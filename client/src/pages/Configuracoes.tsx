@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,38 +7,99 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// TODO: Remove mock data
-const mockConfig = {
-  asaasToken: 'aact_prod_••••••••',
-  asaasUrl: 'https://api.asaas.com/v3',
-  evolutionUrl: 'http://evo.evo.dedyn.io:6001',
-  evolutionInstance: 'teksat',
-  evolutionApiKey: 'm5f7sy11••••••••',
-  diasAviso: 10,
-  messageTemplates: {
-    venceHoje: 'Olá, aqui é da *TEKSAT Rastreamento Veicular*!\nNotamos que sua fatura vence *hoje* 📅.\n\n🔗 Link da fatura: {{link_fatura}}\n💰 Valor: {{valor}}\n📆 Vencimento: {{vencimento}}',
-    aviso: 'Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.\nFaltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.\n\n🔗 Link da fatura: {{link_fatura}}\n💰 Valor: {{valor}}\n🗓️ Vencimento: {{vencimento}}',
-  },
-};
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { Config } from "@shared/schema";
 
 export default function Configuracoes() {
   const { toast } = useToast();
-  const [config, setConfig] = useState(mockConfig);
+
+  const { data: config, isLoading } = useQuery<Config>({
+    queryKey: ['/api/config'],
+  });
+
+  const [formData, setFormData] = useState<Config>({
+    asaasToken: '',
+    asaasUrl: 'https://api.asaas.com/v3',
+    evolutionUrl: '',
+    evolutionInstance: '',
+    evolutionApiKey: '',
+    diasAviso: 10,
+    messageTemplates: {
+      venceHoje: '',
+      aviso: '',
+    },
+  });
+
+  useEffect(() => {
+    if (config) {
+      // Preserve the real structure but use placeholders for display
+      setFormData({
+        ...config,
+        asaasToken: config.asaasToken || '',
+        evolutionApiKey: config.evolutionApiKey || '',
+      });
+    }
+  }, [config]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: Partial<Config>) => {
+      return apiRequest('PUT', '/api/config', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/config'] });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações foram atualizadas com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSave = () => {
-    console.log('Salvando configurações:', config);
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações foram atualizadas com sucesso.",
-    });
+    // Clean up the data before sending
+    const dataToSend = {
+      ...formData,
+      // Only send if changed from placeholder
+      asaasToken: formData.asaasToken === '••••••••' ? undefined : formData.asaasToken,
+      evolutionApiKey: formData.evolutionApiKey === '••••••••' ? undefined : formData.evolutionApiKey,
+    };
+    
+    saveMutation.mutate(dataToSend);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-semibold">Configurações</h1>
+          <p className="text-muted-foreground mt-1">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Configurações</h1>
-        <p className="text-muted-foreground mt-1">Gerencie as configurações do sistema</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">Configurações</h1>
+          <p className="text-muted-foreground mt-1">Gerencie as configurações do sistema</p>
+        </div>
+        <Button 
+          onClick={handleSave} 
+          disabled={saveMutation.isPending}
+          data-testid="button-save"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {saveMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+        </Button>
       </div>
 
       <Tabs defaultValue="asaas" className="space-y-6">
@@ -61,8 +122,8 @@ export default function Configuracoes() {
                 <Input
                   id="asaas-token"
                   type="password"
-                  value={config.asaasToken}
-                  onChange={(e) => setConfig({ ...config, asaasToken: e.target.value })}
+                  value={formData.asaasToken}
+                  onChange={(e) => setFormData({ ...formData, asaasToken: e.target.value })}
                   data-testid="input-asaas-token"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -73,8 +134,8 @@ export default function Configuracoes() {
                 <Label htmlFor="asaas-url">URL da API</Label>
                 <Input
                   id="asaas-url"
-                  value={config.asaasUrl}
-                  onChange={(e) => setConfig({ ...config, asaasUrl: e.target.value })}
+                  value={formData.asaasUrl}
+                  onChange={(e) => setFormData({ ...formData, asaasUrl: e.target.value })}
                   data-testid="input-asaas-url"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -96,8 +157,8 @@ export default function Configuracoes() {
                 <Label htmlFor="evolution-url">URL da Evolution API</Label>
                 <Input
                   id="evolution-url"
-                  value={config.evolutionUrl}
-                  onChange={(e) => setConfig({ ...config, evolutionUrl: e.target.value })}
+                  value={formData.evolutionUrl}
+                  onChange={(e) => setFormData({ ...formData, evolutionUrl: e.target.value })}
                   data-testid="input-evolution-url"
                 />
               </div>
@@ -105,8 +166,8 @@ export default function Configuracoes() {
                 <Label htmlFor="evolution-instance">Nome da Instância</Label>
                 <Input
                   id="evolution-instance"
-                  value={config.evolutionInstance}
-                  onChange={(e) => setConfig({ ...config, evolutionInstance: e.target.value })}
+                  value={formData.evolutionInstance}
+                  onChange={(e) => setFormData({ ...formData, evolutionInstance: e.target.value })}
                   data-testid="input-evolution-instance"
                 />
               </div>
@@ -115,8 +176,8 @@ export default function Configuracoes() {
                 <Input
                   id="evolution-apikey"
                   type="password"
-                  value={config.evolutionApiKey}
-                  onChange={(e) => setConfig({ ...config, evolutionApiKey: e.target.value })}
+                  value={formData.evolutionApiKey}
+                  onChange={(e) => setFormData({ ...formData, evolutionApiKey: e.target.value })}
                   data-testid="input-evolution-apikey"
                 />
               </div>
@@ -136,8 +197,8 @@ export default function Configuracoes() {
                 <Input
                   id="dias-aviso"
                   type="number"
-                  value={config.diasAviso}
-                  onChange={(e) => setConfig({ ...config, diasAviso: parseInt(e.target.value) })}
+                  value={formData.diasAviso}
+                  onChange={(e) => setFormData({ ...formData, diasAviso: parseInt(e.target.value) || 10 })}
                   data-testid="input-dias-aviso"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -157,10 +218,10 @@ export default function Configuracoes() {
             <CardContent className="space-y-4">
               <Textarea
                 rows={8}
-                value={config.messageTemplates.venceHoje}
-                onChange={(e) => setConfig({
-                  ...config,
-                  messageTemplates: { ...config.messageTemplates, venceHoje: e.target.value }
+                value={formData.messageTemplates.venceHoje}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  messageTemplates: { ...formData.messageTemplates, venceHoje: e.target.value }
                 })}
                 data-testid="textarea-template-vence-hoje"
               />
@@ -178,27 +239,20 @@ export default function Configuracoes() {
             <CardContent className="space-y-4">
               <Textarea
                 rows={8}
-                value={config.messageTemplates.aviso}
-                onChange={(e) => setConfig({
-                  ...config,
-                  messageTemplates: { ...config.messageTemplates, aviso: e.target.value }
+                value={formData.messageTemplates.aviso}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  messageTemplates: { ...formData.messageTemplates, aviso: e.target.value }
                 })}
                 data-testid="textarea-template-aviso"
               />
               <p className="text-xs text-muted-foreground">
-                Variáveis disponíveis: {'{'}{'{'} link_fatura {'}'}{'}'}, {'{'}{'{'} valor {'}'}{'}'}, {'{'}{'{'} vencimento {'}'}{'}'}, {'{'}{'{'} cliente_nome {'}'}{'}'}, {'{'}{'{'} dias_aviso {'}'}{'}'}
+                Variáveis disponíveis: {'{'}{'{'} link_fatura {'}'}{'}'}, {'{'}{'{'} valor {'}'}{'}'}, {'{'}{'{'} vencimento {'}'}{'}'}, {'{'}{'{'} dias_aviso {'}'}{'}'}, {'{'}{'{'} cliente_nome {'}'}{'}'}
               </p>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      <div className="flex justify-end">
-        <Button onClick={handleSave} data-testid="button-save-config">
-          <Save className="h-4 w-4 mr-2" />
-          Salvar Configurações
-        </Button>
-      </div>
     </div>
   );
 }

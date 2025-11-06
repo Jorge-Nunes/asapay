@@ -4,66 +4,71 @@ import { StatusChart } from "@/components/StatusChart";
 import { ExecutionLogTable } from "@/components/ExecutionLogTable";
 import { Button } from "@/components/ui/button";
 import { DollarSign, FileText, MessageSquare, TrendingUp, Play, RefreshCw } from "lucide-react";
-import { useState } from "react";
-
-// TODO: Remove mock data
-const mockMetrics = {
-  totalPendente: 12450.00,
-  venceHoje: 8,
-  mensagensEnviadas: 142,
-  taxaConversao: 78.5,
-};
-
-const mockChartData = [
-  { date: '01/01', mensagens: 45, erros: 2 },
-  { date: '02/01', mensagens: 52, erros: 1 },
-  { date: '03/01', mensagens: 38, erros: 3 },
-  { date: '04/01', mensagens: 61, erros: 0 },
-  { date: '05/01', mensagens: 48, erros: 2 },
-  { date: '06/01', mensagens: 55, erros: 1 },
-  { date: '07/01', mensagens: 43, erros: 0 },
-];
-
-const mockStatusData = [
-  { name: 'Pendente', value: 45 },
-  { name: 'Recebido', value: 28 },
-  { name: 'Vencido', value: 12 },
-  { name: 'Confirmado', value: 35 },
-];
-
-const mockLogs = [
-  {
-    id: '1',
-    cobrancaId: 'cob_1',
-    customerName: 'João Silva',
-    customerPhone: '11999999999',
-    tipo: 'vence_hoje' as const,
-    status: 'success' as const,
-    mensagem: 'Mensagem enviada com sucesso',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    cobrancaId: 'cob_2',
-    customerName: 'Maria Santos',
-    customerPhone: '11988888888',
-    tipo: 'aviso' as const,
-    status: 'success' as const,
-    timestamp: new Date(Date.now() - 60000).toISOString(),
-  },
-];
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { DashboardMetrics, Execution } from "@shared/schema";
 
 export default function Dashboard() {
-  const [isRunning, setIsRunning] = useState(false);
+  const { toast } = useToast();
+
+  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
+    queryKey: ['/api/dashboard/metrics'],
+  });
+
+  const { data: chartData = [] } = useQuery<Array<{ date: string; mensagens: number; erros: number }>>({
+    queryKey: ['/api/dashboard/chart-data'],
+  });
+
+  const { data: statusData = [] } = useQuery<Array<{ name: string; value: number }>>({
+    queryKey: ['/api/dashboard/status-data'],
+  });
+
+  const { data: executions = [] } = useQuery<Execution[]>({
+    queryKey: ['/api/executions'],
+  });
+
+  const runExecutionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/executions/run', { method: 'POST' });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao executar');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/executions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/chart-data'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cobrancas'] });
+      toast({
+        title: "Execução concluída",
+        description: "O processamento foi executado com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro na execução",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleRunExecution = () => {
-    setIsRunning(true);
-    console.log('Executando processamento...');
-    setTimeout(() => {
-      setIsRunning(false);
-      console.log('Processamento concluído');
-    }, 3000);
+    runExecutionMutation.mutate();
   };
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries();
+    toast({
+      title: "Atualizado",
+      description: "Dados atualizados com sucesso.",
+    });
+  };
+
+  const latestLogs = executions[0]?.detalhes?.slice(0, 10) || [];
 
   return (
     <div className="space-y-8">
@@ -73,17 +78,22 @@ export default function Dashboard() {
           <p className="text-muted-foreground mt-1">Visão geral do sistema de cobranças</p>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" data-testid="button-refresh">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            data-testid="button-refresh"
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
           <Button 
             onClick={handleRunExecution} 
-            disabled={isRunning}
+            disabled={runExecutionMutation.isPending}
             data-testid="button-run-execution"
           >
             <Play className="h-4 w-4 mr-2" />
-            {isRunning ? 'Executando...' : 'Executar Agora'}
+            {runExecutionMutation.isPending ? 'Executando...' : 'Executar Agora'}
           </Button>
         </div>
       </div>
@@ -91,38 +101,34 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Pendente"
-          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mockMetrics.totalPendente)}
+          value={metricsLoading ? '...' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics?.totalPendente || 0)}
           icon={DollarSign}
-          trend={{ value: 5.2, isPositive: false }}
         />
         <MetricCard
           title="Vence Hoje"
-          value={mockMetrics.venceHoje}
+          value={metricsLoading ? '...' : metrics?.venceHoje || 0}
           icon={FileText}
-          trend={{ value: 12.3, isPositive: true }}
         />
         <MetricCard
           title="Mensagens Enviadas"
-          value={mockMetrics.mensagensEnviadas}
+          value={metricsLoading ? '...' : metrics?.mensagensEnviadas || 0}
           icon={MessageSquare}
-          trend={{ value: 8.7, isPositive: true }}
         />
         <MetricCard
           title="Taxa de Conversão"
-          value={`${mockMetrics.taxaConversao}%`}
+          value={metricsLoading ? '...' : `${(metrics?.taxaConversao || 0).toFixed(1)}%`}
           icon={TrendingUp}
-          trend={{ value: 3.1, isPositive: true }}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ExecutionChart data={mockChartData} />
-        <StatusChart data={mockStatusData} />
+        <ExecutionChart data={chartData} />
+        <StatusChart data={statusData} />
       </div>
 
       <div>
         <h2 className="text-xl font-semibold mb-4">Últimas Execuções</h2>
-        <ExecutionLogTable logs={mockLogs} />
+        <ExecutionLogTable logs={latestLogs} />
       </div>
     </div>
   );

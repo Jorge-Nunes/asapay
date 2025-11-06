@@ -4,29 +4,51 @@ import { ExecutionChart } from "@/components/ExecutionChart";
 import { StatusChart } from "@/components/StatusChart";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, MessageSquare, PlayCircle } from "lucide-react";
-
-// TODO: Remove mock data
-const mockChartData = [
-  { date: '01/01', mensagens: 45, erros: 2 },
-  { date: '02/01', mensagens: 52, erros: 1 },
-  { date: '03/01', mensagens: 38, erros: 3 },
-  { date: '04/01', mensagens: 61, erros: 0 },
-  { date: '05/01', mensagens: 48, erros: 2 },
-  { date: '06/01', mensagens: 55, erros: 1 },
-  { date: '07/01', mensagens: 43, erros: 0 },
-];
-
-const mockStatusData = [
-  { name: 'Pendente', value: 45 },
-  { name: 'Recebido', value: 28 },
-  { name: 'Vencido', value: 12 },
-  { name: 'Confirmado', value: 35 },
-];
+import { useQuery } from "@tanstack/react-query";
+import type { Cobranca, Execution } from "@shared/schema";
 
 export default function Relatorios() {
+  const { data: chartData = [] } = useQuery<Array<{ date: string; mensagens: number; erros: number }>>({
+    queryKey: ['/api/dashboard/chart-data'],
+  });
+
+  const { data: statusData = [] } = useQuery<Array<{ name: string; value: number }>>({
+    queryKey: ['/api/dashboard/status-data'],
+  });
+
+  const { data: cobrancas = [] } = useQuery<Cobranca[]>({
+    queryKey: ['/api/cobrancas'],
+  });
+
+  const { data: executions = [] } = useQuery<Execution[]>({
+    queryKey: ['/api/executions'],
+  });
+
   const handleExport = () => {
     console.log('Exportando relatório...');
   };
+
+  const totalCobrancas = cobrancas.length;
+  const totalMensagens = executions.reduce((sum, exec) => sum + exec.mensagensEnviadas, 0);
+  const totalExecucoes = executions.length;
+
+  const mensagensVenceHoje = executions.reduce((sum, exec) => {
+    const venceHojeCount = exec.detalhes?.filter(d => d.tipo === 'vence_hoje').length || 0;
+    return sum + venceHojeCount;
+  }, 0);
+
+  const mensagensAviso = executions.reduce((sum, exec) => {
+    const avisoCount = exec.detalhes?.filter(d => d.tipo === 'aviso').length || 0;
+    return sum + avisoCount;
+  }, 0);
+
+  const mensagensEnviadas = executions.reduce((sum, exec) => {
+    const successCount = exec.detalhes?.filter(d => d.status === 'success').length || 0;
+    return sum + successCount;
+  }, 0);
+
+  const totalErros = executions.reduce((sum, exec) => sum + exec.erros, 0);
+  const taxaSucesso = totalMensagens > 0 ? ((mensagensEnviadas / totalMensagens) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="space-y-6">
@@ -52,36 +74,36 @@ export default function Relatorios() {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Cobranças</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold tabular-nums">120</div>
+                <div className="text-3xl font-bold tabular-nums">{totalCobrancas}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Neste mês
                 </p>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Mensagens Enviadas</CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold tabular-nums">342</div>
+                <div className="text-3xl font-bold tabular-nums">{totalMensagens}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Últimos 30 dias
                 </p>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Execuções</CardTitle>
                 <PlayCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold tabular-nums">30</div>
+                <div className="text-3xl font-bold tabular-nums">{totalExecucoes}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Neste mês
                 </p>
@@ -90,8 +112,8 @@ export default function Relatorios() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ExecutionChart data={mockChartData} />
-            <StatusChart data={mockStatusData} />
+            <ExecutionChart data={chartData} />
+            <StatusChart data={statusData} />
           </div>
         </TabsContent>
 
@@ -105,11 +127,11 @@ export default function Relatorios() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Vence Hoje</span>
-                    <span className="text-sm font-semibold tabular-nums">156</span>
+                    <span className="text-sm font-semibold tabular-nums">{mensagensVenceHoje}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Aviso</span>
-                    <span className="text-sm font-semibold tabular-nums">186</span>
+                    <span className="text-sm font-semibold tabular-nums">{mensagensAviso}</span>
                   </div>
                 </div>
               </CardContent>
@@ -119,21 +141,77 @@ export default function Relatorios() {
                 <CardTitle className="text-lg">Taxa de Sucesso</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold tabular-nums text-chart-2">98.5%</div>
+                <div className="text-4xl font-bold tabular-nums text-chart-2">{taxaSucesso}%</div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  337 de 342 mensagens enviadas com sucesso
+                  {mensagensEnviadas} de {totalMensagens} mensagens enviadas com sucesso
                 </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <ExecutionChart data={chartData} />
+        </TabsContent>
+
+        <TabsContent value="cobrancas" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Status das Cobranças</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StatusChart data={statusData} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Resumo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {statusData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between">
+                      <span className="text-sm">{item.name}</span>
+                      <span className="text-sm font-semibold tabular-nums">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="cobrancas" className="space-y-6">
-          <StatusChart data={mockStatusData} />
-        </TabsContent>
-
         <TabsContent value="executions" className="space-y-6">
-          <ExecutionChart data={mockChartData} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Execuções</CardTitle>
+                <PlayCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tabular-nums">{totalExecucoes}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Mensagens Enviadas</CardTitle>
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tabular-nums">{totalMensagens}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Erros</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tabular-nums">{totalErros}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <ExecutionChart data={chartData} />
         </TabsContent>
       </Tabs>
     </div>

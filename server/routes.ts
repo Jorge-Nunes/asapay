@@ -1,13 +1,203 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { ExecutionService } from "./services/execution.service";
+import { setupCronJobs } from "./cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Setup cron jobs
+  setupCronJobs();
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  // Config routes
+  app.get("/api/config", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      // Return metadata showing which secrets are set
+      res.json({
+        ...config,
+        asaasToken: config.asaasToken ? '••••••••' : '',
+        evolutionApiKey: config.evolutionApiKey ? '••••••••' : '',
+        _hasAsaasToken: !!config.asaasToken,
+        _hasEvolutionApiKey: !!config.evolutionApiKey,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch config" });
+    }
+  });
+
+  app.put("/api/config", async (req, res) => {
+    try {
+      const currentConfig = await storage.getConfig();
+      const updateData = { ...req.body };
+
+      // Don't update if value is the masked placeholder or undefined
+      if (!updateData.asaasToken || updateData.asaasToken === '••••••••') {
+        updateData.asaasToken = currentConfig.asaasToken;
+      }
+      if (!updateData.evolutionApiKey || updateData.evolutionApiKey === '••••••••') {
+        updateData.evolutionApiKey = currentConfig.evolutionApiKey;
+      }
+
+      // Validate required fields only if they're being set for the first time
+      if (!updateData.asaasToken || updateData.asaasToken.trim() === '') {
+        return res.status(400).json({ error: "Token do Asaas é obrigatório" });
+      }
+      if (!updateData.evolutionUrl || updateData.evolutionUrl.trim() === '') {
+        return res.status(400).json({ error: "URL da Evolution API é obrigatória" });
+      }
+      if (!updateData.evolutionApiKey || updateData.evolutionApiKey.trim() === '') {
+        return res.status(400).json({ error: "API Key da Evolution é obrigatória" });
+      }
+      if (!updateData.evolutionInstance || updateData.evolutionInstance.trim() === '') {
+        return res.status(400).json({ error: "Instância da Evolution é obrigatória" });
+      }
+
+      const updated = await storage.updateConfig(updateData);
+      res.json({
+        ...updated,
+        asaasToken: updated.asaasToken ? '••••••••' : '',
+        evolutionApiKey: updated.evolutionApiKey ? '••••••••' : '',
+        _hasAsaasToken: !!updated.asaasToken,
+        _hasEvolutionApiKey: !!updated.evolutionApiKey,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update config" });
+    }
+  });
+
+  // Cobranças routes
+  app.get("/api/cobrancas", async (req, res) => {
+    try {
+      const { status, tipo } = req.query;
+      let cobrancas = await storage.getCobrancas();
+
+      if (status && status !== 'all') {
+        cobrancas = cobrancas.filter(c => c.status === status);
+      }
+
+      if (tipo && tipo !== 'all') {
+        cobrancas = cobrancas.filter(c => c.tipo === tipo);
+      }
+
+      res.json(cobrancas);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cobranças" });
+    }
+  });
+
+  app.get("/api/cobrancas/:id", async (req, res) => {
+    try {
+      const cobranca = await storage.getCobrancaById(req.params.id);
+      if (!cobranca) {
+        return res.status(404).json({ error: "Cobrança not found" });
+      }
+      res.json(cobranca);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cobrança" });
+    }
+  });
+
+  // Executions routes
+  app.get("/api/executions", async (req, res) => {
+    try {
+      const executions = await storage.getExecutions();
+      res.json(executions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch executions" });
+    }
+  });
+
+  app.get("/api/executions/:id", async (req, res) => {
+    try {
+      const execution = await storage.getExecutionById(req.params.id);
+      if (!execution) {
+        return res.status(404).json({ error: "Execution not found" });
+      }
+      res.json(execution);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch execution" });
+    }
+  });
+
+  app.post("/api/executions/run", async (req, res) => {
+    try {
+      const execution = await ExecutionService.runExecution();
+      res.json(execution);
+    } catch (error) {
+      console.error('Error running execution:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to run execution" 
+      });
+    }
+  });
+
+  // Execution logs routes
+  app.get("/api/executions/:id/logs", async (req, res) => {
+    try {
+      const logs = await storage.getExecutionLogs(req.params.id);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch logs" });
+    }
+  });
+
+  // Dashboard routes
+  app.get("/api/dashboard/metrics", async (req, res) => {
+    try {
+      const metrics = await storage.getDashboardMetrics();
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dashboard metrics" });
+    }
+  });
+
+  app.get("/api/dashboard/chart-data", async (req, res) => {
+    try {
+      const executions = await storage.getExecutions();
+      
+      // Get last 7 days of executions
+      const last7Days = executions
+        .slice(0, 7)
+        .reverse()
+        .map(exec => ({
+          date: new Date(exec.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          mensagens: exec.mensagensEnviadas,
+          erros: exec.erros,
+        }));
+
+      res.json(last7Days);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chart data" });
+    }
+  });
+
+  app.get("/api/dashboard/status-data", async (req, res) => {
+    try {
+      const cobrancas = await storage.getCobrancas();
+      
+      const statusCounts = {
+        PENDING: 0,
+        RECEIVED: 0,
+        CONFIRMED: 0,
+        OVERDUE: 0,
+      };
+
+      cobrancas.forEach(c => {
+        statusCounts[c.status]++;
+      });
+
+      const data = [
+        { name: 'Pendente', value: statusCounts.PENDING },
+        { name: 'Recebido', value: statusCounts.RECEIVED },
+        { name: 'Confirmado', value: statusCounts.CONFIRMED },
+        { name: 'Vencido', value: statusCounts.OVERDUE },
+      ].filter(item => item.value > 0);
+
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch status data" });
+    }
+  });
 
   const httpServer = createServer(app);
 

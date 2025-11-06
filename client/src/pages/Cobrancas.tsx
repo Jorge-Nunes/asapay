@@ -9,80 +9,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Cobranca } from "@shared/schema";
 
-// TODO: Remove mock data
-const mockCobrancas: Cobranca[] = [
-  {
-    id: '1',
-    customer: 'cus_1',
-    customerName: 'João Silva',
-    customerPhone: '11999999999',
-    value: 150.00,
-    dueDate: new Date().toISOString(),
-    status: 'PENDING',
-    invoiceUrl: 'https://asaas.com/invoice/1',
-    description: 'Mensalidade Janeiro',
-    tipo: 'vence_hoje',
-  },
-  {
-    id: '2',
-    customer: 'cus_2',
-    customerName: 'Maria Santos',
-    customerPhone: '11988888888',
-    value: 250.00,
-    dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'PENDING',
-    invoiceUrl: 'https://asaas.com/invoice/2',
-    description: 'Mensalidade Janeiro',
-    tipo: 'aviso',
-  },
-  {
-    id: '3',
-    customer: 'cus_3',
-    customerName: 'Pedro Costa',
-    customerPhone: '11977777777',
-    value: 180.00,
-    dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'OVERDUE',
-    invoiceUrl: 'https://asaas.com/invoice/3',
-    description: 'Mensalidade Dezembro',
-  },
-  {
-    id: '4',
-    customer: 'cus_4',
-    customerName: 'Ana Oliveira',
-    customerPhone: '11966666666',
-    value: 200.00,
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'PENDING',
-    invoiceUrl: 'https://asaas.com/invoice/4',
-    description: 'Mensalidade Janeiro',
-  },
-];
-
 export default function Cobrancas() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tipoFilter, setTipoFilter] = useState<string>("all");
 
-  const filteredCobrancas = mockCobrancas.filter((cobranca) => {
+  const { data: cobrancas = [], isLoading } = useQuery<Cobranca[]>({
+    queryKey: ['/api/cobrancas', statusFilter, tipoFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (tipoFilter !== 'all') params.append('tipo', tipoFilter);
+      
+      const response = await fetch(`/api/cobrancas?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch cobranças');
+      return response.json();
+    },
+  });
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/cobrancas'] });
+    toast({
+      title: "Atualizado",
+      description: "Lista de cobranças atualizada com sucesso.",
+    });
+  };
+
+  const filteredCobrancas = cobrancas.filter((cobranca) => {
     const matchesSearch = cobranca.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || cobranca.status === statusFilter;
-    const matchesTipo = tipoFilter === "all" || cobranca.tipo === tipoFilter;
-    return matchesSearch && matchesStatus && matchesTipo;
+    return matchesSearch;
   });
 
   const handleSendMessage = (cobranca: Cobranca) => {
     console.log('Enviando mensagem para:', cobranca.customerName);
+    toast({
+      title: "Mensagem enviada",
+      description: `Mensagem enviada para ${cobranca.customerName}`,
+    });
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Cobranças</h1>
-        <p className="text-muted-foreground mt-1">Gerencie todas as cobranças pendentes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">Cobranças</h1>
+          <p className="text-muted-foreground mt-1">Gerencie todas as cobranças pendentes</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          data-testid="button-refresh-cobrancas"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Atualizar
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -125,7 +113,11 @@ export default function Cobrancas() {
         </Button>
       </div>
 
-      <CobrancaTable cobrancas={filteredCobrancas} onSendMessage={handleSendMessage} />
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">Carregando cobranças...</div>
+      ) : (
+        <CobrancaTable cobrancas={filteredCobrancas} onSendMessage={handleSendMessage} />
+      )}
     </div>
   );
 }

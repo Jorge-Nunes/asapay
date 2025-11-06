@@ -1,37 +1,179 @@
-import { type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import type { Config, Cobranca, Execution, ExecutionLog, DashboardMetrics } from "@shared/schema";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Config
+  getConfig(): Promise<Config>;
+  updateConfig(config: Partial<Config>): Promise<Config>;
+
+  // Cobranças
+  getCobrancas(): Promise<Cobranca[]>;
+  getCobrancaById(id: string): Promise<Cobranca | undefined>;
+  saveCobrancas(cobrancas: Cobranca[]): Promise<void>;
+  updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined>;
+
+  // Executions
+  getExecutions(): Promise<Execution[]>;
+  getExecutionById(id: string): Promise<Execution | undefined>;
+  createExecution(execution: Omit<Execution, 'id'>): Promise<Execution>;
+  updateExecution(id: string, data: Partial<Execution>): Promise<Execution | undefined>;
+
+  // Execution Logs
+  getExecutionLogs(executionId?: string): Promise<ExecutionLog[]>;
+  addExecutionLog(log: Omit<ExecutionLog, 'id'>): Promise<ExecutionLog>;
+
+  // Dashboard
+  getDashboardMetrics(): Promise<DashboardMetrics>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
+  private config: Config;
+  private cobrancas: Map<string, Cobranca>;
+  private executions: Map<string, Execution>;
+  private executionLogs: ExecutionLog[];
 
   constructor() {
-    this.users = new Map();
+    this.config = {
+      asaasToken: process.env.ASAAS_TOKEN || '',
+      asaasUrl: process.env.ASAAS_URL || 'https://api.asaas.com/v3',
+      evolutionUrl: process.env.EVOLUTION_URL || '',
+      evolutionInstance: process.env.EVOLUTION_INSTANCE || '',
+      evolutionApiKey: process.env.EVOLUTION_APIKEY || '',
+      diasAviso: 10,
+      messageTemplates: {
+        venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
+Notamos que sua fatura vence *hoje* 📅.
+Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
+
+🔗 Link da fatura: {{link_fatura}}
+💰 Valor: {{valor}}
+📆 Vencimento: {{vencimento}}
+
+Qualquer dúvida, nossa equipe está à disposição! 🤝`,
+        aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
+Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
+Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
+
+🔗 Link da fatura: {{link_fatura}}
+💰 Valor: {{valor}}
+🗓️ Vencimento: {{vencimento}}
+
+Estamos aqui para ajudar no que precisar! 📞`,
+      },
+    };
+    this.cobrancas = new Map();
+    this.executions = new Map();
+    this.executionLogs = [];
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getConfig(): Promise<Config> {
+    return this.config;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async updateConfig(config: Partial<Config>): Promise<Config> {
+    this.config = { ...this.config, ...config };
+    return this.config;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async getCobrancas(): Promise<Cobranca[]> {
+    return Array.from(this.cobrancas.values());
+  }
+
+  async getCobrancaById(id: string): Promise<Cobranca | undefined> {
+    return this.cobrancas.get(id);
+  }
+
+  async saveCobrancas(cobrancas: Cobranca[]): Promise<void> {
+    for (const cobranca of cobrancas) {
+      this.cobrancas.set(cobranca.id, cobranca);
+    }
+  }
+
+  async updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined> {
+    const cobranca = this.cobrancas.get(id);
+    if (!cobranca) return undefined;
+    
+    const updated = { ...cobranca, ...data };
+    this.cobrancas.set(id, updated);
+    return updated;
+  }
+
+  async getExecutions(): Promise<Execution[]> {
+    return Array.from(this.executions.values())
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  async getExecutionById(id: string): Promise<Execution | undefined> {
+    return this.executions.get(id);
+  }
+
+  async createExecution(execution: Omit<Execution, 'id'>): Promise<Execution> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    const newExecution: Execution = { ...execution, id };
+    this.executions.set(id, newExecution);
+    return newExecution;
+  }
+
+  async updateExecution(id: string, data: Partial<Execution>): Promise<Execution | undefined> {
+    const execution = this.executions.get(id);
+    if (!execution) return undefined;
+    
+    const updated = { ...execution, ...data };
+    this.executions.set(id, updated);
+    return updated;
+  }
+
+  async getExecutionLogs(executionId?: string): Promise<ExecutionLog[]> {
+    if (executionId) {
+      const execution = this.executions.get(executionId);
+      return execution?.detalhes || [];
+    }
+    return this.executionLogs;
+  }
+
+  async addExecutionLog(log: Omit<ExecutionLog, 'id'>): Promise<ExecutionLog> {
+    const id = randomUUID();
+    const newLog: ExecutionLog = { ...log, id };
+    this.executionLogs.push(newLog);
+    return newLog;
+  }
+
+  async getDashboardMetrics(): Promise<DashboardMetrics> {
+    const cobrancas = Array.from(this.cobrancas.values());
+    const pendentes = cobrancas.filter(c => c.status === 'PENDING');
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    const venceHoje = pendentes.filter(c => {
+      const dueDate = new Date(c.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate.getTime() === hoje.getTime();
+    }).length;
+
+    const totalPendente = pendentes.reduce((sum, c) => sum + c.value, 0);
+
+    // Count messages sent in last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const mensagensEnviadas = this.executionLogs.filter(log => 
+      new Date(log.timestamp) > thirtyDaysAgo && log.status === 'success'
+    ).length;
+
+    // Calculate conversion rate (paid vs total in last 30 days)
+    const recebidas = cobrancas.filter(c => 
+      c.status === 'RECEIVED' || c.status === 'CONFIRMED'
+    ).length;
+    const total = cobrancas.length || 1;
+    const taxaConversao = (recebidas / total) * 100;
+
+    return {
+      totalPendente,
+      venceHoje,
+      mensagensEnviadas,
+      taxaConversao,
+    };
   }
 }
 
