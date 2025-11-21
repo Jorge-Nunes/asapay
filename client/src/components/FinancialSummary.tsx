@@ -71,19 +71,19 @@ const getPeriodDates = (period: string): { startDate: string; endDate: string } 
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
-  const endDate = `${year}-${month}-${day}`;
+  const todayStr = `${year}-${month}-${day}`;
 
   switch (period) {
     case 'today':
-      return { startDate: endDate, endDate };
+      return { startDate: todayStr, endDate: todayStr };
     case 'thisMonth': {
       const startOfMonth = new Date(year, today.getMonth(), 1);
       const startDate = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}-${String(startOfMonth.getDate()).padStart(2, '0')}`;
-      return { startDate, endDate };
+      return { startDate, endDate: todayStr };
     }
     case 'thisYear': {
-      const startOfYear = new Date(year, 0, 1);
-      const startDate = `${startOfYear.getFullYear()}-01-01`;
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
       return { startDate, endDate };
     }
     case 'allTime':
