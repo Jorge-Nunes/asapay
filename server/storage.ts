@@ -14,6 +14,7 @@ export interface IStorage {
   getCobrancaById(id: string): Promise<Cobranca | undefined>;
   saveCobrancas(cobrancas: Cobranca[]): Promise<void>;
   updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined>;
+  createCobranca(cobranca: Omit<Cobranca, 'id'>): Promise<Cobranca>;
 
   // Executions
   getExecutions(): Promise<Execution[]>;
@@ -40,6 +41,7 @@ export interface IStorage {
   // Clients
   getClients(): Promise<ClientData[]>;
   getClientByAsaasId(asaasCustomerId: string): Promise<ClientData | undefined>;
+  createClient(client: Omit<ClientData, 'id' | 'createdAt' | 'updatedAt'>): Promise<ClientData>;
   syncClients(clients: InsertClient[]): Promise<void>;
   updateClientPreferences(clientId: string, blockDailyMessages: boolean, diasAtrasoNotificacao: number): Promise<void>;
   updateClientTraccarMapping(clientId: string, traccarUserId: string | null): Promise<void>;
@@ -192,6 +194,15 @@ Obrigado por sua confiança! 🙏`,
     return updated;
   }
 
+  async createCobranca(cobranca: Omit<Cobranca, 'id'>): Promise<Cobranca> {
+    const newCobranca: Cobranca = {
+      ...cobranca,
+      id: randomUUID(),
+    };
+    this.cobrancas.set(newCobranca.id, newCobranca);
+    return newCobranca;
+  }
+
   async getExecutions(): Promise<Execution[]> {
     return Array.from(this.executions.values())
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -272,6 +283,17 @@ Obrigado por sua confiança! 🙏`,
 
   async getClients(): Promise<ClientData[]> {
     return Array.from(this.clients.values());
+  }
+
+  async createClient(client: Omit<ClientData, 'id' | 'createdAt' | 'updatedAt'>): Promise<ClientData> {
+    const newClient: ClientData = {
+      id: randomUUID(),
+      ...client,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.clients.set(newClient.id, newClient);
+    return newClient;
   }
 
   async getClientByAsaasId(asaasCustomerId: string): Promise<ClientData | undefined> {

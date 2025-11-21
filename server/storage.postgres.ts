@@ -403,6 +403,32 @@ Obrigado por sua confiança! 🙏`,
     }
   }
 
+  async createCobranca(cobranca: Omit<Cobranca, 'id'>): Promise<Cobranca> {
+    try {
+      const db = getDb();
+      const { randomUUID } = await import('crypto');
+      const id = randomUUID();
+
+      await db.insert(cobrancas).values({
+        id,
+        customer: cobranca.customer,
+        customerName: cobranca.customerName,
+        customerPhone: cobranca.customerPhone,
+        value: cobranca.value.toString(),
+        dueDate: cobranca.dueDate,
+        status: cobranca.status,
+        invoiceUrl: cobranca.invoiceUrl,
+        description: cobranca.description,
+        tipo: cobranca.tipo,
+      });
+
+      return this.getCobrancaById(id) as Promise<Cobranca>;
+    } catch (error) {
+      console.error('[Storage] Error in createCobranca:', error);
+      throw error;
+    }
+  }
+
   async getExecutions(): Promise<Execution[]> {
     try {
       const db = getDb();
@@ -760,6 +786,35 @@ Obrigado por sua confiança! 🙏`,
       return result as schema.ClientData[];
     } catch (error) {
       console.error('[Storage] Error in getClients:', error);
+      throw error;
+    }
+  }
+
+  async createClient(client: Omit<schema.ClientData, 'id' | 'createdAt' | 'updatedAt'>): Promise<schema.ClientData> {
+    try {
+      const db = getDb();
+      const { randomUUID } = await import('crypto');
+      const id = randomUUID();
+
+      await db.insert(schema.clients).values({
+        id,
+        name: client.name,
+        asaasCustomerId: client.asaasCustomerId || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        mobilePhone: client.mobilePhone || '',
+        address: client.address || '',
+        city: client.city || '',
+        state: client.state || '',
+        traccarUserId: client.traccarUserId || '',
+        blockDailyMessages: client.blockDailyMessages || 0,
+        diasAtrasoNotificacao: client.diasAtrasoNotificacao || 3,
+        isTraccarBlocked: client.isTraccarBlocked || 0,
+      });
+
+      return this.getClientByAsaasId(client.asaasCustomerId || id) as Promise<schema.ClientData>;
+    } catch (error) {
+      console.error('[Storage] Error in createClient:', error);
       throw error;
     }
   }
