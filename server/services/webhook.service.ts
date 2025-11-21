@@ -154,46 +154,67 @@ export class WebhookService {
   }
 
   private async handlePaymentConfirmed(payload: AsaasWebhookPayload): Promise<void> {
-    const paymentId = payload.data.id;
-    console.log(`[Webhook] Pagamento recebido/confirmado: ${paymentId}`);
-
-    // Update cobrança status to RECEIVED
-    const allCobrancas = await storage.getCobrancas();
-    const cobranca = allCobrancas.find(c => c.id === paymentId || c.id === payload.data.payment?.id);
-
-    if (cobranca) {
-      await storage.updateCobranca(cobranca.id, {
-        status: "RECEIVED",
-        tipo: "processada",
-      });
-
-      console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para RECEIVED`);
-
-      // Check if customer should be unblocked in Traccar
-      await this.checkAndUnblockTraccar(cobranca.customer);
-
-      // Try to send confirmation message
-      try {
-        const config = await storage.getConfig();
-        if (config.messageTemplates?.pagamentoConfirmado && config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
-          const evolutionService = new EvolutionService(
-            config.evolutionUrl,
-            config.evolutionApiKey,
-            config.evolutionInstance
-          );
-
-          const phone = cobranca.customerPhone?.replace(/\D/g, "") || "";
-          const confirmationMessage = config.messageTemplates.pagamentoConfirmado
-            .replace('{{cliente_nome}}', cobranca.customerName)
-            .replace('{{valor}}', cobranca.value.toString())
-            .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
-
-          await evolutionService.sendTextMessage(phone, confirmationMessage);
-          console.log(`[Webhook] Mensagem de confirmação enviada para ${phone}`);
-        }
-      } catch (error) {
-        console.error(`[Webhook] Erro ao enviar mensagem de confirmação:`, error);
+    try {
+      // Get payment data - can be in payload.payment or payload.data.payment
+      const paymentData = payload.payment || payload.data?.payment;
+      
+      if (!paymentData) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_CONFIRMED - sem payment`);
+        return;
       }
+
+      const paymentId = paymentData.id;
+      
+      if (!paymentId) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_CONFIRMED - sem ID`);
+        return;
+      }
+
+      console.log(`[Webhook] Pagamento recebido/confirmado: ${paymentId}`);
+
+      // Update cobrança status to RECEIVED
+      const allCobrancas = await storage.getCobrancas();
+      const cobranca = allCobrancas.find(c => c.id === paymentId);
+
+      if (cobranca) {
+        await storage.updateCobranca(cobranca.id, {
+          status: "RECEIVED",
+          tipo: "processada",
+        });
+
+        console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para RECEIVED`);
+
+        // Check if customer should be unblocked in Traccar
+        await this.checkAndUnblockTraccar(cobranca.customer);
+
+        // Try to send confirmation message
+        try {
+          const config = await storage.getConfig();
+          if (config.messageTemplates?.pagamentoConfirmado && config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
+            const evolutionService = new EvolutionService(
+              config.evolutionUrl,
+              config.evolutionApiKey,
+              config.evolutionInstance
+            );
+
+            const phone = cobranca.customerPhone?.replace(/\D/g, "") || "";
+            const confirmationMessage = config.messageTemplates.pagamentoConfirmado
+              .replace('{{cliente_nome}}', cobranca.customerName)
+              .replace('{{valor}}', cobranca.value.toString())
+              .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
+
+            await evolutionService.sendTextMessage(phone, confirmationMessage);
+            console.log(`[Webhook] Mensagem de confirmação enviada para ${phone}`);
+          }
+        } catch (error) {
+          console.error(`[Webhook] Erro ao enviar mensagem de confirmação:`, error);
+        }
+      } else {
+        console.log(`[Webhook] Cobrança com ID ${paymentId} não encontrada`);
+      }
+    } catch (error) {
+      console.error(`[Webhook] Erro em handlePaymentConfirmed:`, error);
+      throw error;
     }
   }
 
@@ -261,29 +282,53 @@ export class WebhookService {
   }
 
   private async handlePaymentOverdue(payload: AsaasWebhookPayload): Promise<void> {
-    const paymentId = payload.data.id;
-    console.log(`[Webhook] Cobrança vencida: ${paymentId}`);
+    try {
+      // Get payment data - can be in payload.payment or payload.data.payment
+      const paymentData = payload.payment || payload.data?.payment;
+      
+      if (!paymentData) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_OVERDUE - sem payment`);
+        return;
+      }
 
-    const allCobrancas = await storage.getCobrancas();
-    const cobranca = allCobrancas.find(c => c.id === paymentId || c.id === payload.data.payment?.id);
+      const paymentId = paymentData.id;
+      
+      if (!paymentId) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_OVERDUE - sem ID`);
+        return;
+      }
 
-    if (cobranca) {
-      await storage.updateCobranca(cobranca.id, {
-        status: "OVERDUE",
-      });
+      console.log(`[Webhook] Cobrança vencida: ${paymentId}`);
 
-      console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para OVERDUE`);
+      const allCobrancas = await storage.getCobrancas();
+      const cobranca = allCobrancas.find(c => c.id === paymentId);
+
+      if (cobranca) {
+        await storage.updateCobranca(cobranca.id, {
+          status: "OVERDUE",
+        });
+
+        console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para OVERDUE`);
+      } else {
+        console.log(`[Webhook] Cobrança com ID ${paymentId} não encontrada`);
+      }
+    } catch (error) {
+      console.error(`[Webhook] Erro em handlePaymentOverdue:`, error);
+      throw error;
     }
   }
 
   private async handlePaymentDeleted(payload: AsaasWebhookPayload): Promise<void> {
     try {
-      if (!payload.data) {
-        console.log(`[Webhook] Payload inválido para PAYMENT_DELETED - sem data`);
+      // Get payment data - can be in payload.payment or payload.data.payment
+      const paymentData = payload.payment || payload.data?.payment;
+      
+      if (!paymentData) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_DELETED - sem payment`);
         return;
       }
 
-      const paymentId = payload.data.id || payload.data.payment?.id;
+      const paymentId = paymentData.id;
       
       if (!paymentId) {
         console.log(`[Webhook] Payload inválido para PAYMENT_DELETED - sem ID`);
