@@ -264,6 +264,7 @@ Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
           ...client,
           blockDailyMessages: 0,
           diasAtrasoNotificacao: 3,
+          isTraccarBlocked: 0,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -282,6 +283,27 @@ Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
         updatedAt: new Date(),
       };
       this.clients.set(clientId, updated);
+    }
+  }
+
+  async updateClientTraccarMapping(clientId: string, traccarUserId: string | null): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (client) {
+      (client as any).traccarUserId = traccarUserId;
+    }
+  }
+
+  async blockClientTraccar(clientId: string): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (client) {
+      (client as any).isTraccarBlocked = 1;
+    }
+  }
+
+  async unblockClientTraccar(clientId: string): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (client) {
+      (client as any).isTraccarBlocked = 0;
     }
   }
 
