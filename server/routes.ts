@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./index";
 import { ExecutionService } from "./services/execution.service";
 import { EvolutionService } from "./services/evolution.service";
+import { ProcessorService } from "./services/processor.service";
 import { setupCronJobs } from "./cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -118,6 +119,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Credenciais Evolution não configuradas" });
       }
 
+      if (!config.messageTemplates?.venceHoje || !config.messageTemplates?.aviso) {
+        return res.status(400).json({ error: "Templates de mensagem não configurados" });
+      }
+
       const evolutionService = new EvolutionService(
         config.evolutionUrl,
         config.evolutionApiKey,
@@ -130,10 +135,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Telefone do cliente não encontrado" });
       }
 
-      // Build message
-      const messageTemplate = `Olá ${cobranca.customerName}! Você tem uma cobrança pendente de R$ ${cobranca.value.toFixed(2)} com vencimento em ${new Date(cobranca.dueDate).toLocaleDateString('pt-BR')}. Clique aqui para pagar: ${cobranca.invoiceUrl}`;
+      // Select template based on tipo
+      const template = cobranca.tipo === 'vence_hoje' 
+        ? config.messageTemplates.venceHoje 
+        : config.messageTemplates.aviso;
 
-      const success = await evolutionService.sendTextMessage(phone, messageTemplate);
+      // Generate message using template
+      const processedCobranca = {
+        ...cobranca,
+        value: parseFloat(cobranca.value.toString()),
+      };
+      
+      const message = ProcessorService.generateMessage(
+        processedCobranca,
+        template,
+        config.diasAviso
+      );
+
+      const success = await evolutionService.sendTextMessage(phone, message);
 
       res.json({ 
         success, 
