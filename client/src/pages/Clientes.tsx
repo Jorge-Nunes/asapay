@@ -297,6 +297,7 @@ export default function Clientes() {
                   >
                     Mapeado <SortIcon field="traccarUserId" />
                   </th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold">Bloqueado Traccar</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Ações</th>
                 </tr>
               </thead>
@@ -319,36 +320,51 @@ export default function Clientes() {
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
                         {client.traccarUserId ? (
-                          <>
-                            <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded">
-                              Mapeado
-                            </span>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6"
-                              onClick={() => {
-                                const action = Boolean(client.isTraccarBlocked) ? `unblock-${client.id}` : `block-${client.id}`;
-                                setBlockingClientId(action);
-                                blockTraccarMutation.mutate(client.id);
-                              }}
-                              disabled={blockTraccarMutation.isPending}
-                              title={Boolean(client.isTraccarBlocked) ? "Desbloquear na Traccar" : "Bloquear na Traccar"}
-                              data-testid={`button-toggle-traccar-${client.id}`}
-                            >
-                              {Boolean(client.isTraccarBlocked) ? (
-                                <Unlock className="h-3 w-3 text-green-600 dark:text-green-400" />
-                              ) : (
-                                <Lock className="h-3 w-3 text-red-600 dark:text-red-400" />
-                              )}
-                            </Button>
-                          </>
+                          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded">
+                            Mapeado
+                          </span>
                         ) : (
                           <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs rounded">
                             Não Mapeado
                           </span>
                         )}
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {Boolean(client.isTraccarBlocked) && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 mx-auto"
+                          onClick={() => {
+                            const action = `unblock-${client.id}`;
+                            setBlockingClientId(action);
+                            blockTraccarMutation.mutate(client.id);
+                          }}
+                          disabled={blockTraccarMutation.isPending}
+                          title="Desbloquear na Traccar"
+                          data-testid={`button-unblock-traccar-${client.id}`}
+                        >
+                          <Lock className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        </Button>
+                      )}
+                      {!Boolean(client.isTraccarBlocked) && client.traccarUserId && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 mx-auto"
+                          onClick={() => {
+                            const action = `block-${client.id}`;
+                            setBlockingClientId(action);
+                            blockTraccarMutation.mutate(client.id);
+                          }}
+                          disabled={blockTraccarMutation.isPending}
+                          title="Bloquear na Traccar"
+                          data-testid={`button-block-traccar-${client.id}`}
+                        >
+                          <Unlock className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </Button>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Dialog open={editingClientId === client.id} onOpenChange={(open) => !open && setEditingClientId(null)}>
