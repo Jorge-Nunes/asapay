@@ -231,10 +231,17 @@ Obrigado por sua confiança! 🙏`,
     }
   }
 
-  async getCobrancas(): Promise<Cobranca[]> {
+  async getCobrancas(limit?: number, offset?: number): Promise<Cobranca[]> {
     try {
       const db = getDb();
-      const result = await db.query.cobrancas.findMany();
+      let query = db.query.cobrancas;
+      
+      let result = await (query as any).findMany();
+      
+      if (offset !== undefined && limit !== undefined) {
+        result = result.slice(offset, offset + limit);
+      }
+      
       return result.map(r => ({
         id: r.id,
         customer: r.customer,
@@ -249,6 +256,56 @@ Obrigado por sua confiança! 🙏`,
       }));
     } catch (error) {
       console.error('[Storage] Error in getCobrancas:', error);
+      throw error;
+    }
+  }
+
+  async getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit = 50, offset = 0): Promise<{ data: Cobranca[]; total: number }> {
+    try {
+      const db = getDb();
+      const { and } = require('drizzle-orm');
+      
+      let whereConditions: any[] = [];
+      
+      if (filters?.status && filters.status !== 'all') {
+        whereConditions.push((cobrancas as any).status.equals(filters.status));
+      }
+      
+      if (filters?.tipo && filters.tipo !== 'all') {
+        whereConditions.push((cobrancas as any).tipo.equals(filters.tipo));
+      }
+      
+      // Get total count with filters
+      let countQuery = db.query.cobrancas;
+      const allResults = whereConditions.length > 0 
+        ? await (countQuery as any).findMany({ where: and(...whereConditions) })
+        : await (countQuery as any).findMany();
+      
+      const total = allResults.length;
+      
+      // Get paginated results with filters
+      let paginatedResults = whereConditions.length > 0
+        ? await (countQuery as any).findMany({ where: and(...whereConditions) })
+        : await (countQuery as any).findMany();
+      
+      paginatedResults = paginatedResults.slice(offset, offset + limit);
+      
+      const data = paginatedResults.map((r: any) => ({
+        id: r.id,
+        customer: r.customer,
+        customerName: r.customerName,
+        customerPhone: r.customerPhone,
+        value: parseFloat(r.value as any),
+        dueDate: r.dueDate,
+        status: r.status as any,
+        invoiceUrl: r.invoiceUrl,
+        description: r.description,
+        tipo: r.tipo as any,
+      }));
+      
+      return { data, total };
+    } catch (error) {
+      console.error('[Storage] Error in getCobrancasPaginated:', error);
       throw error;
     }
   }

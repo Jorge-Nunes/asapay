@@ -10,6 +10,7 @@ export interface IStorage {
 
   // Cobranças
   getCobrancas(limit?: number, offset?: number): Promise<Cobranca[]>;
+  getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit?: number, offset?: number): Promise<{ data: Cobranca[]; total: number }>;
   getCobrancaById(id: string): Promise<Cobranca | undefined>;
   saveCobrancas(cobrancas: Cobranca[]): Promise<void>;
   updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined>;
@@ -153,6 +154,23 @@ Obrigado por sua confiança! 🙏`,
     }
     
     return cobrancas;
+  }
+
+  async getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit = 50, offset = 0): Promise<{ data: Cobranca[]; total: number }> {
+    let cobrancas = Array.from(this.cobrancas.values());
+    
+    if (filters?.status && filters.status !== 'all') {
+      cobrancas = cobrancas.filter(c => c.status === filters.status);
+    }
+    
+    if (filters?.tipo && filters.tipo !== 'all') {
+      cobrancas = cobrancas.filter(c => c.tipo === filters.tipo);
+    }
+    
+    const total = cobrancas.length;
+    const data = cobrancas.slice(offset, offset + limit);
+    
+    return { data, total };
   }
 
   async getCobrancaById(id: string): Promise<Cobranca | undefined> {

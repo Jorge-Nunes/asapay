@@ -93,26 +93,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageLimit = Math.min(parseInt(limit as string) || 50, 100);
       const pageOffset = Math.max(parseInt(offset as string) || 0, 0);
       
-      let cobrancas = await storage.getCobrancas();
-
-      if (status && status !== 'all') {
-        cobrancas = cobrancas.filter(c => c.status === status);
-      }
-
-      if (tipo && tipo !== 'all') {
-        cobrancas = cobrancas.filter(c => c.tipo === tipo);
-      }
-
-      const total = cobrancas.length;
-      const paginatedCobrancas = cobrancas.slice(pageOffset, pageOffset + pageLimit);
+      const result = await storage.getCobrancasPaginated(
+        { 
+          status: status as string, 
+          tipo: tipo as string 
+        },
+        pageLimit,
+        pageOffset
+      );
 
       res.json({
-        data: paginatedCobrancas,
-        total,
+        data: result.data,
+        total: result.total,
         limit: pageLimit,
         offset: pageOffset,
       });
     } catch (error) {
+      console.error('[Routes] Error in GET /api/cobrancas:', error);
       res.status(500).json({ error: "Failed to fetch cobranças" });
     }
   });
