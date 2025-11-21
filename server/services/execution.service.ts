@@ -2,6 +2,7 @@ import { storage } from '../index';
 import { AsaasService } from './asaas.service';
 import { EvolutionService } from './evolution.service';
 import { ProcessorService } from './processor.service';
+import { TraccarService } from './traccar.service';
 import type { Execution, ExecutionLog } from '@shared/schema';
 
 export class ExecutionService {
@@ -97,9 +98,91 @@ export class ExecutionService {
         }
       );
 
+      // Handle Traccar blocking logic
+      if (config.traccarUrl && config.traccarApiKey) {
+        console.log('Processing Traccar blocking for overdue customers...');
+        try {
+          const traccarService = new TraccarService(config);
+          
+          // Count overdue invoices per customer (by email and phone)
+          const overdueByCustomer = new Map<string, number>();
+          
+          cobrancas.forEach(cobranca => {
+            if (cobranca.status === 'OVERDUE') {
+              // Use email/phone as identifier
+              const key = `${cobranca.customerPhone}`;
+              overdueByCustomer.set(key, (overdueByCustomer.get(key) || 0) + 1);
+            }
+          });
+
+          const limiteCobrancas = config.traccarLimiteCobrancasVencidas || 3;
+          
+          // Process blocking/unblocking
+          for (const [customerPhone, overdueCount] of overdueByCustomer.entries()) {
+            try {
+              // Try to find user by phone in Traccar
+              const traccarUser = await traccarService.getUserByPhone(customerPhone);
+              
+              if (traccarUser) {
+                const shouldBlock = overdueCount >= limiteCobrancas;
+                const isCurrentlyBlocked = traccarUser.disabled === true;
+                
+                if (shouldBlock && !isCurrentlyBlocked) {
+                  // Block user
+                  console.log(`[Traccar] Bloqueando usuário ${customerPhone} - ${overdueCount} cobranças vencidas`);
+                  await traccarService.blockUser(traccarUser.id);
+                  
+                  logs.push({
+                    id: `traccar-${traccarUser.id}-blocked`,
+                    cobrancaId: 'N/A',
+                    customerName: traccarUser.name || customerPhone,
+                    customerPhone,
+                    tipo: 'atraso',
+                    status: 'success',
+                    timestamp: new Date().toISOString(),
+                    mensagem: `Usuário bloqueado no Traccar (${overdueCount}/${limiteCobrancas} cobranças vencidas)`,
+                  } as ExecutionLog);
+                } else if (!shouldBlock && isCurrentlyBlocked) {
+                  // Unblock user if they no longer meet the blocking criteria
+                  console.log(`[Traccar] Desbloqueando usuário ${customerPhone}`);
+                  await traccarService.unblockUser(traccarUser.id);
+                  
+                  logs.push({
+                    id: `traccar-${traccarUser.id}-unblocked`,
+                    cobrancaId: 'N/A',
+                    customerName: traccarUser.name || customerPhone,
+                    customerPhone,
+                    tipo: 'atraso',
+                    status: 'success',
+                    timestamp: new Date().toISOString(),
+                    mensagem: `Usuário desbloqueado no Traccar (${overdueCount}/${limiteCobrancas} cobranças vencidas)`,
+                  } as ExecutionLog);
+                }
+              }
+            } catch (error) {
+              console.error(`[Traccar] Erro ao processar bloqueio para ${customerPhone}:`, error);
+              
+              logs.push({
+                id: `traccar-error-${customerPhone}`,
+                cobrancaId: 'N/A',
+                customerName: customerPhone,
+                customerPhone,
+                tipo: 'atraso',
+                status: 'error',
+                timestamp: new Date().toISOString(),
+                erro: error instanceof Error ? error.message : 'Erro desconhecido ao processar Traccar',
+              } as ExecutionLog);
+            }
+          }
+        } catch (error) {
+          console.error('[Traccar] Erro ao inicializar serviço:', error);
+        }
+      }
+
       // Calculate metrics
       const mensagensEnviadas = processedLogs.filter(l => l.status === 'success').length;
       const erros = processedLogs.filter(l => l.status === 'error').length;
+      const blockedUsers = logs.filter(l => l.mensagem?.includes('bloqueado')).length;
 
       // Update execution
       await storage.updateExecution(execution.id, {
@@ -107,10 +190,10 @@ export class ExecutionService {
         cobrancasProcessadas: categorized.filter(c => c.tipo !== 'processada').length,
         mensagensEnviadas,
         erros,
-        detalhes: processedLogs,
+        detalhes: logs,
       });
 
-      console.log(`Execution completed: ${mensagensEnviadas} messages sent, ${erros} errors`);
+      console.log(`Execution completed: ${mensagensEnviadas} messages sent, ${erros} errors, ${blockedUsers} users blocked/unblocked`);
 
       return (await storage.getExecutionById(execution.id))!;
     } catch (error) {
