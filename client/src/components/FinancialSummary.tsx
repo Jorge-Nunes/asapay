@@ -1,9 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Calendar, ChevronDown } from "lucide-react";
 import type { FinancialSummary as FinancialSummaryType } from "@shared/schema";
 
 const FinancialSummaryCard = ({ title, total, netValue, customers, invoices, color }: { 
@@ -63,16 +66,57 @@ const FinancialSummaryCard = ({ title, total, netValue, customers, invoices, col
   );
 };
 
+const getPeriodDates = (period: string): { startDate: string; endDate: string } => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const endDate = `${year}-${month}-${day}`;
+
+  switch (period) {
+    case 'today':
+      return { startDate: endDate, endDate };
+    case 'thisMonth': {
+      const startOfMonth = new Date(year, today.getMonth(), 1);
+      const startDate = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}-${String(startOfMonth.getDate()).padStart(2, '0')}`;
+      return { startDate, endDate };
+    }
+    case 'thisYear': {
+      const startOfYear = new Date(year, 0, 1);
+      const startDate = `${startOfYear.getFullYear()}-01-01`;
+      return { startDate, endDate };
+    }
+    case 'allTime':
+      return { startDate: '', endDate: '' };
+    default:
+      return { startDate: '', endDate: '' };
+  }
+};
+
+const getPeriodLabel = (period: string): string => {
+  const labels: Record<string, string> = {
+    today: 'Hoje',
+    thisMonth: 'Este mês',
+    thisYear: 'Este ano',
+    allTime: 'Desde o início',
+    custom: 'Personalizado',
+  };
+  return labels[period] || 'Este mês';
+};
+
 export function FinancialSummarySection() {
-  const [filters, setFilters] = useState({ startDate: '', endDate: '' });
-  
+  const [period, setPeriod] = useState('thisMonth');
+  const [customDates, setCustomDates] = useState({ startDate: '', endDate: '' });
+  const [isOpen, setIsOpen] = useState(false);
+
+  const displayPeriod = period === 'custom' ? customDates : getPeriodDates(period);
   const queryParams = new URLSearchParams();
-  if (filters.startDate) queryParams.append('startDate', filters.startDate);
-  if (filters.endDate) queryParams.append('endDate', filters.endDate);
+  if (displayPeriod.startDate) queryParams.append('startDate', displayPeriod.startDate);
+  if (displayPeriod.endDate) queryParams.append('endDate', displayPeriod.endDate);
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
 
-  const { data: summary, isLoading, refetch } = useQuery<FinancialSummaryType>({
-    queryKey: ['/api/dashboard/financial-summary', filters],
+  const { data: summary, isLoading } = useQuery<FinancialSummaryType>({
+    queryKey: ['/api/dashboard/financial-summary', displayPeriod],
     queryFn: async () => {
       const response = await fetch(`/api/dashboard/financial-summary${queryString}`);
       if (!response.ok) throw new Error('Erro ao carregar resumo financeiro');
@@ -80,50 +124,114 @@ export function FinancialSummarySection() {
     },
   });
 
-  const handleClearFilters = () => {
-    setFilters({ startDate: '', endDate: '' });
+  const handleApply = () => {
+    setIsOpen(false);
+  };
+
+  const handleClear = () => {
+    setPeriod('thisMonth');
+    setCustomDates({ startDate: '', endDate: '' });
   };
 
   if (isLoading || !summary) {
     return <div className="text-center py-8 text-muted-foreground">Carregando dados financeiros...</div>;
   }
 
-  const hasFilters = filters.startDate || filters.endDate;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h2 className="text-lg font-semibold text-foreground">Situação das cobranças</h2>
-        <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            placeholder="Data inicial"
-            value={filters.startDate}
-            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-            data-testid="input-start-date"
-            className="w-40"
-          />
-          <span className="text-muted-foreground">até</span>
-          <Input
-            type="date"
-            placeholder="Data final"
-            value={filters.endDate}
-            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-            data-testid="input-end-date"
-            className="w-40"
-          />
-          {hasFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilters}
-              data-testid="button-clear-filters"
+        
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="gap-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-full"
+              data-testid="button-filter-period"
             >
-              <X className="h-4 w-4" />
+              <Calendar className="h-4 w-4" />
+              {getPeriodLabel(period)}
+              <ChevronDown className="h-4 w-4" />
             </Button>
-          )}
-        </div>
+          </PopoverTrigger>
+          
+          <PopoverContent className="w-72" align="end">
+            <div className="space-y-4">
+              <RadioGroup value={period} onValueChange={(val) => {
+                setPeriod(val);
+                if (val !== 'custom') {
+                  setCustomDates({ startDate: '', endDate: '' });
+                }
+              }}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="today" id="today" />
+                  <Label htmlFor="today" className="text-sm font-normal cursor-pointer">Hoje</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="thisMonth" id="thisMonth" />
+                  <Label htmlFor="thisMonth" className="text-sm font-normal cursor-pointer">Este mês</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="thisYear" id="thisYear" />
+                  <Label htmlFor="thisYear" className="text-sm font-normal cursor-pointer">Este ano</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="allTime" id="allTime" />
+                  <Label htmlFor="allTime" className="text-sm font-normal cursor-pointer">Desde o início</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="custom" id="custom" />
+                  <Label htmlFor="custom" className="text-sm font-normal cursor-pointer">Personalizado</Label>
+                </div>
+              </RadioGroup>
+
+              {period === 'custom' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Data inicial</label>
+                    <Input
+                      type="date"
+                      value={customDates.startDate}
+                      onChange={(e) => setCustomDates({ ...customDates, startDate: e.target.value })}
+                      data-testid="input-custom-start"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Data final</label>
+                    <Input
+                      type="date"
+                      value={customDates.endDate}
+                      onChange={(e) => setCustomDates({ ...customDates, endDate: e.target.value })}
+                      data-testid="input-custom-end"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2 border-t">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleClear}
+                  data-testid="button-clear"
+                  className="flex-1"
+                >
+                  Limpar
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={handleApply}
+                  data-testid="button-apply"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  Aplicar
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <FinancialSummaryCard
           title="Recebidas"
