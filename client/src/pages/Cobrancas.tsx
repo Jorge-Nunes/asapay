@@ -10,17 +10,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, RefreshCw } from "lucide-react";
+import { Search, Filter, RefreshCw, ArrowUp, ArrowDown } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Cobranca } from "@shared/schema";
+
+type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo';
+type SortDirection = 'asc' | 'desc';
 
 export default function Cobrancas() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tipoFilter, setTipoFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortFieldCobranca>('dueDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const { data: cobrancas = [], isLoading } = useQuery<Cobranca[]>({
     queryKey: ['/api/cobrancas', statusFilter, tipoFilter],
@@ -47,6 +52,44 @@ export default function Cobrancas() {
     const matchesSearch = cobranca.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
+
+  const sortedCobrancas = [...filteredCobrancas].sort((a, b) => {
+    let aValue: any = a[sortField];
+    let bValue: any = b[sortField];
+
+    if (sortField === 'dueDate') {
+      aValue = new Date(aValue).getTime();
+      bValue = new Date(bValue).getTime();
+    }
+
+    if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+      return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+    }
+
+    if (typeof aValue === 'number') {
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+
+    return 0;
+  });
+
+  const handleSort = (field: SortFieldCobranca) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortFieldCobranca }) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 inline ml-1" />
+      : <ArrowDown className="h-4 w-4 inline ml-1" />;
+  };
 
   const sendMessageMutation = useMutation({
     mutationFn: async (cobrancaId: string) => {
@@ -147,7 +190,14 @@ export default function Cobrancas() {
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Carregando cobranças...</div>
         ) : (
-          <CobrancaTable cobrancas={filteredCobrancas} onSendMessage={handleSendMessage} />
+          <CobrancaTable 
+            cobrancas={sortedCobrancas} 
+            onSendMessage={handleSendMessage}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            SortIcon={SortIcon}
+          />
         )}
       </Card>
     </div>

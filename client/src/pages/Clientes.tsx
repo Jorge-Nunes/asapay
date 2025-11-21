@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Download, Edit2 } from "lucide-react";
+import { Search, RefreshCw, Download, Edit2, ArrowUp, ArrowDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,11 +23,16 @@ interface ClientWithPreferences extends ClientData {
   diasAtrasoNotificacao: number;
 }
 
+type SortFieldClient = 'name' | 'email' | 'phone' | 'blockDailyMessages' | 'diasAtrasoNotificacao';
+type SortDirection = 'asc' | 'desc';
+
 export default function Clientes() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3 });
+  const [sortField, setSortField] = useState<SortFieldClient>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const { data: clients = [], isLoading } = useQuery<ClientWithPreferences[]>({
     queryKey: ['/api/clients'],
@@ -104,6 +109,39 @@ export default function Clientes() {
     return matchesSearch;
   });
 
+  const sortedClients = [...filteredClients].sort((a, b) => {
+    let aValue: any = a[sortField];
+    let bValue: any = b[sortField];
+
+    if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+      return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+    }
+
+    if (typeof aValue === 'number') {
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+
+    return 0;
+  });
+
+  const handleSort = (field: SortFieldClient) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortFieldClient }) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 inline ml-1" />
+      : <ArrowDown className="h-4 w-4 inline ml-1" />;
+  };
+
   const handleSync = () => {
     syncMutation.mutate();
   };
@@ -167,16 +205,46 @@ export default function Clientes() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Nome</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Telefone</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Bloqueado</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Dias Atraso</th>
+                  <th 
+                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
+                    onClick={() => handleSort('name')}
+                    data-testid="header-nome"
+                  >
+                    Nome <SortIcon field="name" />
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
+                    onClick={() => handleSort('email')}
+                    data-testid="header-email"
+                  >
+                    Email <SortIcon field="email" />
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
+                    onClick={() => handleSort('phone')}
+                    data-testid="header-telefone"
+                  >
+                    Telefone <SortIcon field="phone" />
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
+                    onClick={() => handleSort('blockDailyMessages')}
+                    data-testid="header-bloqueado"
+                  >
+                    Bloqueado <SortIcon field="blockDailyMessages" />
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
+                    onClick={() => handleSort('diasAtrasoNotificacao')}
+                    data-testid="header-dias-atraso"
+                  >
+                    Dias Atraso <SortIcon field="diasAtrasoNotificacao" />
+                  </th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredClients.map((client) => (
+                {sortedClients.map((client) => (
                   <tr key={client.id} className="border-b hover:bg-muted/30 transition-colors" data-testid={`row-client-${client.id}`}>
                     <td className="px-4 py-3 text-sm">{client.name}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{client.email || '-'}</td>

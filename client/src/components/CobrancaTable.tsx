@@ -8,14 +8,21 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, MessageSquare } from "lucide-react";
+import { ExternalLink, MessageSquare, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Cobranca } from "@shared/schema";
 
+type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo';
+type SortDirection = 'asc' | 'desc';
+
 interface CobrancaTableProps {
   cobrancas: Cobranca[];
   onSendMessage?: (cobranca: Cobranca) => void;
+  sortField?: SortFieldCobranca;
+  sortDirection?: SortDirection;
+  onSort?: (field: SortFieldCobranca) => void;
+  SortIcon?: ({ field }: { field: SortFieldCobranca }) => React.ReactNode;
 }
 
 const statusConfig = {
@@ -31,17 +38,47 @@ const tipoConfig = {
   processada: { label: "Processada", variant: "outline" as const },
 };
 
-export function CobrancaTable({ cobrancas, onSendMessage }: CobrancaTableProps) {
+export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirection, onSort, SortIcon }: CobrancaTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Vencimento</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Tipo</TableHead>
+            <TableHead 
+              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              onClick={() => onSort?.('customerName')}
+              data-testid="header-cliente"
+            >
+              Cliente {SortIcon && sortField === 'customerName' && <SortIcon field="customerName" />}
+            </TableHead>
+            <TableHead 
+              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              onClick={() => onSort?.('value')}
+              data-testid="header-valor"
+            >
+              Valor {SortIcon && sortField === 'value' && <SortIcon field="value" />}
+            </TableHead>
+            <TableHead 
+              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              onClick={() => onSort?.('dueDate')}
+              data-testid="header-vencimento"
+            >
+              Vencimento {SortIcon && sortField === 'dueDate' && <SortIcon field="dueDate" />}
+            </TableHead>
+            <TableHead 
+              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              onClick={() => onSort?.('status')}
+              data-testid="header-status"
+            >
+              Status {SortIcon && sortField === 'status' && <SortIcon field="status" />}
+            </TableHead>
+            <TableHead 
+              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              onClick={() => onSort?.('tipo')}
+              data-testid="header-tipo"
+            >
+              Tipo {SortIcon && sortField === 'tipo' && <SortIcon field="tipo" />}
+            </TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
