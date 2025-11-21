@@ -4,6 +4,7 @@ import { storage } from "./index";
 import { ExecutionService } from "./services/execution.service";
 import { EvolutionService } from "./services/evolution.service";
 import { ProcessorService } from "./services/processor.service";
+import { AsaasService } from "./services/asaas.service";
 import { setupCronJobs } from "./cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -344,6 +345,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[Routes] Error in deleteUser:', error);
       res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // Clients Management Routes
+  app.get("/api/clients", async (req, res) => {
+    try {
+      const clients = await storage.getClients();
+      res.json(clients);
+    } catch (error) {
+      console.error('[Routes] Error in getClients:', error);
+      res.status(500).json({ error: "Failed to fetch clients" });
+    }
+  });
+
+  app.put("/api/clients/:id/preferences", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { blockDailyMessages, diasAtrasoNotificacao } = req.body;
+
+      if (typeof blockDailyMessages !== 'boolean' || typeof diasAtrasoNotificacao !== 'number') {
+        return res.status(400).json({ error: "blockDailyMessages deve ser boolean e diasAtrasoNotificacao deve ser número" });
+      }
+
+      if (diasAtrasoNotificacao < 1) {
+        return res.status(400).json({ error: "diasAtrasoNotificacao deve ser no mínimo 1" });
+      }
+
+      await storage.updateClientPreferences(id, blockDailyMessages, diasAtrasoNotificacao);
+      const clients = await storage.getClients();
+      const updatedClient = clients.find(c => c.id === id);
+      
+      res.json({ 
+        success: true, 
+        message: "Preferências atualizadas com sucesso",
+        client: updatedClient 
+      });
+    } catch (error) {
+      console.error('[Routes] Error in updateClientPreferences:', error);
+      res.status(500).json({ error: "Failed to update client preferences" });
+    }
+  });
+
+  app.post("/api/clients/sync", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+
+      if (!config.asaasToken) {
+        return res.status(400).json({ error: "Token do Asaas não configurado" });
+      }
+
+      // Fetch customers from Asaas
+      const asaasService = new AsaasService(config.asaasUrl, config.asaasToken);
+      const asaasCustomers = await asaasService.getAllCustomers();
+
+      if (!asaasCustomers || asaasCustomers.length === 0) {
+        return res.status(400).json({ error: "Nenhum cliente encontrado no Asaas" });
+      }
+
+      // Transform Asaas customers to our InsertClient format
+      const clientsToSync = asaasCustomers.map(customer => ({
+        asaasCustomerId: customer.id,
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        mobilePhone: customer.mobilePhone || '',
+        address: customer.address || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        postalCode: customer.postalCode || '',
+        cpfCnpj: customer.cpfCnpj || '',
+      }));
+
+      // Sync clients to storage
+      await storage.syncClients(clientsToSync);
+
+      res.json({
+        success: true,
+        message: `${clientsToSync.length} clientes sincronizados com sucesso`,
+        count: clientsToSync.length,
+      });
+    } catch (error) {
+      console.error('[Routes] Error in syncClients:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to sync clients" });
     }
   });
 
