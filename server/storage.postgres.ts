@@ -40,6 +40,10 @@ export class PostgresStorage implements IStorage {
         evolutionUrl: config?.evolutionUrl || '',
         evolutionInstance: config?.evolutionInstance || '',
         evolutionApiKey: config?.evolutionApiKey || '',
+        traccarUrl: config?.traccarUrl || '',
+        traccarApiKey: config?.traccarApiKey || '',
+        traccarLimiteCobrancasVencidas: config?.traccarLimiteCobrancasVencidas || 3,
+        webhookUrl: config?.webhookUrl || '',
         diasAviso: config?.diasAviso || 10,
         messageTemplates: (config?.messageTemplates as any) || {
           venceHoje: '',
@@ -53,6 +57,8 @@ export class PostgresStorage implements IStorage {
         evolutionUrl: result.evolutionUrl ? result.evolutionUrl : 'EMPTY',
         evolutionApiKey: result.evolutionApiKey ? 'SET' : 'EMPTY',
         evolutionInstance: result.evolutionInstance ? result.evolutionInstance : 'EMPTY',
+        traccarUrl: result.traccarUrl ? result.traccarUrl : 'EMPTY',
+        traccarApiKey: result.traccarApiKey ? 'SET' : 'EMPTY',
       });
 
       return result;
@@ -75,6 +81,10 @@ export class PostgresStorage implements IStorage {
             evolutionUrl: config.evolutionUrl ?? existing.evolutionUrl,
             evolutionInstance: config.evolutionInstance ?? existing.evolutionInstance,
             evolutionApiKey: config.evolutionApiKey ?? existing.evolutionApiKey,
+            traccarUrl: config.traccarUrl ?? existing.traccarUrl,
+            traccarApiKey: config.traccarApiKey ?? existing.traccarApiKey,
+            traccarLimiteCobrancasVencidas: config.traccarLimiteCobrancasVencidas ?? existing.traccarLimiteCobrancasVencidas,
+            webhookUrl: config.webhookUrl ?? existing.webhookUrl,
             diasAviso: config.diasAviso ?? existing.diasAviso,
             messageTemplates: config.messageTemplates ?? existing.messageTemplates,
             updatedAt: new Date(),
@@ -87,6 +97,10 @@ export class PostgresStorage implements IStorage {
           evolutionUrl: config.evolutionUrl || '',
           evolutionInstance: config.evolutionInstance || '',
           evolutionApiKey: config.evolutionApiKey || '',
+          traccarUrl: config.traccarUrl || '',
+          traccarApiKey: config.traccarApiKey || '',
+          traccarLimiteCobrancasVencidas: config.traccarLimiteCobrancasVencidas || 3,
+          webhookUrl: config.webhookUrl || '',
           diasAviso: config.diasAviso || 10,
           messageTemplates: config.messageTemplates || {
             venceHoje: '',
