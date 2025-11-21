@@ -28,40 +28,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/config", async (req, res) => {
     try {
       const currentConfig = await storage.getConfig();
-      const updateData = { ...req.body };
+      const updateData: any = {};
 
-      // Don't update if value is the masked placeholder or undefined
-      if (!updateData.asaasToken || updateData.asaasToken === '••••••••') {
-        updateData.asaasToken = currentConfig.asaasToken;
-      }
-      if (!updateData.evolutionApiKey || updateData.evolutionApiKey === '••••••••') {
-        updateData.evolutionApiKey = currentConfig.evolutionApiKey;
-      }
+      // Preserve current values if masked or not provided
+      updateData.asaasToken = (req.body.asaasToken && req.body.asaasToken !== '••••••••') 
+        ? req.body.asaasToken 
+        : currentConfig.asaasToken;
+      updateData.evolutionApiKey = (req.body.evolutionApiKey && req.body.evolutionApiKey !== '••••••••') 
+        ? req.body.evolutionApiKey 
+        : currentConfig.evolutionApiKey;
+      updateData.evolutionUrl = req.body.evolutionUrl || currentConfig.evolutionUrl;
+      updateData.evolutionInstance = req.body.evolutionInstance || currentConfig.evolutionInstance;
+      updateData.diasAviso = req.body.diasAviso || currentConfig.diasAviso;
+      updateData.messageTemplates = req.body.messageTemplates || currentConfig.messageTemplates;
+      updateData.asaasUrl = req.body.asaasUrl || currentConfig.asaasUrl;
 
-      // Validate required fields - use actual token values
-      const finalAsaasToken = updateData.asaasToken?.trim?.() || currentConfig.asaasToken?.trim?.();
-      const finalEvolutionUrl = updateData.evolutionUrl?.trim?.() || currentConfig.evolutionUrl?.trim?.();
-      const finalEvolutionApiKey = updateData.evolutionApiKey?.trim?.() || currentConfig.evolutionApiKey?.trim?.();
-      const finalEvolutionInstance = updateData.evolutionInstance?.trim?.() || currentConfig.evolutionInstance?.trim?.();
-
-      if (!finalAsaasToken) {
+      // Validate that all fields are now non-empty
+      if (!updateData.asaasToken || updateData.asaasToken.trim() === '') {
         return res.status(400).json({ error: "Token do Asaas é obrigatório" });
       }
-      if (!finalEvolutionUrl) {
+      if (!updateData.evolutionUrl || updateData.evolutionUrl.trim() === '') {
         return res.status(400).json({ error: "URL da Evolution API é obrigatória" });
       }
-      if (!finalEvolutionApiKey) {
+      if (!updateData.evolutionApiKey || updateData.evolutionApiKey.trim() === '') {
         return res.status(400).json({ error: "API Key da Evolution é obrigatória" });
       }
-      if (!finalEvolutionInstance) {
+      if (!updateData.evolutionInstance || updateData.evolutionInstance.trim() === '') {
         return res.status(400).json({ error: "Instância da Evolution é obrigatória" });
       }
-
-      // Ensure all required fields are set before updating
-      updateData.asaasToken = finalAsaasToken;
-      updateData.evolutionUrl = finalEvolutionUrl;
-      updateData.evolutionApiKey = finalEvolutionApiKey;
-      updateData.evolutionInstance = finalEvolutionInstance;
 
       const updated = await storage.updateConfig(updateData);
       res.json({
@@ -72,6 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         _hasEvolutionApiKey: !!updated.evolutionApiKey,
       });
     } catch (error) {
+      console.error('[Routes] Error in updateConfig:', error);
       res.status(500).json({ error: "Failed to update config" });
     }
   });
