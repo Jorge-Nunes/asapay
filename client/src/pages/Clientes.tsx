@@ -278,13 +278,6 @@ export default function Clientes() {
                   </th>
                   <th 
                     className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
-                    onClick={() => handleSort('blockDailyMessages')}
-                    data-testid="header-bloqueado"
-                  >
-                    Bloqueado <SortIcon field="blockDailyMessages" />
-                  </th>
-                  <th 
-                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
                     onClick={() => handleSort('diasAtrasoNotificacao')}
                     data-testid="header-dias-atraso"
                   >
@@ -307,15 +300,6 @@ export default function Clientes() {
                     <td className="px-4 py-3 text-sm">{client.name}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{client.email || '-'}</td>
                     <td className="px-4 py-3 text-sm">{client.mobilePhone || client.phone || '-'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="inline-flex items-center gap-2">
-                        {Boolean(client.blockDailyMessages) ? (
-                          <span className="px-2 py-1 bg-destructive/10 text-destructive text-xs rounded">Sim</span>
-                        ) : (
-                          <span className="px-2 py-1 bg-green-500/10 text-green-700 dark:text-green-400 text-xs rounded">Não</span>
-                        )}
-                      </div>
-                    </td>
                     <td className="px-4 py-3 text-sm">{client.diasAtrasoNotificacao || 3} dias</td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
@@ -473,12 +457,12 @@ export default function Clientes() {
             <div className="text-2xl font-bold">{clients.length}</div>
           </Card>
           <Card className="p-4 border-2">
-            <div className="text-sm text-muted-foreground">Bloqueados</div>
-            <div className="text-2xl font-bold">{clients.filter(c => c.blockDailyMessages).length}</div>
+            <div className="text-sm text-muted-foreground">Mapeados</div>
+            <div className="text-2xl font-bold">{clients.filter(c => c.traccarUserId).length}</div>
           </Card>
           <Card className="p-4 border-2">
-            <div className="text-sm text-muted-foreground">Ativos</div>
-            <div className="text-2xl font-bold">{clients.filter(c => !c.blockDailyMessages).length}</div>
+            <div className="text-sm text-muted-foreground">Bloqueados na Traccar</div>
+            <div className="text-2xl font-bold">{clients.filter(c => c.isTraccarBlocked).length}</div>
           </Card>
         </div>
       )}
