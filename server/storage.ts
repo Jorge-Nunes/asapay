@@ -80,6 +80,38 @@ Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 🗓️ Vencimento: {{vencimento}}
 
 Estamos aqui para ajudar no que precisar! 📞`,
+        atraso: `⚠️ *URGENTE* - Olá {{cliente_nome}}!
+Detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
+Sua localização será bloqueada em breve no rastreador!
+
+Regularize sua situação agora:
+🔗 {{link_fatura}}
+💰 Valor total pendente: {{valor_total}}
+
+Ligue agora: (11) 3XXX-XXXX
+Visite: www.teksat.com.br
+
+Evite a perda de rastreamento! ⏰`,
+        bloqueio: `🔒 *BLOQUEIO ATIVADO*
+Olá {{cliente_nome}}, detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
+
+⚠️ *SEU RASTREAMENTO FOI BLOQUEADO* como medida de segurança.
+
+Para reativar:
+✅ Regularize o pagamento das cobranças
+🔗 Clique: {{link_fatura}}
+📞 Suporte: (11) 3XXX-XXXX
+
+Depois da confirmação do pagamento, o bloqueio será removido automaticamente em até 1 hora.`,
+        desbloqueio: `✅ *BLOQUEIO REMOVIDO!*
+Olá {{cliente_nome}}, recebemos seu pagamento! 🎉
+
+🔓 Seu rastreamento foi *reativado* com sucesso!
+
+Agora você pode continuar rastreando seus veículos normalmente.
+Obrigado por regularizar sua conta!
+
+Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
       },
     };
     this.cobrancas = new Map();

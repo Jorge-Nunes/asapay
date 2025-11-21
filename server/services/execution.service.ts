@@ -132,31 +132,78 @@ export class ExecutionService {
                   console.log(`[Traccar] Bloqueando usuário ${customerPhone} - ${overdueCount} cobranças vencidas`);
                   await traccarService.blockUser(traccarUser.id);
                   
-                  logs.push({
-                    id: `traccar-${traccarUser.id}-blocked`,
-                    cobrancaId: 'N/A',
-                    customerName: traccarUser.name || customerPhone,
-                    customerPhone,
-                    tipo: 'atraso',
-                    status: 'success',
-                    timestamp: new Date().toISOString(),
-                    mensagem: `Usuário bloqueado no Traccar (${overdueCount}/${limiteCobrancas} cobranças vencidas)`,
-                  } as ExecutionLog);
+                  // Send blocking message
+                  try {
+                    if (config.messageTemplates?.bloqueio) {
+                      const blockingMessage = config.messageTemplates.bloqueio
+                        .replace(/\{\{cliente_nome\}\}/g, traccarUser.name || customerPhone)
+                        .replace(/\{\{quantidade_cobrancas\}\}/g, String(overdueCount))
+                        .replace(/\{\{link_fatura\}\}/g, 'Acesse sua conta no Asaas')
+                        .replace(/\{\{valor_total\}\}/g, 'Consulte sua conta');
+                      
+                      await evolutionService.sendTextMessage(customerPhone, blockingMessage);
+                      
+                      logs.push({
+                        id: `traccar-${traccarUser.id}-blocked`,
+                        cobrancaId: 'N/A',
+                        customerName: traccarUser.name || customerPhone,
+                        customerPhone,
+                        tipo: 'atraso',
+                        status: 'success',
+                        timestamp: new Date().toISOString(),
+                        mensagem: `Usuário bloqueado no Traccar (${overdueCount}/${limiteCobrancas} cobranças vencidas) - Mensagem de bloqueio enviada`,
+                      } as ExecutionLog);
+                    }
+                  } catch (error) {
+                    console.error(`[Traccar] Erro ao enviar mensagem de bloqueio para ${customerPhone}:`, error);
+                    logs.push({
+                      id: `traccar-${traccarUser.id}-blocked-msg-error`,
+                      cobrancaId: 'N/A',
+                      customerName: traccarUser.name || customerPhone,
+                      customerPhone,
+                      tipo: 'atraso',
+                      status: 'success',
+                      timestamp: new Date().toISOString(),
+                      mensagem: `Usuário bloqueado no Traccar mas falha ao enviar mensagem: ${error instanceof Error ? error.message : 'erro desconhecido'}`,
+                    } as ExecutionLog);
+                  }
                 } else if (!shouldBlock && isCurrentlyBlocked) {
                   // Unblock user if they no longer meet the blocking criteria
                   console.log(`[Traccar] Desbloqueando usuário ${customerPhone}`);
                   await traccarService.unblockUser(traccarUser.id);
                   
-                  logs.push({
-                    id: `traccar-${traccarUser.id}-unblocked`,
-                    cobrancaId: 'N/A',
-                    customerName: traccarUser.name || customerPhone,
-                    customerPhone,
-                    tipo: 'atraso',
-                    status: 'success',
-                    timestamp: new Date().toISOString(),
-                    mensagem: `Usuário desbloqueado no Traccar (${overdueCount}/${limiteCobrancas} cobranças vencidas)`,
-                  } as ExecutionLog);
+                  // Send unblocking message
+                  try {
+                    if (config.messageTemplates?.desbloqueio) {
+                      const unlockingMessage = config.messageTemplates.desbloqueio
+                        .replace(/\{\{cliente_nome\}\}/g, traccarUser.name || customerPhone);
+                      
+                      await evolutionService.sendTextMessage(customerPhone, unlockingMessage);
+                      
+                      logs.push({
+                        id: `traccar-${traccarUser.id}-unblocked`,
+                        cobrancaId: 'N/A',
+                        customerName: traccarUser.name || customerPhone,
+                        customerPhone,
+                        tipo: 'atraso',
+                        status: 'success',
+                        timestamp: new Date().toISOString(),
+                        mensagem: `Usuário desbloqueado no Traccar (${overdueCount}/${limiteCobrancas} cobranças vencidas) - Mensagem de desbloqueio enviada`,
+                      } as ExecutionLog);
+                    }
+                  } catch (error) {
+                    console.error(`[Traccar] Erro ao enviar mensagem de desbloqueio para ${customerPhone}:`, error);
+                    logs.push({
+                      id: `traccar-${traccarUser.id}-unblocked-msg-error`,
+                      cobrancaId: 'N/A',
+                      customerName: traccarUser.name || customerPhone,
+                      customerPhone,
+                      tipo: 'atraso',
+                      status: 'success',
+                      timestamp: new Date().toISOString(),
+                      mensagem: `Usuário desbloqueado no Traccar mas falha ao enviar mensagem: ${error instanceof Error ? error.message : 'erro desconhecido'}`,
+                    } as ExecutionLog);
+                  }
                 }
               }
             } catch (error) {

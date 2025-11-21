@@ -94,6 +94,8 @@ export type Config = {
     venceHoje: string;
     aviso: string;
     atraso: string;
+    bloqueio?: string;
+    desbloqueio?: string;
   };
 };
 

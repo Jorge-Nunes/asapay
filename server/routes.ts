@@ -20,8 +20,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...config,
         asaasToken: config.asaasToken ? '••••••••' : '',
         evolutionApiKey: config.evolutionApiKey ? '••••••••' : '',
+        traccarApiKey: config.traccarApiKey ? '••••••••' : '',
         _hasAsaasToken: !!config.asaasToken,
         _hasEvolutionApiKey: !!config.evolutionApiKey,
+        _hasTraccarApiKey: !!config.traccarApiKey,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch config" });
@@ -40,8 +42,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateData.evolutionApiKey = (req.body.evolutionApiKey && req.body.evolutionApiKey !== '••••••••') 
         ? req.body.evolutionApiKey 
         : currentConfig.evolutionApiKey;
+      updateData.traccarApiKey = (req.body.traccarApiKey && req.body.traccarApiKey !== '••••••••') 
+        ? req.body.traccarApiKey 
+        : currentConfig.traccarApiKey;
       updateData.evolutionUrl = req.body.evolutionUrl || currentConfig.evolutionUrl;
       updateData.evolutionInstance = req.body.evolutionInstance || currentConfig.evolutionInstance;
+      updateData.traccarUrl = req.body.traccarUrl || currentConfig.traccarUrl;
+      updateData.traccarLimiteCobrancasVencidas = req.body.traccarLimiteCobrancasVencidas || currentConfig.traccarLimiteCobrancasVencidas;
       updateData.diasAviso = req.body.diasAviso || currentConfig.diasAviso;
       updateData.messageTemplates = req.body.messageTemplates || currentConfig.messageTemplates;
       updateData.asaasUrl = req.body.asaasUrl || currentConfig.asaasUrl;
@@ -65,8 +72,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...updated,
         asaasToken: updated.asaasToken ? '••••••••' : '',
         evolutionApiKey: updated.evolutionApiKey ? '••••••••' : '',
+        traccarApiKey: updated.traccarApiKey ? '••••••••' : '',
         _hasAsaasToken: !!updated.asaasToken,
         _hasEvolutionApiKey: !!updated.evolutionApiKey,
+        _hasTraccarApiKey: !!updated.traccarApiKey,
       });
     } catch (error) {
       console.error('[Routes] Error in updateConfig:', error);
