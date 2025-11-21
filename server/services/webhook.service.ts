@@ -3,8 +3,10 @@ import { EvolutionService } from "./evolution.service";
 import { TraccarService } from "./traccar.service";
 
 export interface AsaasWebhookPayload {
+  id?: string;
   event: string;
-  data: {
+  dateCreated?: string;
+  data?: {
     id: string;
     customer?: string;
     payment?: {
@@ -14,6 +16,21 @@ export interface AsaasWebhookPayload {
       dueDate: string;
       confirmedDate?: string;
     };
+    [key: string]: any;
+  };
+  payment?: {
+    id: string;
+    customer: string;
+    value: number;
+    dueDate: string;
+    status: string;
+    description: string;
+    billingType: string;
+    invoiceUrl: string;
+    customerName?: string;
+    phone?: string;
+    mobilePhone?: string;
+    email?: string;
     [key: string]: any;
   };
 }
@@ -48,13 +65,16 @@ export class WebhookService {
 
   private async handlePaymentCreated(payload: AsaasWebhookPayload): Promise<void> {
     try {
-      if (!payload.data) {
-        console.log(`[Webhook] Payload inválido para PAYMENT_CREATED - sem data`);
+      // Get payment data - can be in payload.payment or payload.data.payment
+      const paymentData = payload.payment || payload.data?.payment;
+      
+      if (!paymentData) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_CREATED - sem payment`);
         return;
       }
 
-      const paymentId = payload.data.id;
-      const customerId = payload.data.customer;
+      const paymentId = paymentData.id;
+      const customerId = paymentData.customer;
 
       if (!paymentId || !customerId) {
         console.log(`[Webhook] Payload inválido para PAYMENT_CREATED - sem ID ou customer`);
@@ -77,23 +97,23 @@ export class WebhookService {
 
         try {
           const response = await fetch(`${config.asaasUrl}/payments/${paymentId}`, {
-            headers: { 'Authorization': `Bearer ${config.asaasToken}` }
+            headers: { 'access_token': config.asaasToken }
           });
 
           if (response.ok) {
-            const paymentData = await response.json();
+            const fullPaymentData = await response.json();
             
             // Create new cobrança
             const newCobranca = {
-              id: paymentData.id,
-              customer: paymentData.customer,
-              customerName: paymentData.customerName || 'Desconhecido',
-              customerPhone: paymentData.phone || '',
-              value: paymentData.value || 0,
-              dueDate: paymentData.dueDate || new Date().toISOString().split('T')[0],
+              id: fullPaymentData.id,
+              customer: fullPaymentData.customer,
+              customerName: fullPaymentData.customerName || 'Desconhecido',
+              customerPhone: fullPaymentData.phone || fullPaymentData.mobilePhone || '',
+              value: fullPaymentData.value || 0,
+              dueDate: fullPaymentData.dueDate || new Date().toISOString().split('T')[0],
               status: 'PENDING' as const,
-              invoiceUrl: paymentData.invoiceUrl || '',
-              description: paymentData.description || '',
+              invoiceUrl: fullPaymentData.invoiceUrl || '',
+              description: fullPaymentData.description || '',
               tipo: 'importada' as const
             };
 
@@ -104,13 +124,13 @@ export class WebhookService {
             const allClients = await storage.getClients();
             const clientExists = allClients.find(c => c.asaasId === customerId);
             
-            if (!clientExists && paymentData.customerName) {
+            if (!clientExists && fullPaymentData.customerName) {
               const newClient = {
-                name: paymentData.customerName,
+                name: fullPaymentData.customerName,
                 asaasId: customerId,
-                phone: paymentData.phone || '',
-                mobilePhone: paymentData.mobilePhone || paymentData.phone || '',
-                email: paymentData.email || '',
+                phone: fullPaymentData.phone || '',
+                mobilePhone: fullPaymentData.mobilePhone || fullPaymentData.phone || '',
+                email: fullPaymentData.email || '',
                 traccarUserId: '',
                 isTraccarBlocked: false,
                 lastMessageAtraso: null,
@@ -119,7 +139,7 @@ export class WebhookService {
               console.log(`[Webhook] Cliente ${customerId} sincronizado com sucesso`);
             }
           } else {
-            console.log(`[Webhook] Erro ao buscar detalhes da cobrança ${paymentId} no Asaas`);
+            console.log(`[Webhook] Erro ao buscar detalhes da cobrança ${paymentId} no Asaas (status: ${response.status})`);
           }
         } catch (error) {
           console.error(`[Webhook] Erro ao sincronizar cobrança do Asaas:`, error);

@@ -1,0 +1,65 @@
+30:16 PM [express] GET /api/executions 304 in 10298ms :: [{"id":"70ed5251-1594-4a5a-aa22-238b04409…
+10:30:30 PM [express] GET /api/cobrancas 304 in 145ms :: {"data":[{"id":"pay_74g0dxjbei1ktbbe","custo…
+[Webhook] Recebido evento do Asaas: PAYMENT_CREATED
+[Webhook] Payload completo: {
+  "id": "evt_05b708f961d739ea7eba7e4db318f621&12771816",
+  "event": "PAYMENT_CREATED",
+  "dateCreated": "2025-11-21 19:31:50",
+  "payment": {
+    "object": "payment",
+    "id": "pay_aqxin99ny8gy6tsv",
+    "dateCreated": "2025-11-21",
+    "customer": "cus_000007240272",
+    "subscription": "sub_p3xphb60rdrifsk9",
+    "checkoutSession": null,
+    "paymentLink": null,
+    "value": 500,
+    "netValue": 498.01,
+    "originalValue": null,
+    "interestValue": null,
+    "description": "Rastreamento Veicular",
+    "billingType": "PIX",
+    "pixTransaction": null,
+    "status": "PENDING",
+    "dueDate": "2025-11-23",
+    "originalDueDate": "2025-11-23",
+    "paymentDate": null,
+    "clientPaymentDate": null,
+    "installmentNumber": null,
+    "invoiceUrl": "https://sandbox.asaas.com/i/aqxin99ny8gy6tsv",
+    "invoiceNumber": "12040310",
+    "externalReference": null,
+    "deleted": false,
+    "anticipated": false,
+    "anticipable": false,
+    "creditDate": null,
+    "estimatedCreditDate": null,
+    "transactionReceiptUrl": null,
+    "nossoNumero": null,
+    "bankSlipUrl": null,
+    "lastInvoiceViewedDate": null,
+    "lastBankSlipViewedDate": null,
+    "discount": {
+      "value": 0,
+      "limitDate": null,
+      "dueDateLimitDays": 0,
+      "type": "PERCENTAGE"
+    },
+    "fine": {
+      "value": 0,
+      "type": "PERCENTAGE"
+    },
+    "interest": {
+      "value": 0,
+      "type": "PERCENTAGE"
+    },
+    "postalService": false,
+    "escrow": null,
+    "refunds": null
+  }
+}
+[Webhook] Processando evento: PAYMENT_CREATED
+[Webhook] Payload inválido para PAYMENT_CREATED - sem data
+10:31:50 PM [express] POST /api/webhook/asaas 200 in 2ms :: {"success":true}
+10:32:19 PM [express] GET /api/clients 304 in 3834ms :: [{"id":"62476ab7-42d0-4a61-9297-bdae2bba7dca"…
+10:32:20 PM [express] GET /api/cobrancas 304 in 3459ms :: {"data":[{"id":"pay_74g0dxjbei1ktbbe","cust…
