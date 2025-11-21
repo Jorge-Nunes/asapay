@@ -5,15 +5,27 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save } from "lucide-react";
+import { Save, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Config } from "@shared/schema";
 import UsersManager from "./UsersManager";
+import { TemplatePreview } from "@/components/TemplatePreview";
+
+interface PreviewState {
+  isOpen: boolean;
+  templateName: string;
+  templateContent: string;
+}
 
 export default function Configuracoes() {
   const { toast } = useToast();
+  const [previewState, setPreviewState] = useState<PreviewState>({
+    isOpen: false,
+    templateName: '',
+    templateContent: '',
+  });
 
   const { data: config, isLoading } = useQuery<Config>({
     queryKey: ['/api/config'],
@@ -81,6 +93,22 @@ export default function Configuracoes() {
     saveMutation.mutate(dataToSend);
   };
 
+  const openPreview = (name: string, content: string) => {
+    setPreviewState({
+      isOpen: true,
+      templateName: name,
+      templateContent: content,
+    });
+  };
+
+  const closePreview = () => {
+    setPreviewState({
+      isOpen: false,
+      templateName: '',
+      templateContent: '',
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -93,6 +121,13 @@ export default function Configuracoes() {
   }
 
   return (
+    <>
+      <TemplatePreview 
+        isOpen={previewState.isOpen}
+        onClose={closePreview}
+        templateName={previewState.templateName}
+        templateContent={previewState.templateContent}
+      />
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -337,9 +372,19 @@ export default function Configuracoes() {
 
         <TabsContent value="templates" className="space-y-6">
           <Card className="border-2">
-            <CardHeader>
-              <CardTitle>Template - Vence Hoje</CardTitle>
-              <CardDescription>Mensagem enviada no dia do vencimento</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Template - Vence Hoje</CardTitle>
+                <CardDescription>Mensagem enviada no dia do vencimento</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => openPreview('Vence Hoje', formData.messageTemplates.venceHoje)}
+                data-testid="button-preview-vence-hoje"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -359,9 +404,19 @@ export default function Configuracoes() {
           </Card>
 
           <Card className="border-2">
-            <CardHeader>
-              <CardTitle>Template - Aviso</CardTitle>
-              <CardDescription>Mensagem enviada X dias antes do vencimento</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Template - Aviso</CardTitle>
+                <CardDescription>Mensagem enviada X dias antes do vencimento</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => openPreview('Aviso', formData.messageTemplates.aviso)}
+                data-testid="button-preview-aviso"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -381,9 +436,19 @@ export default function Configuracoes() {
           </Card>
 
           <Card className="border-2">
-            <CardHeader>
-              <CardTitle>Template - Atraso</CardTitle>
-              <CardDescription>Mensagem para cobranças vencidas</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Template - Atraso</CardTitle>
+                <CardDescription>Mensagem para cobranças vencidas</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => openPreview('Atraso', formData.messageTemplates.atraso)}
+                data-testid="button-preview-atraso"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -403,9 +468,19 @@ export default function Configuracoes() {
           </Card>
 
           <Card className="border-2">
-            <CardHeader>
-              <CardTitle>Template - Bloqueio</CardTitle>
-              <CardDescription>Mensagem enviada ao bloquear usuário no Traccar</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Template - Bloqueio</CardTitle>
+                <CardDescription>Mensagem enviada ao bloquear usuário no Traccar</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => openPreview('Bloqueio', formData.messageTemplates.bloqueio || '')}
+                data-testid="button-preview-bloqueio"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -425,9 +500,19 @@ export default function Configuracoes() {
           </Card>
 
           <Card className="border-2">
-            <CardHeader>
-              <CardTitle>Template - Desbloqueio</CardTitle>
-              <CardDescription>Mensagem enviada ao desbloquear usuário no Traccar</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Template - Desbloqueio</CardTitle>
+                <CardDescription>Mensagem enviada ao desbloquear usuário no Traccar</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => openPreview('Desbloqueio', formData.messageTemplates.desbloqueio || '')}
+                data-testid="button-preview-desbloqueio"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -447,9 +532,19 @@ export default function Configuracoes() {
           </Card>
 
           <Card className="border-2">
-            <CardHeader>
-              <CardTitle>Template - Pagamento Confirmado</CardTitle>
-              <CardDescription>Mensagem enviada quando receber webhook de pagamento confirmado</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Template - Pagamento Confirmado</CardTitle>
+                <CardDescription>Mensagem enviada quando receber webhook de pagamento confirmado</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => openPreview('Pagamento Confirmado', formData.messageTemplates.pagamentoConfirmado || '')}
+                data-testid="button-preview-pagamento-confirmado"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -474,5 +569,6 @@ export default function Configuracoes() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }
