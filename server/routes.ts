@@ -182,7 +182,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/executions", async (req, res) => {
     try {
       const executions = await storage.getExecutions();
-      res.json(executions);
+      // Enrich with logs
+      const enriched = executions.map(exec => ({
+        ...exec,
+        detalhes: exec.detalhes || []
+      }));
+      res.json(enriched);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch executions" });
     }
@@ -277,7 +282,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       cobrancas.forEach(c => {
-        statusCounts[c.status]++;
+        const status = c.status as keyof typeof statusCounts;
+        if (status in statusCounts) {
+          statusCounts[status]++;
+        }
       });
 
       const data = [
@@ -285,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { name: 'Recebido', value: statusCounts.RECEIVED },
         { name: 'Confirmado', value: statusCounts.CONFIRMED },
         { name: 'Vencido', value: statusCounts.OVERDUE },
-      ].filter(item => item.value > 0);
+      ];
 
       res.json(data);
     } catch (error) {
