@@ -430,6 +430,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/clients/:id/traccar-mapping", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { traccarUserId } = req.body;
+
+      if (traccarUserId && typeof traccarUserId !== 'string') {
+        return res.status(400).json({ error: "traccarUserId deve ser uma string ou nulo" });
+      }
+
+      await storage.updateClientTraccarMapping(id, traccarUserId || null);
+      const clients = await storage.getClients();
+      const updatedClient = clients.find(c => c.id === id);
+      
+      res.json({ 
+        success: true, 
+        message: "Mapeamento Traccar atualizado com sucesso",
+        client: updatedClient 
+      });
+    } catch (error) {
+      console.error('[Routes] Error in updateClientTraccarMapping:', error);
+      res.status(500).json({ error: "Failed to update client traccar mapping" });
+    }
+  });
+
   app.post("/api/clients/sync", async (req, res) => {
     try {
       const config = await storage.getConfig();

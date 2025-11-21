@@ -21,16 +21,17 @@ import type { ClientData } from "@shared/schema";
 interface ClientWithPreferences extends ClientData {
   blockDailyMessages: number;
   diasAtrasoNotificacao: number;
+  traccarUserId?: string | null;
 }
 
-type SortFieldClient = 'name' | 'email' | 'phone' | 'blockDailyMessages' | 'diasAtrasoNotificacao';
+type SortFieldClient = 'name' | 'email' | 'phone' | 'blockDailyMessages' | 'diasAtrasoNotificacao' | 'traccarUserId';
 type SortDirection = 'asc' | 'desc';
 
 export default function Clientes() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
-  const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3 });
+  const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
   const [sortField, setSortField] = useState<SortFieldClient>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -72,24 +73,37 @@ export default function Clientes() {
   });
 
   const updatePreferencesMutation = useMutation({
-    mutationFn: async ({ clientId, blockDailyMessages, diasAtrasoNotificacao }: { clientId: string; blockDailyMessages: boolean; diasAtrasoNotificacao: number }) => {
-      const response = await fetch(`/api/clients/${clientId}/preferences`, {
+    mutationFn: async ({ clientId, blockDailyMessages, diasAtrasoNotificacao, traccarUserId }: { clientId: string; blockDailyMessages: boolean; diasAtrasoNotificacao: number; traccarUserId: string }) => {
+      // Update preferences
+      const response1 = await fetch(`/api/clients/${clientId}/preferences`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blockDailyMessages, diasAtrasoNotificacao }),
       });
-      if (!response.ok) {
-        const error = await response.json();
+      if (!response1.ok) {
+        const error = await response1.json();
         throw new Error(error.error || 'Erro ao atualizar preferências');
       }
-      return response.json();
+
+      // Update traccar mapping
+      const response2 = await fetch(`/api/clients/${clientId}/traccar-mapping`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ traccarUserId: traccarUserId || null }),
+      });
+      if (!response2.ok) {
+        const error = await response2.json();
+        throw new Error(error.error || 'Erro ao atualizar mapeamento Traccar');
+      }
+
+      return response2.json();
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       setEditingClientId(null);
       toast({
         title: "Sucesso",
-        description: "Preferências atualizadas com sucesso!",
+        description: "Preferências e mapeamento atualizados com sucesso!",
       });
     },
     onError: (error: Error) => {
@@ -151,6 +165,7 @@ export default function Clientes() {
     setEditFormData({
       blockDailyMessages: Boolean(client.blockDailyMessages),
       diasAtrasoNotificacao: client.diasAtrasoNotificacao || 3,
+      traccarUserId: client.traccarUserId || '',
     });
   };
 
@@ -159,6 +174,7 @@ export default function Clientes() {
       clientId,
       blockDailyMessages: editFormData.blockDailyMessages,
       diasAtrasoNotificacao: editFormData.diasAtrasoNotificacao,
+      traccarUserId: editFormData.traccarUserId,
     });
   };
 
@@ -240,6 +256,13 @@ export default function Clientes() {
                   >
                     Dias Atraso <SortIcon field="diasAtrasoNotificacao" />
                   </th>
+                  <th 
+                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
+                    onClick={() => handleSort('traccarUserId')}
+                    data-testid="header-mapeado"
+                  >
+                    Mapeado <SortIcon field="traccarUserId" />
+                  </th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Ações</th>
                 </tr>
               </thead>
@@ -259,6 +282,17 @@ export default function Clientes() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm">{client.diasAtrasoNotificacao || 3} dias</td>
+                    <td className="px-4 py-3 text-sm">
+                      {client.traccarUserId ? (
+                        <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded">
+                          Mapeado
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs rounded">
+                          Não Mapeado
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <Dialog open={editingClientId === client.id} onOpenChange={(open) => !open && setEditingClientId(null)}>
                         <DialogTrigger asChild>
@@ -316,6 +350,26 @@ export default function Clientes() {
                                 />
                                 <span className="text-sm text-muted-foreground">dias</span>
                               </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="traccarUserId" className="text-base">ID do Usuário Traccar (mapeamento)</Label>
+                              <Input
+                                id="traccarUserId"
+                                type="text"
+                                placeholder="Ex: 12345"
+                                value={editFormData.traccarUserId}
+                                onChange={(e) =>
+                                  setEditFormData(prev => ({
+                                    ...prev,
+                                    traccarUserId: e.target.value
+                                  }))
+                                }
+                                data-testid="input-traccar-user-id"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Deixe em branco para remover o mapeamento
+                              </p>
                             </div>
 
                             <Button
