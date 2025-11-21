@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, and, count } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { 
   configurations, 
   cobrancas, 
@@ -13,8 +13,9 @@ import {
   type DashboardMetrics
 } from "@shared/schema";
 import type { IStorage } from "./storage";
+import * as schema from "@shared/schema";
 
-let db: ReturnType<typeof drizzle> | null = null;
+let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 function getDb() {
   if (!db) {
@@ -22,27 +23,27 @@ function getDb() {
       throw new Error("DATABASE_URL not configured");
     }
     const client = postgres(process.env.DATABASE_URL);
-    db = drizzle(client);
+    db = drizzle(client, { schema });
   }
   return db;
 }
 
 export class PostgresStorage implements IStorage {
   async getConfig(): Promise<Config> {
-    const db = getDb();
-    const config = await db.query.configurations.findFirst();
-    
-    if (!config) {
-      // Return default config
-      return {
-        asaasToken: process.env.ASAAS_TOKEN || '',
-        asaasUrl: process.env.ASAAS_URL || 'https://api.asaas.com/v3',
-        evolutionUrl: process.env.EVOLUTION_URL || '',
-        evolutionInstance: process.env.EVOLUTION_INSTANCE || '',
-        evolutionApiKey: process.env.EVOLUTION_APIKEY || '',
-        diasAviso: 10,
-        messageTemplates: {
-          venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
+    try {
+      const db = getDb();
+      const config = await db.query.configurations.findFirst();
+      
+      if (!config) {
+        return {
+          asaasToken: process.env.ASAAS_TOKEN || '',
+          asaasUrl: process.env.ASAAS_URL || 'https://api.asaas.com/v3',
+          evolutionUrl: process.env.EVOLUTION_URL || '',
+          evolutionInstance: process.env.EVOLUTION_INSTANCE || '',
+          evolutionApiKey: process.env.EVOLUTION_APIKEY || '',
+          diasAviso: 10,
+          messageTemplates: {
+            venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
 Notamos que sua fatura vence *hoje* 📅.
 Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
 
@@ -51,7 +52,7 @@ Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto an
 📆 Vencimento: {{vencimento}}
 
 Qualquer dúvida, nossa equipe está à disposição! 🤝`,
-          aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
+            aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
 Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
 Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 
@@ -60,81 +61,139 @@ Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 🗓️ Vencimento: {{vencimento}}
 
 Estamos aqui para ajudar no que precisar! 📞`,
-        },
-      };
-    }
+          },
+        };
+      }
 
-    return {
-      asaasToken: config.asaasToken,
-      asaasUrl: config.asaasUrl,
-      evolutionUrl: config.evolutionUrl,
-      evolutionInstance: config.evolutionInstance,
-      evolutionApiKey: config.evolutionApiKey,
-      diasAviso: config.diasAviso,
-      messageTemplates: config.messageTemplates as any,
-    };
+      return {
+        asaasToken: config.asaasToken,
+        asaasUrl: config.asaasUrl,
+        evolutionUrl: config.evolutionUrl,
+        evolutionInstance: config.evolutionInstance,
+        evolutionApiKey: config.evolutionApiKey,
+        diasAviso: config.diasAviso,
+        messageTemplates: config.messageTemplates as any,
+      };
+    } catch (error) {
+      console.error('[Storage] Error in getConfig:', error);
+      throw error;
+    }
   }
 
   async updateConfig(config: Partial<Config>): Promise<Config> {
-    const db = getDb();
-    const existing = await db.query.configurations.findFirst();
+    try {
+      const db = getDb();
+      const existing = await db.query.configurations.findFirst();
 
-    if (existing) {
-      await db.update(configurations)
-        .set({
-          asaasToken: config.asaasToken ?? existing.asaasToken,
-          asaasUrl: config.asaasUrl ?? existing.asaasUrl,
-          evolutionUrl: config.evolutionUrl ?? existing.evolutionUrl,
-          evolutionInstance: config.evolutionInstance ?? existing.evolutionInstance,
-          evolutionApiKey: config.evolutionApiKey ?? existing.evolutionApiKey,
-          diasAviso: config.diasAviso ?? existing.diasAviso,
-          messageTemplates: config.messageTemplates ?? existing.messageTemplates,
-          updatedAt: new Date(),
-        })
-        .where(eq(configurations.id, existing.id));
-    } else {
-      await db.insert(configurations).values({
-        asaasToken: config.asaasToken || '',
-        asaasUrl: config.asaasUrl || 'https://api.asaas.com/v3',
-        evolutionUrl: config.evolutionUrl || '',
-        evolutionInstance: config.evolutionInstance || '',
-        evolutionApiKey: config.evolutionApiKey || '',
-        diasAviso: config.diasAviso || 10,
-        messageTemplates: config.messageTemplates || {
-          venceHoje: '',
-          aviso: '',
-        },
-      });
+      if (existing) {
+        await db.update(configurations)
+          .set({
+            asaasToken: config.asaasToken ?? existing.asaasToken,
+            asaasUrl: config.asaasUrl ?? existing.asaasUrl,
+            evolutionUrl: config.evolutionUrl ?? existing.evolutionUrl,
+            evolutionInstance: config.evolutionInstance ?? existing.evolutionInstance,
+            evolutionApiKey: config.evolutionApiKey ?? existing.evolutionApiKey,
+            diasAviso: config.diasAviso ?? existing.diasAviso,
+            messageTemplates: config.messageTemplates ?? existing.messageTemplates,
+            updatedAt: new Date(),
+          })
+          .where(eq(configurations.id, existing.id));
+      } else {
+        await db.insert(configurations).values({
+          asaasToken: config.asaasToken || '',
+          asaasUrl: config.asaasUrl || 'https://api.asaas.com/v3',
+          evolutionUrl: config.evolutionUrl || '',
+          evolutionInstance: config.evolutionInstance || '',
+          evolutionApiKey: config.evolutionApiKey || '',
+          diasAviso: config.diasAviso || 10,
+          messageTemplates: config.messageTemplates || {
+            venceHoje: '',
+            aviso: '',
+          },
+        });
+      }
+
+      return this.getConfig();
+    } catch (error) {
+      console.error('[Storage] Error in updateConfig:', error);
+      throw error;
     }
-
-    return this.getConfig();
   }
 
   async getCobrancas(): Promise<Cobranca[]> {
-    const db = getDb();
-    const result = await db.query.cobrancas.findMany();
-    return result as Cobranca[];
+    try {
+      const db = getDb();
+      const result = await db.query.cobrancas.findMany();
+      return result.map(r => ({
+        id: r.id,
+        customer: r.customer,
+        customerName: r.customerName,
+        customerPhone: r.customerPhone,
+        value: parseFloat(r.value as any),
+        dueDate: r.dueDate,
+        status: r.status as any,
+        invoiceUrl: r.invoiceUrl,
+        description: r.description,
+        tipo: r.tipo as any,
+      }));
+    } catch (error) {
+      console.error('[Storage] Error in getCobrancas:', error);
+      throw error;
+    }
   }
 
   async getCobrancaById(id: string): Promise<Cobranca | undefined> {
-    const db = getDb();
-    const result = await db.query.cobrancas.findFirst({
-      where: eq(cobrancas.id, id),
-    });
-    return result as Cobranca | undefined;
+    try {
+      const db = getDb();
+      const result = await db.query.cobrancas.findFirst({
+        where: eq(cobrancas.id, id),
+      });
+      if (!result) return undefined;
+      return {
+        id: result.id,
+        customer: result.customer,
+        customerName: result.customerName,
+        customerPhone: result.customerPhone,
+        value: parseFloat(result.value as any),
+        dueDate: result.dueDate,
+        status: result.status as any,
+        invoiceUrl: result.invoiceUrl,
+        description: result.description,
+        tipo: result.tipo as any,
+      };
+    } catch (error) {
+      console.error('[Storage] Error in getCobrancaById:', error);
+      throw error;
+    }
   }
 
   async saveCobrancas(newCobrancas: Cobranca[]): Promise<void> {
-    const db = getDb();
-    
-    for (const cobranca of newCobrancas) {
-      const existing = await db.query.cobrancas.findFirst({
-        where: eq(cobrancas.id, cobranca.id),
-      });
+    try {
+      const db = getDb();
+      
+      for (const cobranca of newCobrancas) {
+        const existing = await db.query.cobrancas.findFirst({
+          where: eq(cobrancas.id, cobranca.id),
+        });
 
-      if (existing) {
-        await db.update(cobrancas)
-          .set({
+        if (existing) {
+          await db.update(cobrancas)
+            .set({
+              customer: cobranca.customer,
+              customerName: cobranca.customerName,
+              customerPhone: cobranca.customerPhone,
+              value: cobranca.value.toString(),
+              dueDate: cobranca.dueDate,
+              status: cobranca.status,
+              invoiceUrl: cobranca.invoiceUrl,
+              description: cobranca.description,
+              tipo: cobranca.tipo,
+              updatedAt: new Date(),
+            })
+            .where(eq(cobrancas.id, cobranca.id));
+        } else {
+          await db.insert(cobrancas).values({
+            id: cobranca.id,
             customer: cobranca.customer,
             customerName: cobranca.customerName,
             customerPhone: cobranca.customerPhone,
@@ -144,67 +203,103 @@ Estamos aqui para ajudar no que precisar! 📞`,
             invoiceUrl: cobranca.invoiceUrl,
             description: cobranca.description,
             tipo: cobranca.tipo,
-            updatedAt: new Date(),
-          })
-          .where(eq(cobrancas.id, cobranca.id));
-      } else {
-        await db.insert(cobrancas).values({
-          id: cobranca.id,
-          customer: cobranca.customer,
-          customerName: cobranca.customerName,
-          customerPhone: cobranca.customerPhone,
-          value: cobranca.value.toString(),
-          dueDate: cobranca.dueDate,
-          status: cobranca.status,
-          invoiceUrl: cobranca.invoiceUrl,
-          description: cobranca.description,
-          tipo: cobranca.tipo,
-        });
+          });
+        }
       }
+    } catch (error) {
+      console.error('[Storage] Error in saveCobrancas:', error);
+      throw error;
     }
   }
 
   async updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined> {
-    const db = getDb();
-    
-    await db.update(cobrancas)
-      .set({
-        customer: data.customer,
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
-        value: data.value?.toString(),
-        dueDate: data.dueDate,
-        status: data.status,
-        invoiceUrl: data.invoiceUrl,
-        description: data.description,
-        tipo: data.tipo,
-        updatedAt: new Date(),
-      })
-      .where(eq(cobrancas.id, id));
+    try {
+      const db = getDb();
+      
+      await db.update(cobrancas)
+        .set({
+          customer: data.customer,
+          customerName: data.customerName,
+          customerPhone: data.customerPhone,
+          value: data.value?.toString(),
+          dueDate: data.dueDate,
+          status: data.status,
+          invoiceUrl: data.invoiceUrl,
+          description: data.description,
+          tipo: data.tipo,
+          updatedAt: new Date(),
+        })
+        .where(eq(cobrancas.id, id));
 
-    return this.getCobrancaById(id);
+      return this.getCobrancaById(id);
+    } catch (error) {
+      console.error('[Storage] Error in updateCobranca:', error);
+      throw error;
+    }
   }
 
   async getExecutions(): Promise<Execution[]> {
-    const db = getDb();
-    const execs = await db.query.executions.findMany({
-      orderBy: (table) => [table.timestamp],
-    });
-
-    const result: Execution[] = [];
-    for (const exec of execs) {
-      const logs = await db.query.executionLogs.findMany({
-        where: eq(executionLogs.executionId, exec.id),
+    try {
+      const db = getDb();
+      const execs = await db.query.executions.findMany({
+        orderBy: (table: any) => [table.timestamp],
       });
 
-      result.push({
+      const result: Execution[] = [];
+      for (const exec of execs) {
+        const logs = await db.query.executionLogs.findMany({
+          where: eq(executionLogs.executionId, exec.id),
+        });
+
+        result.push({
+          id: exec.id,
+          timestamp: exec.timestamp!.toISOString(),
+          status: exec.status as any,
+          cobrancasProcessadas: exec.cobrancasProcessadas,
+          mensagensEnviadas: exec.mensagensEnviadas,
+          erros: exec.erros,
+          detalhes: logs.map((l: any) => ({
+            id: l.id,
+            cobrancaId: l.cobrancaId,
+            customerName: l.customerName,
+            customerPhone: l.customerPhone,
+            tipo: l.tipo as any,
+            status: l.status as any,
+            mensagem: l.mensagem || undefined,
+            erro: l.erro || undefined,
+            timestamp: l.timestamp!.toISOString(),
+          })),
+        });
+      }
+
+      return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (error) {
+      console.error('[Storage] Error in getExecutions:', error);
+      throw error;
+    }
+  }
+
+  async getExecutionById(id: string): Promise<Execution | undefined> {
+    try {
+      const db = getDb();
+      const exec = await db.query.executions.findFirst({
+        where: eq(executions.id, id),
+      });
+
+      if (!exec) return undefined;
+
+      const logs = await db.query.executionLogs.findMany({
+        where: eq(executionLogs.executionId, id),
+      });
+
+      return {
         id: exec.id,
         timestamp: exec.timestamp!.toISOString(),
         status: exec.status as any,
         cobrancasProcessadas: exec.cobrancasProcessadas,
         mensagensEnviadas: exec.mensagensEnviadas,
         erros: exec.erros,
-        detalhes: logs.map(l => ({
+        detalhes: logs.map((l: any) => ({
           id: l.id,
           cobrancaId: l.cobrancaId,
           customerName: l.customerName,
@@ -215,89 +310,82 @@ Estamos aqui para ajudar no que precisar! 📞`,
           erro: l.erro || undefined,
           timestamp: l.timestamp!.toISOString(),
         })),
-      });
+      };
+    } catch (error) {
+      console.error('[Storage] Error in getExecutionById:', error);
+      throw error;
     }
-
-    return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }
-
-  async getExecutionById(id: string): Promise<Execution | undefined> {
-    const db = getDb();
-    const exec = await db.query.executions.findFirst({
-      where: eq(executions.id, id),
-    });
-
-    if (!exec) return undefined;
-
-    const logs = await db.query.executionLogs.findMany({
-      where: eq(executionLogs.executionId, id),
-    });
-
-    return {
-      id: exec.id,
-      timestamp: exec.timestamp!.toISOString(),
-      status: exec.status as any,
-      cobrancasProcessadas: exec.cobrancasProcessadas,
-      mensagensEnviadas: exec.mensagensEnviadas,
-      erros: exec.erros,
-      detalhes: logs.map(l => ({
-        id: l.id,
-        cobrancaId: l.cobrancaId,
-        customerName: l.customerName,
-        customerPhone: l.customerPhone,
-        tipo: l.tipo as any,
-        status: l.status as any,
-        mensagem: l.mensagem || undefined,
-        erro: l.erro || undefined,
-        timestamp: l.timestamp!.toISOString(),
-      })),
-    };
   }
 
   async createExecution(execution: Omit<Execution, 'id'>): Promise<Execution> {
-    const db = getDb();
-    const result = await db.insert(executions).values({
-      timestamp: new Date(execution.timestamp),
-      status: execution.status,
-      cobrancasProcessadas: execution.cobrancasProcessadas,
-      mensagensEnviadas: execution.mensagensEnviadas,
-      erros: execution.erros,
-    }).returning();
+    try {
+      const db = getDb();
+      const result = await db.insert(executions).values({
+        timestamp: new Date(execution.timestamp),
+        status: execution.status,
+        cobrancasProcessadas: execution.cobrancasProcessadas,
+        mensagensEnviadas: execution.mensagensEnviadas,
+        erros: execution.erros,
+      }).returning();
 
-    return {
-      id: result[0].id,
-      timestamp: result[0].timestamp!.toISOString(),
-      status: result[0].status as any,
-      cobrancasProcessadas: result[0].cobrancasProcessadas,
-      mensagensEnviadas: result[0].mensagensEnviadas,
-      erros: result[0].erros,
-      detalhes: [],
-    };
+      return {
+        id: result[0].id,
+        timestamp: result[0].timestamp!.toISOString(),
+        status: result[0].status as any,
+        cobrancasProcessadas: result[0].cobrancasProcessadas,
+        mensagensEnviadas: result[0].mensagensEnviadas,
+        erros: result[0].erros,
+        detalhes: [],
+      };
+    } catch (error) {
+      console.error('[Storage] Error in createExecution:', error);
+      throw error;
+    }
   }
 
   async updateExecution(id: string, data: Partial<Execution>): Promise<Execution | undefined> {
-    const db = getDb();
-    
-    await db.update(executions)
-      .set({
-        status: data.status,
-        cobrancasProcessadas: data.cobrancasProcessadas,
-        mensagensEnviadas: data.mensagensEnviadas,
-        erros: data.erros,
-      })
-      .where(eq(executions.id, id));
+    try {
+      const db = getDb();
+      
+      await db.update(executions)
+        .set({
+          status: data.status,
+          cobrancasProcessadas: data.cobrancasProcessadas,
+          mensagensEnviadas: data.mensagensEnviadas,
+          erros: data.erros,
+        })
+        .where(eq(executions.id, id));
 
-    return this.getExecutionById(id);
+      return this.getExecutionById(id);
+    } catch (error) {
+      console.error('[Storage] Error in updateExecution:', error);
+      throw error;
+    }
   }
 
   async getExecutionLogs(executionId?: string): Promise<ExecutionLog[]> {
-    const db = getDb();
-    
-    if (executionId) {
-      const logs = await db.query.executionLogs.findMany({
-        where: eq(executionLogs.executionId, executionId),
-      });
-      return logs.map(l => ({
+    try {
+      const db = getDb();
+      
+      if (executionId) {
+        const logs = await db.query.executionLogs.findMany({
+          where: eq(executionLogs.executionId, executionId),
+        });
+        return logs.map((l: any) => ({
+          id: l.id,
+          cobrancaId: l.cobrancaId,
+          customerName: l.customerName,
+          customerPhone: l.customerPhone,
+          tipo: l.tipo as any,
+          status: l.status as any,
+          mensagem: l.mensagem || undefined,
+          erro: l.erro || undefined,
+          timestamp: l.timestamp!.toISOString(),
+        }));
+      }
+
+      const logs = await db.query.executionLogs.findMany();
+      return logs.map((l: any) => ({
         id: l.id,
         cobrancaId: l.cobrancaId,
         customerName: l.customerName,
@@ -308,87 +396,86 @@ Estamos aqui para ajudar no que precisar! 📞`,
         erro: l.erro || undefined,
         timestamp: l.timestamp!.toISOString(),
       }));
+    } catch (error) {
+      console.error('[Storage] Error in getExecutionLogs:', error);
+      throw error;
     }
-
-    const logs = await db.query.executionLogs.findMany();
-    return logs.map(l => ({
-      id: l.id,
-      cobrancaId: l.cobrancaId,
-      customerName: l.customerName,
-      customerPhone: l.customerPhone,
-      tipo: l.tipo as any,
-      status: l.status as any,
-      mensagem: l.mensagem || undefined,
-      erro: l.erro || undefined,
-      timestamp: l.timestamp!.toISOString(),
-    }));
   }
 
   async addExecutionLog(log: Omit<ExecutionLog, 'id'>): Promise<ExecutionLog> {
-    const db = getDb();
-    
-    // Get the latest execution to use as executionId
-    const latestExecution = await db.query.executions.findFirst({
-      orderBy: (table) => [table.timestamp],
-    });
+    try {
+      const db = getDb();
+      
+      const latestExecution = await db.query.executions.findFirst({
+        orderBy: (table: any) => [table.timestamp],
+      });
 
-    if (!latestExecution) {
-      throw new Error("No execution found");
+      if (!latestExecution) {
+        throw new Error("No execution found");
+      }
+
+      const result = await db.insert(executionLogs).values({
+        executionId: latestExecution.id,
+        cobrancaId: log.cobrancaId,
+        customerName: log.customerName,
+        customerPhone: log.customerPhone,
+        tipo: log.tipo,
+        status: log.status,
+        mensagem: log.mensagem,
+        erro: log.erro,
+        timestamp: new Date(log.timestamp),
+      }).returning();
+
+      return {
+        id: result[0].id,
+        cobrancaId: result[0].cobrancaId,
+        customerName: result[0].customerName,
+        customerPhone: result[0].customerPhone,
+        tipo: result[0].tipo as any,
+        status: result[0].status as any,
+        mensagem: result[0].mensagem || undefined,
+        erro: result[0].erro || undefined,
+        timestamp: result[0].timestamp!.toISOString(),
+      };
+    } catch (error) {
+      console.error('[Storage] Error in addExecutionLog:', error);
+      throw error;
     }
-
-    const result = await db.insert(executionLogs).values({
-      executionId: latestExecution.id,
-      cobrancaId: log.cobrancaId,
-      customerName: log.customerName,
-      customerPhone: log.customerPhone,
-      tipo: log.tipo,
-      status: log.status,
-      mensagem: log.mensagem,
-      erro: log.erro,
-      timestamp: new Date(log.timestamp),
-    }).returning();
-
-    return {
-      id: result[0].id,
-      cobrancaId: result[0].cobrancaId,
-      customerName: result[0].customerName,
-      customerPhone: result[0].customerPhone,
-      tipo: result[0].tipo as any,
-      status: result[0].status as any,
-      mensagem: result[0].mensagem || undefined,
-      erro: result[0].erro || undefined,
-      timestamp: result[0].timestamp!.toISOString(),
-    };
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
-    const db = getDb();
-    const allCobrancas = await db.query.cobrancas.findMany();
-    const pendentes = allCobrancas.filter(c => c.status === 'PENDING');
-    
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    
-    const venceHoje = pendentes.filter(c => {
-      const dueDate = new Date(c.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() === hoje.getTime();
-    }).length;
+    try {
+      const db = getDb();
+      const allCobrancas = await db.query.cobrancas.findMany();
+      const pendentes = allCobrancas.filter((c: any) => c.status === 'PENDING');
+      
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      const venceHoje = pendentes.filter((c: any) => {
+        const dueDate = new Date(c.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate.getTime() === hoje.getTime();
+      }).length;
 
-    const totalPendente = pendentes.reduce((sum, c) => sum + parseFloat(c.value as any), 0);
+      const totalPendente = pendentes.reduce((sum: number, c: any) => sum + parseFloat(c.value as any), 0);
 
-    const allLogs = await db.query.executionLogs.findMany();
-    const mensagensEnviadas = allLogs.filter(l => l.status === 'success').length;
+      const allLogs = await db.query.executionLogs.findMany();
+      const mensagensEnviadas = allLogs.filter((l: any) => l.status === 'success').length;
 
-    const recebidas = allCobrancas.filter(c => c.status === 'RECEIVED' || c.status === 'CONFIRMED').length;
-    const total = allCobrancas.length || 1;
-    const taxaConversao = (recebidas / total) * 100;
+      const recebidas = allCobrancas.filter((c: any) => c.status === 'RECEIVED' || c.status === 'CONFIRMED').length;
+      const total = allCobrancas.length || 1;
+      const taxaConversao = (recebidas / total) * 100;
 
-    return {
-      totalPendente,
-      venceHoje,
-      mensagensEnviadas,
-      taxaConversao,
-    };
+      return {
+        totalPendente,
+        venceHoje,
+        mensagensEnviadas,
+        taxaConversao,
+      };
+    } catch (error) {
+      console.error('[Storage] Error in getDashboardMetrics:', error);
+      throw error;
+    }
   }
 }
