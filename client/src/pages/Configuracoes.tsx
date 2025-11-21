@@ -28,6 +28,7 @@ export default function Configuracoes() {
     traccarUrl: '',
     traccarApiKey: '',
     traccarLimiteCobrancasVencidas: 3,
+    webhookUrl: '',
     diasAviso: 10,
     messageTemplates: {
       venceHoje: '',
@@ -162,9 +163,24 @@ export default function Configuracoes() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="webhook-url" className="text-blue-900 dark:text-blue-100">URL Base do Servidor</Label>
+                <Input
+                  id="webhook-url"
+                  value={formData.webhookUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
+                  placeholder="Ex: https://seu-dominio.com ou deixe em branco para auto-detectar"
+                  className="border-2 bg-white dark:bg-gray-900 text-blue-900 dark:text-blue-100"
+                  data-testid="input-webhook-url"
+                />
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  Configure se usar um servidor próprio. Deixe vazio para usar a URL da aplicação automaticamente
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">URL do Webhook:</p>
                 <div className="bg-white dark:bg-gray-900 p-3 rounded border border-blue-300 dark:border-blue-700 font-mono text-xs break-all">
-                  {window.location.origin}/api/webhook/asaas
+                  {(formData.webhookUrl || window.location.origin)}/api/webhook/asaas
                 </div>
                 <p className="text-xs text-blue-800 dark:text-blue-200">
                   Copie esta URL e configure no Asaas para receber eventos automáticos de pagamentos

@@ -89,6 +89,7 @@ export type Config = {
   traccarUrl?: string;
   traccarApiKey?: string;
   traccarLimiteCobrancasVencidas?: number;
+  webhookUrl?: string;
   diasAviso: number;
   messageTemplates: {
     venceHoje: string;

@@ -60,6 +60,7 @@ export class MemStorage implements IStorage {
       evolutionUrl: process.env.EVOLUTION_URL || '',
       evolutionInstance: process.env.EVOLUTION_INSTANCE || '',
       evolutionApiKey: process.env.EVOLUTION_APIKEY || '',
+      webhookUrl: process.env.WEBHOOK_URL || '',
       diasAviso: 10,
       messageTemplates: {
         venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!

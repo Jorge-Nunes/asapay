@@ -50,6 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateData.evolutionInstance = req.body.evolutionInstance || currentConfig.evolutionInstance;
       updateData.traccarUrl = req.body.traccarUrl || currentConfig.traccarUrl;
       updateData.traccarLimiteCobrancasVencidas = req.body.traccarLimiteCobrancasVencidas || currentConfig.traccarLimiteCobrancasVencidas;
+      updateData.webhookUrl = req.body.webhookUrl || currentConfig.webhookUrl;
       updateData.diasAviso = req.body.diasAviso || currentConfig.diasAviso;
       updateData.messageTemplates = req.body.messageTemplates || currentConfig.messageTemplates;
       updateData.asaasUrl = req.body.asaasUrl || currentConfig.asaasUrl;
