@@ -1,4 +1,4 @@
-import { storage } from '../storage';
+import { storage } from '../index';
 import { AsaasService } from './asaas.service';
 import { EvolutionService } from './evolution.service';
 import { ProcessorService } from './processor.service';
