@@ -77,6 +77,10 @@ export class ExecutionService {
         await storage.updateCobranca(cobranca.id, { tipo: cobranca.tipo });
       }
 
+      console.log('Fetching clients for preference checking...');
+      const clients = await storage.getClients();
+      const clientsMap = new Map(clients.map(c => [c.id, c]));
+
       console.log('Processing messages...');
       const logs: ExecutionLog[] = [];
       
@@ -84,6 +88,9 @@ export class ExecutionService {
         categorized,
         config,
         evolutionService,
+        clientsMap,
+        (clientId) => storage.getClientLastMessageAtraso(clientId),
+        (clientId) => storage.updateClientLastMessageAtraso(clientId),
         (log) => {
           // Add log to execution in real-time
           logs.push(log as ExecutionLog);

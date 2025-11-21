@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { Cobranca, ExecutionLog, Config } from '@shared/schema';
+import type { Cobranca, ExecutionLog, Config, ClientData } from '@shared/schema';
 import { EvolutionService } from './evolution.service';
 
 interface ProcessedCobranca extends Cobranca {
@@ -69,6 +69,9 @@ export class ProcessorService {
     cobrancas: ProcessedCobranca[],
     config: Config,
     evolutionService: EvolutionService,
+    clientsMap?: Map<string, ClientData>,
+    getLastMessageAtrasoDate?: (clientId: string) => Promise<Date | undefined>,
+    recordMessageAtraso?: (clientId: string) => Promise<void>,
     onProgress?: (log: Omit<ExecutionLog, 'id'>) => void
   ): Promise<ExecutionLog[]> {
     const logs: ExecutionLog[] = [];
@@ -83,6 +86,62 @@ export class ProcessorService {
       const batch = toProcess.slice(i, i + batchSize);
       
       const batchPromises = batch.map(async (cobranca) => {
+        // Check if we should send message for overdue invoices
+        if (cobranca.tipo === 'atraso' && clientsMap) {
+          // Find client by looking for matching customer phone in clients
+          let clientData: ClientData | undefined;
+          for (const client of clientsMap.values()) {
+            if (client.mobilePhone === cobranca.customerPhone || client.phone === cobranca.customerPhone) {
+              clientData = client;
+              break;
+            }
+          }
+
+          // Skip if client blocked daily messages
+          if (clientData?.blockDailyMessages) {
+            const log: Omit<ExecutionLog, 'id'> = {
+              cobrancaId: cobranca.id,
+              customerName: cobranca.customerName,
+              customerPhone: cobranca.customerPhone,
+              tipo: 'atraso',
+              status: 'skipped',
+              timestamp: new Date().toISOString(),
+              mensagem: 'Cliente bloqueou mensagens de atraso',
+            };
+            if (onProgress) {
+              onProgress(log);
+            }
+            return log;
+          }
+
+          // Check if enough days have passed since last overdue message
+          if (clientData && getLastMessageAtrasoDate) {
+            const lastMessageDate = await getLastMessageAtrasoDate(clientData.id);
+            if (lastMessageDate) {
+              const daysSinceLastMessage = Math.floor(
+                (new Date().getTime() - new Date(lastMessageDate).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              const intervalDays = clientData.diasAtrasoNotificacao || 3;
+
+              if (daysSinceLastMessage < intervalDays) {
+                const log: Omit<ExecutionLog, 'id'> = {
+                  cobrancaId: cobranca.id,
+                  customerName: cobranca.customerName,
+                  customerPhone: cobranca.customerPhone,
+                  tipo: 'atraso',
+                  status: 'skipped',
+                  timestamp: new Date().toISOString(),
+                  mensagem: `Aguardando ${intervalDays - daysSinceLastMessage} dia(s) para próxima mensagem`,
+                };
+                if (onProgress) {
+                  onProgress(log);
+                }
+                return log;
+              }
+            }
+          }
+        }
+
         const template = 
           cobranca.tipo === 'vence_hoje'
             ? config.messageTemplates.venceHoje
@@ -108,6 +167,20 @@ export class ProcessorService {
         try {
           await evolutionService.sendTextMessage(cobranca.customerPhone, message);
           log.mensagem = 'Mensagem enviada com sucesso';
+
+          // Record that we sent an overdue message for this client
+          if (cobranca.tipo === 'atraso' && clientsMap && recordMessageAtraso) {
+            let clientData: ClientData | undefined;
+            for (const client of clientsMap.values()) {
+              if (client.mobilePhone === cobranca.customerPhone || client.phone === cobranca.customerPhone) {
+                clientData = client;
+                break;
+              }
+            }
+            if (clientData) {
+              await recordMessageAtraso(clientData.id);
+            }
+          }
         } catch (error) {
           log.status = 'error';
           log.erro = error instanceof Error ? error.message : 'Erro desconhecido';
