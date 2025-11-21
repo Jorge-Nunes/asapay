@@ -46,9 +46,55 @@ export class PostgresStorage implements IStorage {
         webhookUrl: config?.webhookUrl || '',
         diasAviso: config?.diasAviso || 10,
         messageTemplates: (config?.messageTemplates as any) || {
-          venceHoje: '',
-          aviso: '',
-          atraso: '',
+          venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
+Notamos que sua fatura vence *hoje* 📅.
+Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
+
+🔗 Link da fatura: {{link_fatura}}
+💰 Valor: {{valor}}
+📆 Vencimento: {{vencimento}}
+
+Qualquer dúvida, nossa equipe está à disposição! 🤝`,
+          aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
+Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
+Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
+
+🔗 Link da fatura: {{link_fatura}}
+💰 Valor: {{valor}}
+🗓️ Vencimento: {{vencimento}}
+
+Estamos aqui para ajudar no que precisar! 📞`,
+          atraso: `⚠️ *URGENTE* - Olá {{cliente_nome}}!
+Detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
+Sua localização será bloqueada em breve no rastreador!
+
+Regularize sua situação agora:
+🔗 {{link_fatura}}
+💰 Valor total pendente: {{valor_total}}
+
+Ligue agora: (11) 3XXX-XXXX
+Visite: www.teksat.com.br
+
+Evite a perda de rastreamento! ⏰`,
+          bloqueio: `🔒 *BLOQUEIO ATIVADO*
+Olá {{nome}}, seu rastreamento foi bloqueado em {{data}} como medida de segurança.
+
+⚠️ *SEU RASTREAMENTO FOI BLOQUEADO* por falta de pagamento.
+
+Para reativar:
+✅ Regularize o pagamento das cobranças pendentes
+📞 Suporte: (11) 3XXX-XXXX
+
+Após a confirmação do pagamento, o bloqueio será removido automaticamente.`,
+          desbloqueio: `✅ *BLOQUEIO REMOVIDO!*
+Olá {{nome}}, recebemos seu pagamento em {{data}}! 🎉
+
+🔓 Seu rastreamento foi *reativado* com sucesso!
+
+Agora você pode continuar rastreando seus veículos normalmente.
+Obrigado por regularizar sua conta!
+
+Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
         },
       };
       
@@ -103,9 +149,55 @@ export class PostgresStorage implements IStorage {
           webhookUrl: config.webhookUrl || '',
           diasAviso: config.diasAviso || 10,
           messageTemplates: config.messageTemplates || {
-            venceHoje: '',
-            aviso: '',
-            atraso: '',
+            venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
+Notamos que sua fatura vence *hoje* 📅.
+Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
+
+🔗 Link da fatura: {{link_fatura}}
+💰 Valor: {{valor}}
+📆 Vencimento: {{vencimento}}
+
+Qualquer dúvida, nossa equipe está à disposição! 🤝`,
+            aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
+Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
+Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
+
+🔗 Link da fatura: {{link_fatura}}
+💰 Valor: {{valor}}
+🗓️ Vencimento: {{vencimento}}
+
+Estamos aqui para ajudar no que precisar! 📞`,
+            atraso: `⚠️ *URGENTE* - Olá {{cliente_nome}}!
+Detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
+Sua localização será bloqueada em breve no rastreador!
+
+Regularize sua situação agora:
+🔗 {{link_fatura}}
+💰 Valor total pendente: {{valor_total}}
+
+Ligue agora: (11) 3XXX-XXXX
+Visite: www.teksat.com.br
+
+Evite a perda de rastreamento! ⏰`,
+            bloqueio: `🔒 *BLOQUEIO ATIVADO*
+Olá {{nome}}, seu rastreamento foi bloqueado em {{data}} como medida de segurança.
+
+⚠️ *SEU RASTREAMENTO FOI BLOQUEADO* por falta de pagamento.
+
+Para reativar:
+✅ Regularize o pagamento das cobranças pendentes
+📞 Suporte: (11) 3XXX-XXXX
+
+Após a confirmação do pagamento, o bloqueio será removido automaticamente.`,
+            desbloqueio: `✅ *BLOQUEIO REMOVIDO!*
+Olá {{nome}}, recebemos seu pagamento em {{data}}! 🎉
+
+🔓 Seu rastreamento foi *reativado* com sucesso!
+
+Agora você pode continuar rastreando seus veículos normalmente.
+Obrigado por regularizar sua conta!
+
+Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
           },
         });
       }
