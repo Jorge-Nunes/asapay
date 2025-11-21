@@ -97,6 +97,7 @@ export type Config = {
     atraso: string;
     bloqueio?: string;
     desbloqueio?: string;
+    pagamentoConfirmado?: string;
   };
 };
 
