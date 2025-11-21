@@ -582,13 +582,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fetch Traccar users for auto-mapping if configured
       let traccarUsers: any[] = [];
+      console.log('[Sync] Verificando Traccar config:', { 
+        traccarUrl: config.traccarUrl ? '✓ Configurado' : '✗ Não configurado',
+        traccarApiKey: config.traccarApiKey ? '✓ Configurado' : '✗ Não configurado'
+      });
+
       if (config.traccarUrl && config.traccarApiKey) {
         try {
+          console.log('[Sync] Iniciando busca de usuários Traccar...');
           const traccarService = new TraccarService(config);
           traccarUsers = await traccarService.getUsers();
+          console.log(`[Sync] Encontrados ${traccarUsers.length} usuários Traccar`);
+          
+          // Log first few users for debugging
+          if (traccarUsers.length > 0) {
+            console.log('[Sync] Primeiros usuários Traccar:', traccarUsers.slice(0, 3).map(u => ({ id: u.id, email: u.email, name: u.name })));
+          }
         } catch (error) {
-          console.warn('[Routes] Aviso: Não foi possível buscar usuários Traccar para auto-mapeamento');
+          console.error('[Sync] Erro ao buscar usuários Traccar:', error instanceof Error ? error.message : String(error));
         }
+      } else {
+        console.warn('[Sync] Traccar não está configurado - pulando auto-mapeamento');
       }
 
       // Function to find matching Traccar user by email or phone
@@ -598,7 +612,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Try to match by email first
         if (customer.email) {
           const userByEmail = traccarUsers.find(u => u.email === customer.email);
-          if (userByEmail) return userByEmail.id?.toString();
+          if (userByEmail) {
+            console.log(`[Sync] Mapeamento encontrado por email: ${customer.email} → ${userByEmail.id}`);
+            return userByEmail.id?.toString();
+          }
         }
 
         // Try to match by phone (clean numbers)
@@ -609,26 +626,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return userData.replace(/\D/g, '').includes(customerPhone) || 
                    customerPhone.includes(userData.replace(/\D/g, ''));
           });
-          if (userByPhone) return userByPhone.id?.toString();
+          if (userByPhone) {
+            console.log(`[Sync] Mapeamento encontrado por telefone: ${customerPhone} → ${userByPhone.id}`);
+            return userByPhone.id?.toString();
+          }
         }
 
         return null;
       };
 
       // Transform Asaas customers to our InsertClient format with Traccar mapping
-      const clientsToSync = asaasCustomers.map(customer => ({
-        asaasCustomerId: customer.id,
-        name: customer.name,
-        email: customer.email || '',
-        phone: customer.phone || '',
-        mobilePhone: customer.mobilePhone || '',
-        address: customer.address || '',
-        city: customer.city || '',
-        state: customer.state || '',
-        postalCode: customer.postalCode || '',
-        cpfCnpj: customer.cpfCnpj || '',
-        traccarUserId: findTraccarUser(customer), // Auto-map to Traccar user
-      }));
+      const clientsToSync = asaasCustomers.map(customer => {
+        const mapped = findTraccarUser(customer);
+        return {
+          asaasCustomerId: customer.id,
+          name: customer.name,
+          email: customer.email || '',
+          phone: customer.phone || '',
+          mobilePhone: customer.mobilePhone || '',
+          address: customer.address || '',
+          city: customer.city || '',
+          state: customer.state || '',
+          postalCode: customer.postalCode || '',
+          cpfCnpj: customer.cpfCnpj || '',
+          traccarUserId: mapped,
+        };
+      });
 
       // Sync clients to storage
       await storage.syncClients(clientsToSync);
@@ -641,6 +664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `${clientsToSync.length} clientes sincronizados com sucesso${mappedCount > 0 ? ` (${mappedCount} mapeados na Traccar)` : ''}`,
         count: clientsToSync.length,
         mapped: mappedCount,
+        traccarConfigured: !!config.traccarUrl && !!config.traccarApiKey,
+        traccarUsersFound: traccarUsers.length,
       });
     } catch (error) {
       console.error('[Routes] Error in syncClients:', error);
