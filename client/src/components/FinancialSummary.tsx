@@ -77,9 +77,12 @@ const getPeriodDates = (period: string): { startDate: string; endDate: string } 
     case 'today':
       return { startDate: todayStr, endDate: todayStr };
     case 'thisMonth': {
-      const startOfMonth = new Date(year, today.getMonth(), 1);
-      const startDate = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}-${String(startOfMonth.getDate()).padStart(2, '0')}`;
-      return { startDate, endDate: todayStr };
+      // Primeira dia do mês
+      const startDate = `${year}-${month}-01`;
+      // Último dia do mês
+      const lastDay = new Date(year, parseInt(month), 0).getDate();
+      const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      return { startDate, endDate };
     }
     case 'thisYear': {
       const startDate = `${year}-01-01`;
