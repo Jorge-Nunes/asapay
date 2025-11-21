@@ -34,7 +34,7 @@ export default function Cobrancas() {
   const [sortField, setSortField] = useState<SortFieldCobranca>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [page, setPage] = useState(0);
-  const pageSize = 50;
+  const pageSize = 10;
 
   const { data: paginatedData = { data: [], total: 0, limit: pageSize, offset: 0 }, isLoading } = useQuery<PaginatedResponse>({
     queryKey: ['/api/cobrancas', statusFilter, tipoFilter, page],

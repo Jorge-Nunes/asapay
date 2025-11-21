@@ -89,8 +89,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cobranças routes
   app.get("/api/cobrancas", async (req, res) => {
     try {
-      const { status, tipo, limit = '50', offset = '0' } = req.query;
-      const pageLimit = Math.min(parseInt(limit as string) || 50, 100);
+      const { status, tipo, limit = '10', offset = '0' } = req.query;
+      const pageLimit = Math.min(parseInt(limit as string) || 10, 100);
       const pageOffset = Math.max(parseInt(offset as string) || 0, 0);
       
       const result = await storage.getCobrancasPaginated(
