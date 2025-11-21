@@ -630,6 +630,8 @@ export class PostgresStorage implements IStorage {
               state: client.state,
               postalCode: client.postalCode,
               cpfCnpj: client.cpfCnpj,
+              traccarUserId: client.traccarUserId ?? existing.traccarUserId,
+              isTraccarBlocked: client.isTraccarBlocked ?? existing.isTraccarBlocked,
               updatedAt: new Date(),
             })
             .where(eq(schema.clients.asaasCustomerId, client.asaasCustomerId));
@@ -645,8 +647,10 @@ export class PostgresStorage implements IStorage {
             state: client.state,
             postalCode: client.postalCode,
             cpfCnpj: client.cpfCnpj,
+            traccarUserId: client.traccarUserId || null,
             blockDailyMessages: 0,
             diasAtrasoNotificacao: 3,
+            isTraccarBlocked: 0,
           });
         }
       }
