@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExecutionLogTable } from "@/components/ExecutionLogTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Play, Clock, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { Play, Clock, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -11,13 +11,30 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Execution } from "@shared/schema";
 
+const ITEMS_PER_PAGE = 5;
+
 export default function Execucoes() {
   const { toast } = useToast();
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: executions = [] } = useQuery<Execution[]>({
     queryKey: ['/api/executions'],
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(executions.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedExecutions = executions.slice(startIndex, endIndex);
+
+  const handlePrevious = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNext = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
 
   const runExecutionMutation = useMutation({
     mutationFn: async () => {
@@ -110,7 +127,15 @@ export default function Execucoes() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
-          <h2 className="text-lg font-semibold">Histórico</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Histórico</h2>
+            {executions.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {executions.length} total
+              </span>
+            )}
+          </div>
+          
           {executions.length === 0 ? (
             <Card className="border-2">
               <CardContent className="pt-6">
@@ -120,44 +145,74 @@ export default function Execucoes() {
               </CardContent>
             </Card>
           ) : (
-            executions.map((execution) => (
-              <Card
-                key={execution.id}
-                className={`cursor-pointer transition-all border-2 hover-elevate ${
-                  selectedExecution?.id === execution.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedExecutionId(execution.id)}
-                data-testid={`card-execution-${execution.id}`}
-              >
-                <CardHeader className="space-y-0 pb-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(execution.status)}
-                      <CardTitle className="text-sm">
-                        {format(new Date(execution.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </CardTitle>
-                    </div>
-                    {getStatusBadge(execution.status)}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Processadas:</span>
-                      <span className="font-medium tabular-nums">{execution.cobrancasProcessadas}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Enviadas:</span>
-                      <span className="font-medium tabular-nums">{execution.mensagensEnviadas}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Erros:</span>
-                      <span className="font-medium tabular-nums">{execution.erros}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+            <>
+              <div className="space-y-4">
+                {paginatedExecutions.map((execution) => (
+                  <Card
+                    key={execution.id}
+                    className={`cursor-pointer transition-all border-2 hover-elevate ${
+                      selectedExecution?.id === execution.id ? 'ring-2 ring-primary' : ''
+                    }`}
+                    onClick={() => setSelectedExecutionId(execution.id)}
+                    data-testid={`card-execution-${execution.id}`}
+                  >
+                    <CardHeader className="space-y-0 pb-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(execution.status)}
+                          <CardTitle className="text-sm">
+                            {format(new Date(execution.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </CardTitle>
+                        </div>
+                        {getStatusBadge(execution.status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Processadas:</span>
+                          <span className="font-medium tabular-nums">{execution.cobrancasProcessadas}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Enviadas:</span>
+                          <span className="font-medium tabular-nums">{execution.mensagensEnviadas}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Erros:</span>
+                          <span className="font-medium tabular-nums">{execution.erros}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevious}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNext}
+                    disabled={currentPage === totalPages}
+                    data-testid="button-next-page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
