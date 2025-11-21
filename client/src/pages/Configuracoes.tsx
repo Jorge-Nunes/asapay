@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Config } from "@shared/schema";
+import UsersManager from "./UsersManager";
 
 export default function Configuracoes() {
   const { toast } = useToast();
@@ -106,6 +107,7 @@ export default function Configuracoes() {
           <TabsTrigger value="evolution" data-testid="tab-evolution">Evolution API</TabsTrigger>
           <TabsTrigger value="preferences" data-testid="tab-preferences">Preferências</TabsTrigger>
           <TabsTrigger value="templates" data-testid="tab-templates">Templates</TabsTrigger>
+          <TabsTrigger value="usuarios" data-testid="tab-usuarios">Usuários</TabsTrigger>
         </TabsList>
 
         <TabsContent value="asaas" className="space-y-6">
@@ -257,6 +259,10 @@ export default function Configuracoes() {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="usuarios" className="space-y-6">
+          <UsersManager />
         </TabsContent>
       </Tabs>
     </div>

@@ -199,11 +199,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-
-  return httpServer;
-}
-
   // User Auth Routes
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -282,3 +277,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete user" });
     }
   });
+
+  const httpServer = createServer(app);
+
+  return httpServer;
+}

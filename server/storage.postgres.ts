@@ -478,7 +478,6 @@ Estamos aqui para ajudar no que precisar! 📞`,
       throw error;
     }
   }
-}
 
   async getUsers(): Promise<any[]> {
     try {
