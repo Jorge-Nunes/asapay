@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./index";
 import { ExecutionService } from "./services/execution.service";
+import { EvolutionService } from "./services/evolution.service";
 import { setupCronJobs } from "./cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -281,6 +282,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[Routes] Error in deleteUser:', error);
       res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // Test Evolution API - Send test message
+  app.post("/api/test/send-message", async (req, res) => {
+    try {
+      const { phone, message } = req.body;
+      
+      if (!phone || !message) {
+        return res.status(400).json({ error: "Telefone e mensagem são obrigatórios" });
+      }
+
+      const config = await storage.getConfig();
+      
+      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+        return res.status(400).json({ error: "Credenciais Evolution não configuradas" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        config.evolutionInstance
+      );
+
+      const success = await evolutionService.sendTextMessage(phone, message);
+      
+      res.json({ 
+        success, 
+        message: success ? 'Mensagem enviada com sucesso!' : 'Erro ao enviar mensagem' 
+      });
+    } catch (error) {
+      console.error('[Routes] Error in test send message:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao enviar mensagem" });
     }
   });
 
