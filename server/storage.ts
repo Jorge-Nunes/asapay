@@ -9,7 +9,7 @@ export interface IStorage {
   updateConfig(config: Partial<Config>): Promise<Config>;
 
   // Cobranças
-  getCobrancas(): Promise<Cobranca[]>;
+  getCobrancas(limit?: number, offset?: number): Promise<Cobranca[]>;
   getCobrancaById(id: string): Promise<Cobranca | undefined>;
   saveCobrancas(cobrancas: Cobranca[]): Promise<void>;
   updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined>;
@@ -145,8 +145,14 @@ Obrigado por sua confiança! 🙏`,
     return this.config;
   }
 
-  async getCobrancas(): Promise<Cobranca[]> {
-    return Array.from(this.cobrancas.values());
+  async getCobrancas(limit?: number, offset?: number): Promise<Cobranca[]> {
+    let cobrancas = Array.from(this.cobrancas.values());
+    
+    if (offset !== undefined && limit !== undefined) {
+      cobrancas = cobrancas.slice(offset, offset + limit);
+    }
+    
+    return cobrancas;
   }
 
   async getCobrancaById(id: string): Promise<Cobranca | undefined> {
