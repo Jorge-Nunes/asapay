@@ -47,13 +47,28 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
+    // First, get the current user data
+    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!getResponse.ok) {
+      throw new Error(`Erro ao buscar dados do usuário: ${getResponse.statusText}`);
+    }
+
+    const user = await getResponse.json();
+
+    // Update with disabled: true
     const response = await fetch(`${this.baseUrl}/api/users/${userId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ disabled: true }),
+      body: JSON.stringify({ ...user, disabled: true }),
     });
 
     if (!response.ok) {
@@ -68,13 +83,28 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
+    // First, get the current user data
+    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!getResponse.ok) {
+      throw new Error(`Erro ao buscar dados do usuário: ${getResponse.statusText}`);
+    }
+
+    const user = await getResponse.json();
+
+    // Update with disabled: false
     const response = await fetch(`${this.baseUrl}/api/users/${userId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ disabled: false }),
+      body: JSON.stringify({ ...user, disabled: false }),
     });
 
     if (!response.ok) {
