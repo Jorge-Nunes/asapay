@@ -37,13 +37,15 @@ export default function Clientes() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
 
-  const { data: clients = [], isLoading } = useQuery<ClientWithPreferences[]>({
+  const { data: clients = [], isLoading, refetch } = useQuery<ClientWithPreferences[]>({
     queryKey: ['/api/clients'],
     queryFn: async () => {
       const response = await fetch('/api/clients');
       if (!response.ok) throw new Error('Failed to fetch clients');
       return response.json();
     },
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchOnWindowFocus: true, // Refresh when window regains focus
   });
 
   const syncMutation = useMutation({
