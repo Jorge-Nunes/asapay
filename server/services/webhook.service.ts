@@ -121,19 +121,22 @@ export class WebhookService {
             console.log(`[Webhook] Cobrança ${paymentId} sincronizada com sucesso`);
 
             // Also check if customer exists and create if needed
-            const allClients = await storage.getClients();
-            const clientExists = allClients.find(c => c.asaasId === customerId);
+            const clientExists = await storage.getClientByAsaasId(customerId);
             
             if (!clientExists && fullPaymentData.customerName) {
               const newClient = {
                 name: fullPaymentData.customerName,
-                asaasId: customerId,
+                asaasCustomerId: customerId,
                 phone: fullPaymentData.phone || '',
                 mobilePhone: fullPaymentData.mobilePhone || fullPaymentData.phone || '',
                 email: fullPaymentData.email || '',
+                address: fullPaymentData.address || '',
+                city: fullPaymentData.city || '',
+                state: fullPaymentData.state || '',
                 traccarUserId: '',
-                isTraccarBlocked: false,
-                lastMessageAtraso: null,
+                blockDailyMessages: 0,
+                diasAtrasoNotificacao: 3,
+                isTraccarBlocked: 0,
               };
               await storage.createClient(newClient);
               console.log(`[Webhook] Cliente ${customerId} sincronizado com sucesso`);
@@ -227,8 +230,7 @@ export class WebhookService {
       }
 
       // Find client by Asaas customer ID
-      const allClients = await storage.getClients();
-      const client = allClients.find(c => c.asaasId === customerId);
+      const client = await storage.getClientByAsaasId(customerId);
 
       if (!client || !client.traccarUserId) {
         console.log(`[Webhook] Cliente ou mapeamento Traccar não encontrado`);
