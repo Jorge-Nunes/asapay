@@ -24,6 +24,9 @@ export class WebhookService {
 
     try {
       switch (payload.event) {
+        case "PAYMENT_CREATED":
+          await this.handlePaymentCreated(payload);
+          break;
         case "PAYMENT_RECEIVED":
         case "PAYMENT_CONFIRMED":
           await this.handlePaymentConfirmed(payload);
@@ -39,6 +42,93 @@ export class WebhookService {
       }
     } catch (error) {
       console.error(`[Webhook] Erro ao processar evento ${payload.event}:`, error);
+      throw error;
+    }
+  }
+
+  private async handlePaymentCreated(payload: AsaasWebhookPayload): Promise<void> {
+    try {
+      if (!payload.data) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_CREATED - sem data`);
+        return;
+      }
+
+      const paymentId = payload.data.id;
+      const customerId = payload.data.customer;
+
+      if (!paymentId || !customerId) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_CREATED - sem ID ou customer`);
+        return;
+      }
+
+      console.log(`[Webhook] Nova cobrança criada: ${paymentId} (cliente: ${customerId})`);
+
+      // Check if cobrança already exists
+      const allCobrancas = await storage.getCobrancas();
+      const existingCobranca = allCobrancas.find(c => c.id === paymentId);
+
+      if (!existingCobranca) {
+        // Try to fetch full payment details from Asaas
+        const config = await storage.getConfig();
+        if (!config.asaasToken || !config.asaasUrl) {
+          console.log(`[Webhook] Asaas não configurado para sincronizar cobrança ${paymentId}`);
+          return;
+        }
+
+        try {
+          const response = await fetch(`${config.asaasUrl}/payments/${paymentId}`, {
+            headers: { 'Authorization': `Bearer ${config.asaasToken}` }
+          });
+
+          if (response.ok) {
+            const paymentData = await response.json();
+            
+            // Create new cobrança
+            const newCobranca = {
+              id: paymentData.id,
+              customer: paymentData.customer,
+              customerName: paymentData.customerName || 'Desconhecido',
+              customerPhone: paymentData.phone || '',
+              value: paymentData.value || 0,
+              dueDate: paymentData.dueDate || new Date().toISOString().split('T')[0],
+              status: 'PENDING' as const,
+              invoiceUrl: paymentData.invoiceUrl || '',
+              description: paymentData.description || '',
+              tipo: 'importada' as const
+            };
+
+            await storage.createCobranca(newCobranca);
+            console.log(`[Webhook] Cobrança ${paymentId} sincronizada com sucesso`);
+
+            // Also check if customer exists and create if needed
+            const allClients = await storage.getClients();
+            const clientExists = allClients.find(c => c.asaasId === customerId);
+            
+            if (!clientExists && paymentData.customerName) {
+              const newClient = {
+                name: paymentData.customerName,
+                asaasId: customerId,
+                phone: paymentData.phone || '',
+                mobilePhone: paymentData.mobilePhone || paymentData.phone || '',
+                email: paymentData.email || '',
+                traccarUserId: '',
+                isTraccarBlocked: false,
+                lastMessageAtraso: null,
+              };
+              await storage.createClient(newClient);
+              console.log(`[Webhook] Cliente ${customerId} sincronizado com sucesso`);
+            }
+          } else {
+            console.log(`[Webhook] Erro ao buscar detalhes da cobrança ${paymentId} no Asaas`);
+          }
+        } catch (error) {
+          console.error(`[Webhook] Erro ao sincronizar cobrança do Asaas:`, error);
+        }
+      } else {
+        console.log(`[Webhook] Cobrança ${paymentId} já existe`);
+      }
+    } catch (error) {
+      console.error(`[Webhook] Erro em handlePaymentCreated:`, error);
       throw error;
     }
   }

@@ -361,6 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/webhook/asaas", async (req, res) => {
     try {
       console.log('[Webhook] Recebido evento do Asaas:', req.body.event);
+      console.log('[Webhook] Payload completo:', JSON.stringify(req.body, null, 2));
       const webhookService = new WebhookService();
       await webhookService.processAsaasWebhook(req.body);
       res.json({ success: true });
