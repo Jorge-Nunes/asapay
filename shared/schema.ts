@@ -126,12 +126,37 @@ export type ExecutionLog = {
   cobrancaId: string;
   customerName: string;
   customerPhone: string;
-  tipo: 'vence_hoje' | 'aviso';
+  tipo: 'vence_hoje' | 'aviso' | 'atraso';
   status: 'success' | 'error';
   mensagem?: string;
   erro?: string;
   timestamp: string;
 };
+
+export const clients = pgTable("clients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  asaasCustomerId: text("asaas_customer_id").notNull().unique(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  mobilePhone: text("mobile_phone"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  postalCode: text("postal_code"),
+  cpfCnpj: text("cpf_cnpj"),
+  blockDailyMessages: integer("block_daily_messages").notNull().default(0),
+  diasAtrasoNotificacao: integer("dias_atraso_notificacao").notNull().default(3),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const clientLastMessageAtraso = pgTable("client_last_message_atraso", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull(),
+  lastMessageDate: timestamp("last_message_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export type DashboardMetrics = {
   totalPendente: number;
@@ -139,3 +164,6 @@ export type DashboardMetrics = {
   mensagensEnviadas: number;
   taxaConversao: number;
 };
+
+export type ClientData = typeof clients.$inferSelect;
+export type InsertClient = Omit<typeof clients.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
