@@ -59,22 +59,22 @@ export default function Execucoes() {
   const getStatusIcon = (status: Execution['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-chart-2" />;
+        return <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-destructive" />;
+        return <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />;
       case 'running':
-        return <Clock className="h-4 w-4 text-chart-4" />;
+        return <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
     }
   };
 
   const getStatusBadge = (status: Execution['status']) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default" className="bg-chart-2">Concluída</Badge>;
+        return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">Concluída</Badge>;
       case 'failed':
         return <Badge variant="destructive">Falhou</Badge>;
       case 'running':
-        return <Badge variant="secondary">Em execução</Badge>;
+        return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Em execução</Badge>;
     }
   };
 
@@ -82,14 +82,15 @@ export default function Execucoes() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Execuções</h1>
+          <h1 className="text-3xl font-bold text-foreground">Execuções</h1>
           <p className="text-muted-foreground mt-1">Histórico de todas as execuções automáticas</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleRefresh}
+            className="border-2"
             data-testid="button-refresh-executions"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -98,6 +99,7 @@ export default function Execucoes() {
           <Button 
             onClick={() => runExecutionMutation.mutate()}
             disabled={runExecutionMutation.isPending}
+            className="bg-primary hover:bg-primary/90"
             data-testid="button-run-now"
           >
             <Play className="h-4 w-4 mr-2" />
@@ -110,7 +112,7 @@ export default function Execucoes() {
         <div className="lg:col-span-1 space-y-4">
           <h2 className="text-lg font-semibold">Histórico</h2>
           {executions.length === 0 ? (
-            <Card>
+            <Card className="border-2">
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground text-center">
                   Nenhuma execução encontrada
@@ -121,9 +123,9 @@ export default function Execucoes() {
             executions.map((execution) => (
               <Card
                 key={execution.id}
-                className={`cursor-pointer transition-colors ${
+                className={`cursor-pointer transition-all border-2 hover-elevate ${
                   selectedExecution?.id === execution.id ? 'ring-2 ring-primary' : ''
-                } hover-elevate`}
+                }`}
                 onClick={() => setSelectedExecutionId(execution.id)}
                 data-testid={`card-execution-${execution.id}`}
               >
@@ -162,9 +164,13 @@ export default function Execucoes() {
         <div className="lg:col-span-2">
           <h2 className="text-lg font-semibold mb-4">Detalhes da Execução</h2>
           {selectedExecution ? (
-            <ExecutionLogTable logs={selectedExecution.detalhes || []} />
+            <Card className="border-2">
+              <CardContent className="pt-6">
+                <ExecutionLogTable logs={selectedExecution.detalhes || []} />
+              </CardContent>
+            </Card>
           ) : (
-            <Card>
+            <Card className="border-2">
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground text-center">
                   Selecione uma execução para ver os detalhes

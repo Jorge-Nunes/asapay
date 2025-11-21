@@ -33,7 +33,6 @@ export default function Configuracoes() {
 
   useEffect(() => {
     if (config) {
-      // Preserve the real structure but use placeholders for display
       setFormData({
         ...config,
         asaasToken: config.asaasToken || '',
@@ -63,10 +62,8 @@ export default function Configuracoes() {
   });
 
   const handleSave = () => {
-    // Clean up the data before sending
     const dataToSend = {
       ...formData,
-      // Only send if changed from placeholder
       asaasToken: formData.asaasToken === '••••••••' ? undefined : formData.asaasToken,
       evolutionApiKey: formData.evolutionApiKey === '••••••••' ? undefined : formData.evolutionApiKey,
     };
@@ -78,7 +75,7 @@ export default function Configuracoes() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold">Configurações</h1>
+          <h1 className="text-3xl font-bold">Configurações</h1>
           <p className="text-muted-foreground mt-1">Carregando...</p>
         </div>
       </div>
@@ -89,12 +86,13 @@ export default function Configuracoes() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Configurações</h1>
+          <h1 className="text-3xl font-bold text-foreground">Configurações</h1>
           <p className="text-muted-foreground mt-1">Gerencie as configurações do sistema</p>
         </div>
         <Button 
           onClick={handleSave} 
           disabled={saveMutation.isPending}
+          className="bg-primary hover:bg-primary/90"
           data-testid="button-save"
         >
           <Save className="h-4 w-4 mr-2" />
@@ -103,7 +101,7 @@ export default function Configuracoes() {
       </div>
 
       <Tabs defaultValue="asaas" className="space-y-6">
-        <TabsList>
+        <TabsList className="border-2">
           <TabsTrigger value="asaas" data-testid="tab-asaas">Asaas</TabsTrigger>
           <TabsTrigger value="evolution" data-testid="tab-evolution">Evolution API</TabsTrigger>
           <TabsTrigger value="preferences" data-testid="tab-preferences">Preferências</TabsTrigger>
@@ -111,7 +109,7 @@ export default function Configuracoes() {
         </TabsList>
 
         <TabsContent value="asaas" className="space-y-6">
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle>Integração Asaas</CardTitle>
               <CardDescription>Configure o acesso à API do Asaas</CardDescription>
@@ -124,6 +122,7 @@ export default function Configuracoes() {
                   type="password"
                   value={formData.asaasToken}
                   onChange={(e) => setFormData({ ...formData, asaasToken: e.target.value })}
+                  className="border-2"
                   data-testid="input-asaas-token"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -136,6 +135,7 @@ export default function Configuracoes() {
                   id="asaas-url"
                   value={formData.asaasUrl}
                   onChange={(e) => setFormData({ ...formData, asaasUrl: e.target.value })}
+                  className="border-2"
                   data-testid="input-asaas-url"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -147,7 +147,7 @@ export default function Configuracoes() {
         </TabsContent>
 
         <TabsContent value="evolution" className="space-y-6">
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle>Evolution API</CardTitle>
               <CardDescription>Configure a integração com WhatsApp</CardDescription>
@@ -159,6 +159,7 @@ export default function Configuracoes() {
                   id="evolution-url"
                   value={formData.evolutionUrl}
                   onChange={(e) => setFormData({ ...formData, evolutionUrl: e.target.value })}
+                  className="border-2"
                   data-testid="input-evolution-url"
                 />
               </div>
@@ -168,6 +169,7 @@ export default function Configuracoes() {
                   id="evolution-instance"
                   value={formData.evolutionInstance}
                   onChange={(e) => setFormData({ ...formData, evolutionInstance: e.target.value })}
+                  className="border-2"
                   data-testid="input-evolution-instance"
                 />
               </div>
@@ -178,6 +180,7 @@ export default function Configuracoes() {
                   type="password"
                   value={formData.evolutionApiKey}
                   onChange={(e) => setFormData({ ...formData, evolutionApiKey: e.target.value })}
+                  className="border-2"
                   data-testid="input-evolution-apikey"
                 />
               </div>
@@ -186,7 +189,7 @@ export default function Configuracoes() {
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-6">
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle>Preferências de Envio</CardTitle>
               <CardDescription>Configure quando as mensagens devem ser enviadas</CardDescription>
@@ -199,6 +202,7 @@ export default function Configuracoes() {
                   type="number"
                   value={formData.diasAviso}
                   onChange={(e) => setFormData({ ...formData, diasAviso: parseInt(e.target.value) || 10 })}
+                  className="border-2"
                   data-testid="input-dias-aviso"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -210,7 +214,7 @@ export default function Configuracoes() {
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6">
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle>Template - Vence Hoje</CardTitle>
               <CardDescription>Mensagem enviada no dia do vencimento</CardDescription>
@@ -223,6 +227,7 @@ export default function Configuracoes() {
                   ...formData,
                   messageTemplates: { ...formData.messageTemplates, venceHoje: e.target.value }
                 })}
+                className="border-2"
                 data-testid="textarea-template-vence-hoje"
               />
               <p className="text-xs text-muted-foreground">
@@ -231,7 +236,7 @@ export default function Configuracoes() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle>Template - Aviso</CardTitle>
               <CardDescription>Mensagem enviada X dias antes do vencimento</CardDescription>
@@ -244,6 +249,7 @@ export default function Configuracoes() {
                   ...formData,
                   messageTemplates: { ...formData.messageTemplates, aviso: e.target.value }
                 })}
+                className="border-2"
                 data-testid="textarea-template-aviso"
               />
               <p className="text-xs text-muted-foreground">

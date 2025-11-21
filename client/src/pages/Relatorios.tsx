@@ -54,17 +54,17 @@ export default function Relatorios() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Relatórios</h1>
+          <h1 className="text-3xl font-bold text-foreground">Relatórios</h1>
           <p className="text-muted-foreground mt-1">Análise detalhada das execuções e cobranças</p>
         </div>
-        <Button onClick={handleExport} data-testid="button-export">
+        <Button onClick={handleExport} className="bg-primary hover:bg-primary/90" data-testid="button-export">
           <Download className="h-4 w-4 mr-2" />
           Exportar PDF
         </Button>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
+        <TabsList className="border-2">
           <TabsTrigger value="overview" data-testid="tab-overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="messages" data-testid="tab-messages">Mensagens</TabsTrigger>
           <TabsTrigger value="cobrancas" data-testid="tab-cobrancas">Cobranças</TabsTrigger>
@@ -73,53 +73,61 @@ export default function Relatorios() {
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Cobranças</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold tabular-nums">{totalCobrancas}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Neste mês
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Neste mês</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Mensagens Enviadas</CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold tabular-nums">{totalMensagens}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Últimos 30 dias
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Últimos 30 dias</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Execuções</CardTitle>
                 <PlayCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold tabular-nums">{totalExecucoes}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Neste mês
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Neste mês</p>
               </CardContent>
             </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ExecutionChart data={chartData} />
-            <StatusChart data={statusData} />
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle>Execuções</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ExecutionChart data={chartData} />
+              </CardContent>
+            </Card>
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle>Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StatusChart data={statusData} />
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="messages" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader>
                 <CardTitle className="text-lg">Mensagens por Tipo</CardTitle>
               </CardHeader>
@@ -136,7 +144,7 @@ export default function Relatorios() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader>
                 <CardTitle className="text-lg">Taxa de Sucesso</CardTitle>
               </CardHeader>
@@ -149,12 +157,19 @@ export default function Relatorios() {
             </Card>
           </div>
 
-          <ExecutionChart data={chartData} />
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Gráfico de Execuções</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExecutionChart data={chartData} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="cobrancas" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-lg">Status das Cobranças</CardTitle>
               </CardHeader>
@@ -162,7 +177,7 @@ export default function Relatorios() {
                 <StatusChart data={statusData} />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader>
                 <CardTitle className="text-lg">Resumo</CardTitle>
               </CardHeader>
@@ -182,7 +197,7 @@ export default function Relatorios() {
 
         <TabsContent value="executions" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Execuções</CardTitle>
                 <PlayCircle className="h-4 w-4 text-muted-foreground" />
@@ -191,7 +206,7 @@ export default function Relatorios() {
                 <div className="text-3xl font-bold tabular-nums">{totalExecucoes}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Mensagens Enviadas</CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -200,7 +215,7 @@ export default function Relatorios() {
                 <div className="text-3xl font-bold tabular-nums">{totalMensagens}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Erros</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -211,7 +226,14 @@ export default function Relatorios() {
             </Card>
           </div>
 
-          <ExecutionChart data={chartData} />
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Gráfico de Execuções</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExecutionChart data={chartData} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
