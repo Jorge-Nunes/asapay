@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import type { Config, Cobranca, Execution, ExecutionLog, DashboardMetrics } from "@shared/schema";
+import type { Config, Cobranca, Execution, ExecutionLog, DashboardMetrics, ClientData, InsertClient } from "@shared/schema";
 
 export interface IStorage {
   // Config
@@ -32,6 +32,14 @@ export interface IStorage {
   createUser(user: { username: string; password: string }): Promise<any>;
   updateUser(id: string, data: { username?: string; password?: string }): Promise<any | undefined>;
   deleteUser(id: string): Promise<void>;
+
+  // Clients
+  getClients(): Promise<ClientData[]>;
+  getClientByAsaasId(asaasCustomerId: string): Promise<ClientData | undefined>;
+  syncClients(clients: InsertClient[]): Promise<void>;
+  updateClientPreferences(clientId: string, blockDailyMessages: boolean, diasAtrasoNotificacao: number): Promise<void>;
+  getClientLastMessageAtraso(clientId: string): Promise<Date | undefined>;
+  updateClientLastMessageAtraso(clientId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
