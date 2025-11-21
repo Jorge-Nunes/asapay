@@ -32,62 +32,26 @@ export class PostgresStorage implements IStorage {
   async getConfig(): Promise<Config> {
     try {
       const db = getDb();
-      const client = postgres(process.env.DATABASE_URL!);
+      const config = await db.query.configurations.findFirst();
       
-      // Use raw SQL to fetch config directly
-      const rows = await client`SELECT * FROM configurations LIMIT 1`;
-      
-      if (!rows || rows.length === 0) {
-        console.warn('[Storage] No config found in database, using defaults');
-        return {
-          asaasToken: process.env.ASAAS_TOKEN || '',
-          asaasUrl: process.env.ASAAS_URL || 'https://api.asaas.com/v3',
-          evolutionUrl: process.env.EVOLUTION_URL || '',
-          evolutionInstance: process.env.EVOLUTION_INSTANCE || '',
-          evolutionApiKey: process.env.EVOLUTION_APIKEY || '',
-          diasAviso: 10,
-          messageTemplates: {
-            venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
-Notamos que sua fatura vence *hoje* 📅.
-Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
-
-🔗 Link da fatura: {{link_fatura}}
-💰 Valor: {{valor}}
-📆 Vencimento: {{vencimento}}
-
-Qualquer dúvida, nossa equipe está à disposição! 🤝`,
-            aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
-Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
-Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
-
-🔗 Link da fatura: {{link_fatura}}
-💰 Valor: {{valor}}
-🗓️ Vencimento: {{vencimento}}
-
-Estamos aqui para ajudar no que precisar! 📞`,
-          },
-        };
-      }
-
-      const config = rows[0];
       const result = {
-        asaasToken: config.asaas_token || '',
-        asaasUrl: config.asaas_url || 'https://api.asaas.com/v3',
-        evolutionUrl: config.evolution_url || '',
-        evolutionInstance: config.evolution_instance || '',
-        evolutionApiKey: config.evolution_api_key || '',
-        diasAviso: config.dias_aviso || 10,
-        messageTemplates: (config.message_templates as any) || {
+        asaasToken: config?.asaasToken || '',
+        asaasUrl: config?.asaasUrl || 'https://api.asaas.com/v3',
+        evolutionUrl: config?.evolutionUrl || '',
+        evolutionInstance: config?.evolutionInstance || '',
+        evolutionApiKey: config?.evolutionApiKey || '',
+        diasAviso: config?.diasAviso || 10,
+        messageTemplates: (config?.messageTemplates as any) || {
           venceHoje: '',
           aviso: '',
         },
       };
       
-      console.log('[Storage] Config loaded from DB:', {
-        token: result.asaasToken ? `${result.asaasToken.substring(0, 15)}...` : 'EMPTY',
-        url: result.evolutionUrl ? 'SET' : 'EMPTY',
-        key: result.evolutionApiKey ? 'SET' : 'EMPTY',
-        instance: result.evolutionInstance ? 'SET' : 'EMPTY',
+      console.log('[Storage] Config result:', {
+        asaasToken: result.asaasToken ? `${result.asaasToken.substring(0, 15)}...` : 'EMPTY',
+        evolutionUrl: result.evolutionUrl ? result.evolutionUrl : 'EMPTY',
+        evolutionApiKey: result.evolutionApiKey ? 'SET' : 'EMPTY',
+        evolutionInstance: result.evolutionInstance ? result.evolutionInstance : 'EMPTY',
       });
 
       return result;

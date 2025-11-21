@@ -8,11 +8,25 @@ export class ExecutionService {
   static async runExecution(): Promise<Execution> {
     const config = await storage.getConfig();
 
+    console.log('[Execution] Config received:', {
+      asaasToken: config.asaasToken ? `${config.asaasToken.substring(0, 10)}...` : 'EMPTY',
+      evolutionUrl: config.evolutionUrl || 'EMPTY',
+      evolutionApiKey: config.evolutionApiKey ? 'SET' : 'EMPTY',
+      evolutionInstance: config.evolutionInstance || 'EMPTY',
+    });
+
     // Validate config - ensure all required fields are present and not empty
-    const asaasToken = config.asaasToken?.trim?.();
-    const evolutionUrl = config.evolutionUrl?.trim?.();
-    const evolutionApiKey = config.evolutionApiKey?.trim?.();
-    const evolutionInstance = config.evolutionInstance?.trim?.();
+    const asaasToken = (config.asaasToken || '').trim();
+    const evolutionUrl = (config.evolutionUrl || '').trim();
+    const evolutionApiKey = (config.evolutionApiKey || '').trim();
+    const evolutionInstance = (config.evolutionInstance || '').trim();
+
+    console.log('[Execution] After trim:', {
+      asaasToken: asaasToken ? `${asaasToken.substring(0, 10)}...` : 'EMPTY',
+      evolutionUrl: evolutionUrl ? evolutionUrl.substring(0, 20) : 'EMPTY',
+      evolutionApiKey: evolutionApiKey ? 'SET' : 'EMPTY',
+      evolutionInstance: evolutionInstance ? evolutionInstance : 'EMPTY',
+    });
 
     if (!asaasToken || !evolutionUrl || !evolutionApiKey || !evolutionInstance) {
       console.error('[Execution] Config validation failed:', {
