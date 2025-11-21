@@ -16,7 +16,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Cobranca } from "@shared/schema";
 
-type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo';
+type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo' | 'description';
 type SortDirection = 'asc' | 'desc';
 
 export default function Cobrancas() {

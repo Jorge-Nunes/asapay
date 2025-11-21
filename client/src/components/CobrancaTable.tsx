@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Cobranca } from "@shared/schema";
 
-type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo';
+type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo' | 'description';
 type SortDirection = 'asc' | 'desc';
 
 interface CobrancaTableProps {
@@ -68,8 +68,20 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
             >
               Valor {SortIcon && sortField === 'value' && <SortIcon field="value" />}
             </TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Tipo</TableHead>
+            <TableHead 
+              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              onClick={() => onSort?.('description')}
+              data-testid="header-descricao"
+            >
+              Descrição {SortIcon && sortField === 'description' && <SortIcon field="description" />}
+            </TableHead>
+            <TableHead 
+              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              onClick={() => onSort?.('tipo')}
+              data-testid="header-tipo"
+            >
+              Tipo {SortIcon && sortField === 'tipo' && <SortIcon field="tipo" />}
+            </TableHead>
             <TableHead 
               className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
               onClick={() => onSort?.('status')}
