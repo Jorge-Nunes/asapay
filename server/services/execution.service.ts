@@ -182,18 +182,19 @@ export class ExecutionService {
       // Calculate metrics
       const mensagensEnviadas = processedLogs.filter(l => l.status === 'success').length;
       const erros = processedLogs.filter(l => l.status === 'error').length;
-      const blockedUsers = logs.filter(l => l.mensagem?.includes('bloqueado')).length;
+      const usuariosBloqueados = logs.filter(l => l.id?.includes('blocked')).length;
 
       // Update execution
       await storage.updateExecution(execution.id, {
         status: 'completed',
         cobrancasProcessadas: categorized.filter(c => c.tipo !== 'processada').length,
         mensagensEnviadas,
+        usuariosBloqueados,
         erros,
         detalhes: logs,
       });
 
-      console.log(`Execution completed: ${mensagensEnviadas} messages sent, ${erros} errors, ${blockedUsers} users blocked/unblocked`);
+      console.log(`Execution completed: ${mensagensEnviadas} messages sent, ${usuariosBloqueados} users blocked/unblocked, ${erros} errors`);
 
       return (await storage.getExecutionById(execution.id))!;
     } catch (error) {

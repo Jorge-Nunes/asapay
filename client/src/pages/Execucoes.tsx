@@ -4,7 +4,7 @@ import { ExecutionLogTable } from "@/components/ExecutionLogTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Play, Clock, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Clock, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -145,7 +145,7 @@ export default function Execucoes() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Data/Hora</p>
                     <p className="text-base font-semibold flex items-center gap-2">
@@ -160,6 +160,15 @@ export default function Execucoes() {
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Mensagens Enviadas</p>
                     <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{selectedExecution.mensagensEnviadas}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                      <Lock className="h-4 w-4" />
+                      Usuários Bloqueados
+                    </p>
+                    <p className={`text-2xl font-bold ${selectedExecution.usuariosBloqueados > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                      {selectedExecution.usuariosBloqueados}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Erros</p>
@@ -194,6 +203,7 @@ export default function Execucoes() {
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Processadas</TableHead>
                     <TableHead className="text-right">Enviadas</TableHead>
+                    <TableHead className="text-right">Bloqueados</TableHead>
                     <TableHead className="text-right">Erros</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -221,6 +231,9 @@ export default function Execucoes() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm">
                         {execution.mensagensEnviadas}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {execution.usuariosBloqueados}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm">
                         {execution.erros}

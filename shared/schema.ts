@@ -61,6 +61,7 @@ export const executions = pgTable("executions", {
   status: text("status").notNull(), // running, completed, failed
   cobrancasProcessadas: integer("cobrancas_processadas").notNull().default(0),
   mensagensEnviadas: integer("mensagens_enviadas").notNull().default(0),
+  usuariosBloqueados: integer("usuarios_bloqueados").notNull().default(0),
   erros: integer("erros").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -123,6 +124,7 @@ export type Execution = {
   status: 'running' | 'completed' | 'failed';
   cobrancasProcessadas: number;
   mensagensEnviadas: number;
+  usuariosBloqueados: number;
   erros: number;
   detalhes: ExecutionLog[];
 };
