@@ -570,4 +570,118 @@ export class PostgresStorage implements IStorage {
       throw error;
     }
   }
+
+  async getClients(): Promise<schema.ClientData[]> {
+    try {
+      const db = getDb();
+      const result = await db.query.clients.findMany();
+      return result as schema.ClientData[];
+    } catch (error) {
+      console.error('[Storage] Error in getClients:', error);
+      throw error;
+    }
+  }
+
+  async getClientByAsaasId(asaasCustomerId: string): Promise<schema.ClientData | undefined> {
+    try {
+      const db = getDb();
+      const result = await db.query.clients.findFirst({
+        where: eq(schema.clients.asaasCustomerId, asaasCustomerId),
+      });
+      return result as schema.ClientData | undefined;
+    } catch (error) {
+      console.error('[Storage] Error in getClientByAsaasId:', error);
+      throw error;
+    }
+  }
+
+  async syncClients(clients: schema.InsertClient[]): Promise<void> {
+    try {
+      const db = getDb();
+      
+      for (const client of clients) {
+        const existing = await db.query.clients.findFirst({
+          where: eq(schema.clients.asaasCustomerId, client.asaasCustomerId),
+        });
+
+        if (existing) {
+          await db.update(schema.clients)
+            .set({
+              name: client.name,
+              email: client.email,
+              phone: client.phone,
+              mobilePhone: client.mobilePhone,
+              address: client.address,
+              city: client.city,
+              state: client.state,
+              postalCode: client.postalCode,
+              cpfCnpj: client.cpfCnpj,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.clients.asaasCustomerId, client.asaasCustomerId));
+        } else {
+          await db.insert(schema.clients).values({
+            asaasCustomerId: client.asaasCustomerId,
+            name: client.name,
+            email: client.email,
+            phone: client.phone,
+            mobilePhone: client.mobilePhone,
+            address: client.address,
+            city: client.city,
+            state: client.state,
+            postalCode: client.postalCode,
+            cpfCnpj: client.cpfCnpj,
+            blockDailyMessages: 0,
+            diasAtrasoNotificacao: 3,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[Storage] Error in syncClients:', error);
+      throw error;
+    }
+  }
+
+  async updateClientPreferences(clientId: string, blockDailyMessages: boolean, diasAtrasoNotificacao: number): Promise<void> {
+    try {
+      const db = getDb();
+      await db.update(schema.clients)
+        .set({
+          blockDailyMessages: blockDailyMessages ? 1 : 0,
+          diasAtrasoNotificacao,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.clients.id, clientId));
+    } catch (error) {
+      console.error('[Storage] Error in updateClientPreferences:', error);
+      throw error;
+    }
+  }
+
+  async getClientLastMessageAtraso(clientId: string): Promise<Date | undefined> {
+    try {
+      const db = getDb();
+      const result = await db.query.clientLastMessageAtraso.findFirst({
+        where: eq(schema.clientLastMessageAtraso.clientId, clientId),
+        orderBy: (table: any) => [desc(table.lastMessageDate)],
+      });
+      return result?.lastMessageDate;
+    } catch (error) {
+      console.error('[Storage] Error in getClientLastMessageAtraso:', error);
+      return undefined;
+    }
+  }
+
+  async updateClientLastMessageAtraso(clientId: string): Promise<void> {
+    try {
+      const db = getDb();
+      await db.insert(schema.clientLastMessageAtraso).values({
+        clientId,
+        lastMessageDate: new Date(),
+      });
+    } catch (error) {
+      console.error('[Storage] Error in updateClientLastMessageAtraso:', error);
+      throw error;
+    }
+  }
 }
