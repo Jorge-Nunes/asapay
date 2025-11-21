@@ -214,17 +214,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
 
           const phone = client.mobilePhone || client.phone || '';
+          console.log('[Routes] Block message - Phone:', phone, 'Template:', !!config.messageTemplates.bloqueio);
           if (phone) {
             const cleanPhone = phone.replace(/\D/g, '');
+            console.log('[Routes] Cleaned phone:', cleanPhone);
             const message = config.messageTemplates.bloqueio
               .replace('{{nome}}', client.name)
               .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
             
-            await evolutionService.sendTextMessage(cleanPhone, message);
+            console.log('[Routes] Sending blocking message to:', cleanPhone);
+            const result = await evolutionService.sendTextMessage(cleanPhone, message);
+            console.log('[Routes] Blocking message sent:', result);
           }
         } catch (error) {
           console.error('[Routes] Error sending blocking message:', error);
         }
+      } else {
+        console.log('[Routes] Blocking message not sent - Template missing or Evolution not configured', {
+          hasTemplate: !!config.messageTemplates?.bloqueio,
+          hasEvolutionUrl: !!config.evolutionUrl,
+          hasEvolutionApiKey: !!config.evolutionApiKey,
+          hasEvolutionInstance: !!config.evolutionInstance,
+        });
       }
 
       res.json({ success: true, message: `${client.name} foi bloqueado na Traccar` });
@@ -268,17 +279,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
 
           const phone = client.mobilePhone || client.phone || '';
+          console.log('[Routes] Unblock message - Phone:', phone, 'Template:', !!config.messageTemplates.desbloqueio);
           if (phone) {
             const cleanPhone = phone.replace(/\D/g, '');
+            console.log('[Routes] Cleaned phone:', cleanPhone);
             const message = config.messageTemplates.desbloqueio
               .replace('{{nome}}', client.name)
               .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
             
-            await evolutionService.sendTextMessage(cleanPhone, message);
+            console.log('[Routes] Sending unblocking message to:', cleanPhone);
+            const result = await evolutionService.sendTextMessage(cleanPhone, message);
+            console.log('[Routes] Unblocking message sent:', result);
           }
         } catch (error) {
           console.error('[Routes] Error sending unblocking message:', error);
         }
+      } else {
+        console.log('[Routes] Unblocking message not sent - Template missing or Evolution not configured', {
+          hasTemplate: !!config.messageTemplates?.desbloqueio,
+          hasEvolutionUrl: !!config.evolutionUrl,
+          hasEvolutionApiKey: !!config.evolutionApiKey,
+          hasEvolutionInstance: !!config.evolutionInstance,
+        });
       }
 
       res.json({ success: true, message: `${client.name} foi desbloqueado na Traccar` });
