@@ -125,144 +125,140 @@ export default function Execucoes() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {executions.length === 0 ? (
+      {executions.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground text-center">
+              Nenhuma execução encontrada
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {/* Detalhes da Execução */}
+          {selectedExecution && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Detalhes da Execução</CardTitle>
+                  {getStatusBadge(selectedExecution.status)}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Data/Hora</p>
+                    <p className="text-base font-semibold flex items-center gap-2">
+                      {getStatusIcon(selectedExecution.status)}
+                      {format(new Date(selectedExecution.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Cobrança Processadas</p>
+                    <p className="text-2xl font-bold text-primary">{selectedExecution.cobrancasProcessadas}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Mensagens Enviadas</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{selectedExecution.mensagensEnviadas}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Erros</p>
+                    <p className={`text-2xl font-bold ${selectedExecution.erros > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
+                      {selectedExecution.erros}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedExecution.detalhes && selectedExecution.detalhes.length > 0 && (
+                  <div className="mt-6 pt-6 border-t">
+                    <h3 className="text-sm font-semibold mb-4">Registros Detalhados</h3>
+                    <div className="max-h-64 overflow-y-auto">
+                      <ExecutionLogTable logs={selectedExecution.detalhes} />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Histórico de Execuções */}
           <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground text-center">
-                Nenhuma execução encontrada
-              </p>
+            <CardHeader>
+              <CardTitle>Histórico de Execuções</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Processadas</TableHead>
+                    <TableHead className="text-right">Enviadas</TableHead>
+                    <TableHead className="text-right">Erros</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedExecutions.map((execution) => (
+                    <TableRow
+                      key={execution.id}
+                      className={`cursor-pointer hover-elevate transition-all ${
+                        selectedExecution?.id === execution.id ? 'bg-accent' : ''
+                      }`}
+                      onClick={() => setSelectedExecutionId(execution.id)}
+                      data-testid={`row-execution-${execution.id}`}
+                    >
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(execution.status)}
+                          {format(new Date(execution.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(execution.status)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {execution.cobrancasProcessadas}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {execution.mensagensEnviadas}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {execution.erros}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevious}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNext}
+                    disabled={currentPage === totalPages}
+                    data-testid="button-next-page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Histórico de Execuções</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data/Hora</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Processadas</TableHead>
-                        <TableHead className="text-right">Enviadas</TableHead>
-                        <TableHead className="text-right">Erros</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedExecutions.map((execution) => (
-                        <TableRow
-                          key={execution.id}
-                          className={`cursor-pointer hover-elevate transition-all ${
-                            selectedExecution?.id === execution.id ? 'bg-accent' : ''
-                          }`}
-                          onClick={() => setSelectedExecutionId(execution.id)}
-                          data-testid={`row-execution-${execution.id}`}
-                        >
-                          <TableCell className="text-sm">
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(execution.status)}
-                              {format(new Date(execution.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(execution.status)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm">
-                            {execution.cobrancasProcessadas}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm">
-                            {execution.mensagensEnviadas}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm">
-                            {execution.erros}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePrevious}
-                        disabled={currentPage === 1}
-                        data-testid="button-prev-page"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-xs text-muted-foreground">
-                        Página {currentPage} de {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleNext}
-                        disabled={currentPage === totalPages}
-                        data-testid="button-next-page"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="lg:col-span-1">
-              <h2 className="text-lg font-semibold mb-4">Detalhes</h2>
-              {selectedExecution ? (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-sm">
-                        {format(new Date(selectedExecution.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </CardTitle>
-                      {getStatusBadge(selectedExecution.status)}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Processadas:</span>
-                        <span className="font-semibold">{selectedExecution.cobrancasProcessadas}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Enviadas:</span>
-                        <span className="font-semibold">{selectedExecution.mensagensEnviadas}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Erros:</span>
-                        <span className="font-semibold text-rose-600 dark:text-rose-400">{selectedExecution.erros}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-3 border-t">
-                      <h3 className="text-sm font-semibold mb-3">Registros Detalhados</h3>
-                      <div className="max-h-96 overflow-y-auto">
-                        <ExecutionLogTable logs={selectedExecution.detalhes || []} />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground text-center">
-                      Selecione uma execução para ver os detalhes
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
