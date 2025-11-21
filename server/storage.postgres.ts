@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { 
   configurations, 
   cobrancas, 
@@ -263,32 +263,29 @@ Obrigado por sua confiança! 🙏`,
   async getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit = 50, offset = 0): Promise<{ data: Cobranca[]; total: number }> {
     try {
       const db = getDb();
-      const { and } = require('drizzle-orm');
       
       let whereConditions: any[] = [];
       
       if (filters?.status && filters.status !== 'all') {
-        whereConditions.push((cobrancas as any).status.equals(filters.status));
+        whereConditions.push(eq(cobrancas.status, filters.status));
       }
       
       if (filters?.tipo && filters.tipo !== 'all') {
-        whereConditions.push((cobrancas as any).tipo.equals(filters.tipo));
+        whereConditions.push(eq(cobrancas.tipo, filters.tipo));
       }
       
-      // Get total count with filters
-      let countQuery = db.query.cobrancas;
-      const allResults = whereConditions.length > 0 
-        ? await (countQuery as any).findMany({ where: and(...whereConditions) })
-        : await (countQuery as any).findMany();
+      // Build the where clause
+      let whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+      
+      // Get all results with filters to count total
+      const allResults = whereClause 
+        ? await db.query.cobrancas.findMany({ where: whereClause })
+        : await db.query.cobrancas.findMany();
       
       const total = allResults.length;
       
-      // Get paginated results with filters
-      let paginatedResults = whereConditions.length > 0
-        ? await (countQuery as any).findMany({ where: and(...whereConditions) })
-        : await (countQuery as any).findMany();
-      
-      paginatedResults = paginatedResults.slice(offset, offset + limit);
+      // Get paginated results
+      const paginatedResults = allResults.slice(offset, offset + limit);
       
       const data = paginatedResults.map((r: any) => ({
         id: r.id,
