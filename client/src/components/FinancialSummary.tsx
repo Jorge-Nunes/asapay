@@ -1,5 +1,9 @@
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { X } from "lucide-react";
 import type { FinancialSummary as FinancialSummaryType } from "@shared/schema";
 
 const FinancialSummaryCard = ({ title, total, netValue, customers, invoices, color }: { 
@@ -60,17 +64,66 @@ const FinancialSummaryCard = ({ title, total, netValue, customers, invoices, col
 };
 
 export function FinancialSummarySection() {
-  const { data: summary, isLoading } = useQuery<FinancialSummaryType>({
-    queryKey: ['/api/dashboard/financial-summary'],
+  const [filters, setFilters] = useState({ startDate: '', endDate: '' });
+  
+  const queryParams = new URLSearchParams();
+  if (filters.startDate) queryParams.append('startDate', filters.startDate);
+  if (filters.endDate) queryParams.append('endDate', filters.endDate);
+  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
+  const { data: summary, isLoading, refetch } = useQuery<FinancialSummaryType>({
+    queryKey: ['/api/dashboard/financial-summary', filters],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/financial-summary${queryString}`);
+      if (!response.ok) throw new Error('Erro ao carregar resumo financeiro');
+      return response.json();
+    },
   });
+
+  const handleClearFilters = () => {
+    setFilters({ startDate: '', endDate: '' });
+  };
 
   if (isLoading || !summary) {
     return <div className="text-center py-8 text-muted-foreground">Carregando dados financeiros...</div>;
   }
 
+  const hasFilters = filters.startDate || filters.endDate;
+
   return (
-    <div>
-      <h2 className="text-lg font-semibold text-foreground mb-4">Situação das cobranças</h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-lg font-semibold text-foreground">Situação das cobranças</h2>
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            placeholder="Data inicial"
+            value={filters.startDate}
+            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+            data-testid="input-start-date"
+            className="w-40"
+          />
+          <span className="text-muted-foreground">até</span>
+          <Input
+            type="date"
+            placeholder="Data final"
+            value={filters.endDate}
+            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+            data-testid="input-end-date"
+            className="w-40"
+          />
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              data-testid="button-clear-filters"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <FinancialSummaryCard
           title="Recebidas"

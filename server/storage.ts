@@ -26,7 +26,7 @@ export interface IStorage {
 
   // Dashboard
   getDashboardMetrics(): Promise<DashboardMetrics>;
-  getFinancialSummary(): Promise<FinancialSummary>;
+  getFinancialSummary(startDate?: string, endDate?: string): Promise<FinancialSummary>;
 
   // Users
   getUsers(): Promise<any[]>;
@@ -257,9 +257,8 @@ Estamos aqui para ajudar no que precisar! 📞`,
     this.clientLastMessageAtraso.set(clientId, new Date());
   }
 
-  async getFinancialSummary(): Promise<import('@shared/schema').FinancialSummary> {
+  async getFinancialSummary(startDate?: string, endDate?: string): Promise<import('@shared/schema').FinancialSummary> {
     const cobrancas = Array.from(this.cobrancas.values());
-    const statuses = ['RECEIVED', 'CONFIRMED', 'PENDING', 'OVERDUE'] as const;
     const result: import('@shared/schema').FinancialSummary = {
       received: { total: 0, netValue: 0, customers: new Set<string>().size, invoices: 0 },
       confirmed: { total: 0, netValue: 0, customers: new Set<string>().size, invoices: 0 },
@@ -274,7 +273,24 @@ Estamos aqui para ajudar no que precisar! 📞`,
       OVERDUE: new Set<string>(),
     };
 
-    cobrancas.forEach(c => {
+    let filtered = cobrancas;
+    if (startDate || endDate) {
+      filtered = cobrancas.filter(c => {
+        const dueDate = new Date(c.dueDate);
+        if (startDate) {
+          const start = new Date(startDate);
+          if (dueDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (dueDate > end) return false;
+        }
+        return true;
+      });
+    }
+
+    filtered.forEach(c => {
       const key = (c.status as keyof typeof result).toLowerCase() as keyof typeof result;
       if (result[key]) {
         result[key].total += parseFloat(c.value.toString());

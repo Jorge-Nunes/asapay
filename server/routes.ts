@@ -271,7 +271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/financial-summary", async (req, res) => {
     try {
-      const summary = await storage.getFinancialSummary();
+      const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+      const summary = await storage.getFinancialSummary(startDate, endDate);
       res.json(summary);
     } catch (error) {
       console.error('[Routes] Error in getFinancialSummary:', error);

@@ -685,7 +685,7 @@ export class PostgresStorage implements IStorage {
     }
   }
 
-  async getFinancialSummary(): Promise<import('@shared/schema').FinancialSummary> {
+  async getFinancialSummary(startDate?: string, endDate?: string): Promise<import('@shared/schema').FinancialSummary> {
     try {
       const db = getDb();
       const allCobrancas = await db.query.cobrancas.findMany();
@@ -704,7 +704,24 @@ export class PostgresStorage implements IStorage {
         OVERDUE: new Set<string>(),
       };
 
-      allCobrancas.forEach(c => {
+      let filtered = allCobrancas;
+      if (startDate || endDate) {
+        filtered = allCobrancas.filter(c => {
+          const dueDate = new Date(c.dueDate);
+          if (startDate) {
+            const start = new Date(startDate);
+            if (dueDate < start) return false;
+          }
+          if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            if (dueDate > end) return false;
+          }
+          return true;
+        });
+      }
+
+      filtered.forEach(c => {
         const key = (c.status.toUpperCase() as keyof typeof customerSets);
         const resultKey = c.status.toLowerCase() as keyof typeof result;
         
