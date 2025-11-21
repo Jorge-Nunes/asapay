@@ -33,6 +33,8 @@ export default function Configuracoes() {
       venceHoje: '',
       aviso: '',
       atraso: '',
+      bloqueio: '',
+      desbloqueio: '',
     },
   });
 
@@ -342,7 +344,51 @@ export default function Configuracoes() {
                 data-testid="textarea-template-atraso"
               />
               <p className="text-xs text-muted-foreground">
-                Variáveis disponíveis: {'{'}{'{'} link_fatura {'}'}{'}'}, {'{'}{'{'} valor {'}'}{'}'}, {'{'}{'{'} vencimento {'}'}{'}'}, {'{'}{'{'} cliente_nome {'}'}{'}'}
+                Variáveis disponíveis: {'{'}{'{'} link_fatura {'}'}{'}'}, {'{'}{'{'} valor {'}'}{'}'}, {'{'}{'{'} vencimento {'}'}{'}'}, {'{'}{'{'} cliente_nome {'}'}{'}'}, {'{'}{'{'} quantidade_cobrancas {'}'}{'}'}, {'{'}{'{'} valor_total {'}'}{'}'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Template - Bloqueio</CardTitle>
+              <CardDescription>Mensagem enviada ao bloquear usuário no Traccar</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                rows={8}
+                value={formData.messageTemplates.bloqueio || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  messageTemplates: { ...formData.messageTemplates, bloqueio: e.target.value }
+                })}
+                className="border-2"
+                data-testid="textarea-template-bloqueio"
+              />
+              <p className="text-xs text-muted-foreground">
+                Variáveis disponíveis: {'{'}{'{'} cliente_nome {'}'}{'}'}, {'{'}{'{'} quantidade_cobrancas {'}'}{'}'}, {'{'}{'{'} link_fatura {'}'}{'}'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Template - Desbloqueio</CardTitle>
+              <CardDescription>Mensagem enviada ao desbloquear usuário no Traccar</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                rows={8}
+                value={formData.messageTemplates.desbloqueio || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  messageTemplates: { ...formData.messageTemplates, desbloqueio: e.target.value }
+                })}
+                className="border-2"
+                data-testid="textarea-template-desbloqueio"
+              />
+              <p className="text-xs text-muted-foreground">
+                Variáveis disponíveis: {'{'}{'{'} cliente_nome {'}'}{'}'}
               </p>
             </CardContent>
           </Card>
