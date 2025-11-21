@@ -103,12 +103,40 @@ export class WebhookService {
           if (response.ok) {
             const fullPaymentData = await response.json();
             
+            // Fetch customer details to get the name
+            let customerName = 'Desconhecido';
+            let customerEmail = '';
+            let customerPhone = '';
+            let customerMobilePhone = '';
+            let customerAddress = '';
+            let customerCity = '';
+            let customerState = '';
+            
+            try {
+              const customerResponse = await fetch(`${config.asaasUrl}/customers/${customerId}`, {
+                headers: { 'access_token': config.asaasToken }
+              });
+              
+              if (customerResponse.ok) {
+                const customerData = await customerResponse.json();
+                customerName = customerData.name || 'Desconhecido';
+                customerEmail = customerData.email || '';
+                customerPhone = customerData.phone || '';
+                customerMobilePhone = customerData.mobilePhone || '';
+                customerAddress = customerData.address || '';
+                customerCity = customerData.city || '';
+                customerState = customerData.state || '';
+              }
+            } catch (customerError) {
+              console.error(`[Webhook] Erro ao buscar cliente ${customerId}:`, customerError);
+            }
+            
             // Create new cobrança
             const newCobranca = {
               id: fullPaymentData.id,
               customer: fullPaymentData.customer,
-              customerName: fullPaymentData.customerName || 'Desconhecido',
-              customerPhone: fullPaymentData.phone || fullPaymentData.mobilePhone || '',
+              customerName: customerName,
+              customerPhone: customerMobilePhone || customerPhone || fullPaymentData.phone || fullPaymentData.mobilePhone || '',
               value: fullPaymentData.value || 0,
               dueDate: fullPaymentData.dueDate || new Date().toISOString().split('T')[0],
               status: 'PENDING' as const,
@@ -123,23 +151,23 @@ export class WebhookService {
             // Also check if customer exists and create if needed
             const clientExists = await storage.getClientByAsaasId(customerId);
             
-            if (!clientExists && fullPaymentData.customerName) {
+            if (!clientExists) {
               const newClient = {
-                name: fullPaymentData.customerName,
+                name: customerName,
                 asaasCustomerId: customerId,
-                phone: fullPaymentData.phone || '',
-                mobilePhone: fullPaymentData.mobilePhone || fullPaymentData.phone || '',
-                email: fullPaymentData.email || '',
-                address: fullPaymentData.address || '',
-                city: fullPaymentData.city || '',
-                state: fullPaymentData.state || '',
+                phone: customerPhone || '',
+                mobilePhone: customerMobilePhone || customerPhone || '',
+                email: customerEmail || '',
+                address: customerAddress || '',
+                city: customerCity || '',
+                state: customerState || '',
                 traccarUserId: '',
                 blockDailyMessages: 0,
                 diasAtrasoNotificacao: 3,
                 isTraccarBlocked: 0,
               };
               await storage.createClient(newClient);
-              console.log(`[Webhook] Cliente ${customerId} sincronizado com sucesso`);
+              console.log(`[Webhook] Cliente ${customerId} (${customerName}) sincronizado com sucesso`);
             }
           } else {
             console.log(`[Webhook] Erro ao buscar detalhes da cobrança ${paymentId} no Asaas (status: ${response.status})`);
