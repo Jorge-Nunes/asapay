@@ -276,16 +276,9 @@ Estamos aqui para ajudar no que precisar! 📞`,
     let filtered = cobrancas;
     if (startDate || endDate) {
       filtered = cobrancas.filter(c => {
-        const dueDate = new Date(c.dueDate);
-        if (startDate) {
-          const start = new Date(startDate);
-          if (dueDate < start) return false;
-        }
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          if (dueDate > end) return false;
-        }
+        const dueStr = typeof c.dueDate === 'string' ? c.dueDate.split('T')[0] : c.dueDate;
+        if (startDate && dueStr < startDate) return false;
+        if (endDate && dueStr > endDate) return false;
         return true;
       });
     }
