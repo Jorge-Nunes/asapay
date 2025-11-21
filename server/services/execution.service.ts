@@ -8,9 +8,20 @@ export class ExecutionService {
   static async runExecution(): Promise<Execution> {
     const config = await storage.getConfig();
 
-    // Validate config
-    if (!config.asaasToken || !config.evolutionUrl || !config.evolutionApiKey) {
-      throw new Error('Configuração incompleta. Verifique as credenciais do Asaas e Evolution API.');
+    // Validate config - ensure all required fields are present and not empty
+    const asaasToken = config.asaasToken?.trim?.();
+    const evolutionUrl = config.evolutionUrl?.trim?.();
+    const evolutionApiKey = config.evolutionApiKey?.trim?.();
+    const evolutionInstance = config.evolutionInstance?.trim?.();
+
+    if (!asaasToken || !evolutionUrl || !evolutionApiKey || !evolutionInstance) {
+      console.error('[Execution] Config validation failed:', {
+        hasAsaasToken: !!asaasToken,
+        hasEvolutionUrl: !!evolutionUrl,
+        hasEvolutionApiKey: !!evolutionApiKey,
+        hasEvolutionInstance: !!evolutionInstance,
+      });
+      throw new Error('Configuração incompleta. Verifique se todas as credenciais foram configuradas: Token Asaas, URL da Evolution, API Key e Instância.');
     }
 
     // Create execution record

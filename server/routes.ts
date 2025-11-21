@@ -38,19 +38,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.evolutionApiKey = currentConfig.evolutionApiKey;
       }
 
-      // Validate required fields only if they're being set for the first time
-      if (!updateData.asaasToken || updateData.asaasToken.trim() === '') {
+      // Validate required fields - use actual token values
+      const finalAsaasToken = updateData.asaasToken?.trim?.() || currentConfig.asaasToken?.trim?.();
+      const finalEvolutionUrl = updateData.evolutionUrl?.trim?.() || currentConfig.evolutionUrl?.trim?.();
+      const finalEvolutionApiKey = updateData.evolutionApiKey?.trim?.() || currentConfig.evolutionApiKey?.trim?.();
+      const finalEvolutionInstance = updateData.evolutionInstance?.trim?.() || currentConfig.evolutionInstance?.trim?.();
+
+      if (!finalAsaasToken) {
         return res.status(400).json({ error: "Token do Asaas é obrigatório" });
       }
-      if (!updateData.evolutionUrl || updateData.evolutionUrl.trim() === '') {
+      if (!finalEvolutionUrl) {
         return res.status(400).json({ error: "URL da Evolution API é obrigatória" });
       }
-      if (!updateData.evolutionApiKey || updateData.evolutionApiKey.trim() === '') {
+      if (!finalEvolutionApiKey) {
         return res.status(400).json({ error: "API Key da Evolution é obrigatória" });
       }
-      if (!updateData.evolutionInstance || updateData.evolutionInstance.trim() === '') {
+      if (!finalEvolutionInstance) {
         return res.status(400).json({ error: "Instância da Evolution é obrigatória" });
       }
+
+      // Ensure all required fields are set before updating
+      updateData.asaasToken = finalAsaasToken;
+      updateData.evolutionUrl = finalEvolutionUrl;
+      updateData.evolutionApiKey = finalEvolutionApiKey;
+      updateData.evolutionInstance = finalEvolutionInstance;
 
       const updated = await storage.updateConfig(updateData);
       res.json({
