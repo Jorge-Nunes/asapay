@@ -47,6 +47,8 @@ export class MemStorage implements IStorage {
   private cobrancas: Map<string, Cobranca>;
   private executions: Map<string, Execution>;
   private executionLogs: ExecutionLog[];
+  private clients: Map<string, ClientData>;
+  private clientLastMessageAtraso: Map<string, Date>;
 
   constructor() {
     this.config = {
@@ -80,6 +82,8 @@ Estamos aqui para ajudar no que precisar! 📞`,
     this.cobrancas = new Map();
     this.executions = new Map();
     this.executionLogs = [];
+    this.clients = new Map();
+    this.clientLastMessageAtraso = new Map();
   }
 
   async getConfig(): Promise<Config> {
@@ -190,6 +194,64 @@ Estamos aqui para ajudar no que precisar! 📞`,
       mensagensEnviadas,
       taxaConversao,
     };
+  }
+
+  async getClients(): Promise<ClientData[]> {
+    return Array.from(this.clients.values());
+  }
+
+  async getClientByAsaasId(asaasCustomerId: string): Promise<ClientData | undefined> {
+    for (const client of this.clients.values()) {
+      if (client.asaasCustomerId === asaasCustomerId) {
+        return client;
+      }
+    }
+    return undefined;
+  }
+
+  async syncClients(clients: InsertClient[]): Promise<void> {
+    for (const client of clients) {
+      const existing = await this.getClientByAsaasId(client.asaasCustomerId);
+      
+      if (existing) {
+        const updated: ClientData = {
+          ...existing,
+          ...client,
+        };
+        this.clients.set(existing.id, updated);
+      } else {
+        const newClient: ClientData = {
+          id: randomUUID(),
+          ...client,
+          blockDailyMessages: 0,
+          diasAtrasoNotificacao: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        this.clients.set(newClient.id, newClient);
+      }
+    }
+  }
+
+  async updateClientPreferences(clientId: string, blockDailyMessages: boolean, diasAtrasoNotificacao: number): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (client) {
+      const updated: ClientData = {
+        ...client,
+        blockDailyMessages: blockDailyMessages ? 1 : 0,
+        diasAtrasoNotificacao,
+        updatedAt: new Date(),
+      };
+      this.clients.set(clientId, updated);
+    }
+  }
+
+  async getClientLastMessageAtraso(clientId: string): Promise<Date | undefined> {
+    return this.clientLastMessageAtraso.get(clientId);
+  }
+
+  async updateClientLastMessageAtraso(clientId: string): Promise<void> {
+    this.clientLastMessageAtraso.set(clientId, new Date());
   }
 }
 
