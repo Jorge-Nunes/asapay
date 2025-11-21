@@ -658,6 +658,21 @@ export class PostgresStorage implements IStorage {
     }
   }
 
+  async updateClientTraccarMapping(clientId: string, traccarUserId: string | null): Promise<void> {
+    try {
+      const db = getDb();
+      await db.update(schema.clients)
+        .set({
+          traccarUserId,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.clients.id, clientId));
+    } catch (error) {
+      console.error('[Storage] Error in updateClientTraccarMapping:', error);
+      throw error;
+    }
+  }
+
   async getClientLastMessageAtraso(clientId: string): Promise<Date | undefined> {
     try {
       const db = getDb();
