@@ -156,6 +156,7 @@ export const clients = pgTable("clients", {
   state: text("state"),
   postalCode: text("postal_code"),
   cpfCnpj: text("cpf_cnpj"),
+  traccarUserId: text("traccar_user_id"),
   blockDailyMessages: integer("block_daily_messages").notNull().default(0),
   diasAtrasoNotificacao: integer("dias_atraso_notificacao").notNull().default(3),
   createdAt: timestamp("created_at").defaultNow(),

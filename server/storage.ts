@@ -41,6 +41,7 @@ export interface IStorage {
   getClientByAsaasId(asaasCustomerId: string): Promise<ClientData | undefined>;
   syncClients(clients: InsertClient[]): Promise<void>;
   updateClientPreferences(clientId: string, blockDailyMessages: boolean, diasAtrasoNotificacao: number): Promise<void>;
+  updateClientTraccarMapping(clientId: string, traccarUserId: string | null): Promise<void>;
   getClientLastMessageAtraso(clientId: string): Promise<Date | undefined>;
   updateClientLastMessageAtraso(clientId: string): Promise<void>;
 }
