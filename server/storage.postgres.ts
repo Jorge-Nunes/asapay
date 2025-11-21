@@ -673,6 +673,36 @@ export class PostgresStorage implements IStorage {
     }
   }
 
+  async blockClientTraccar(clientId: string): Promise<void> {
+    try {
+      const db = getDb();
+      await db.update(schema.clients)
+        .set({
+          isTraccarBlocked: 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.clients.id, clientId));
+    } catch (error) {
+      console.error('[Storage] Error in blockClientTraccar:', error);
+      throw error;
+    }
+  }
+
+  async unblockClientTraccar(clientId: string): Promise<void> {
+    try {
+      const db = getDb();
+      await db.update(schema.clients)
+        .set({
+          isTraccarBlocked: 0,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.clients.id, clientId));
+    } catch (error) {
+      console.error('[Storage] Error in unblockClientTraccar:', error);
+      throw error;
+    }
+  }
+
   async getClientLastMessageAtraso(clientId: string): Promise<Date | undefined> {
     try {
       const db = getDb();
