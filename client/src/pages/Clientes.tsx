@@ -120,7 +120,7 @@ export default function Clientes() {
   const blockTraccarMutation = useMutation({
     mutationFn: async (clientId: string) => {
       const action = blockingClientId?.includes('unblock-') ? 'unblock' : 'block';
-      const actualClientId = blockingClientId?.replace('unblock-', '') || clientId;
+      const actualClientId = blockingClientId?.replace('unblock-', '').replace('block-', '') || clientId;
       const response = await fetch(`/api/clients/${actualClientId}/${action}-traccar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
