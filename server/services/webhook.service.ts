@@ -65,7 +65,7 @@ export class WebhookService {
       // Try to send confirmation message
       try {
         const config = await storage.getConfig();
-        if (config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
+        if (config.messageTemplates?.pagamentoConfirmado && config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
           const evolutionService = new EvolutionService(
             config.evolutionUrl,
             config.evolutionApiKey,
@@ -73,7 +73,10 @@ export class WebhookService {
           );
 
           const phone = cobranca.customerPhone?.replace(/\D/g, "") || "";
-          const confirmationMessage = `✅ *Pagamento Recebido!*\nOlá ${cobranca.customerName}, recebemos seu pagamento de R$ ${cobranca.value}.\n\nObrigado! 🙏`;
+          const confirmationMessage = config.messageTemplates.pagamentoConfirmado
+            .replace('{{cliente_nome}}', cobranca.customerName)
+            .replace('{{valor}}', cobranca.value.toString())
+            .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
 
           await evolutionService.sendTextMessage(phone, confirmationMessage);
           console.log(`[Webhook] Mensagem de confirmação enviada para ${phone}`);

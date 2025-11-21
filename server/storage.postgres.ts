@@ -95,6 +95,17 @@ Agora você pode continuar rastreando seus veículos normalmente.
 Obrigado por regularizar sua conta!
 
 Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
+          pagamentoConfirmado: `✅ *PAGAMENTO CONFIRMADO!*
+Olá {{cliente_nome}}, agradecemos o seu pagamento de R$ {{valor}}!
+
+Recebemos com sucesso sua contribuição e confirmamos o recebimento. 🎉
+
+📋 Detalhes:
+💰 Valor: R$ {{valor}}
+📅 Data de Recebimento: {{data}}
+
+Seu rastreamento continua ativo e protegido!
+Obrigado por sua confiança! 🙏`,
         },
       };
       
@@ -198,6 +209,17 @@ Agora você pode continuar rastreando seus veículos normalmente.
 Obrigado por regularizar sua conta!
 
 Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
+            pagamentoConfirmado: `✅ *PAGAMENTO CONFIRMADO!*
+Olá {{cliente_nome}}, agradecemos o seu pagamento de R$ {{valor}}!
+
+Recebemos com sucesso sua contribuição e confirmamos o recebimento. 🎉
+
+📋 Detalhes:
+💰 Valor: R$ {{valor}}
+📅 Data de Recebimento: {{data}}
+
+Seu rastreamento continua ativo e protegido!
+Obrigado por sua confiança! 🙏`,
           },
         });
       }

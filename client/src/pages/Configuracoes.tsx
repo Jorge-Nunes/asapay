@@ -36,6 +36,7 @@ export default function Configuracoes() {
       atraso: '',
       bloqueio: '',
       desbloqueio: '',
+      pagamentoConfirmado: '',
     },
   });
 
@@ -441,6 +442,28 @@ export default function Configuracoes() {
               />
               <p className="text-xs text-muted-foreground">
                 Variáveis disponíveis: {'{'}{'{'} cliente_nome {'}'}{'}'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Template - Pagamento Confirmado</CardTitle>
+              <CardDescription>Mensagem enviada quando receber webhook de pagamento confirmado</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                rows={8}
+                value={formData.messageTemplates.pagamentoConfirmado || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  messageTemplates: { ...formData.messageTemplates, pagamentoConfirmado: e.target.value }
+                })}
+                className="border-2"
+                data-testid="textarea-template-pagamento-confirmado"
+              />
+              <p className="text-xs text-muted-foreground">
+                Variáveis disponíveis: {'{'}{'{'} cliente_nome {'}'}{'}'}， {'{'}{'{'} valor {'}'}{'}'}， {'{'}{'{'} data {'}'}{'}'}
               </p>
             </CardContent>
           </Card>
