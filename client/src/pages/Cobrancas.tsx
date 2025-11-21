@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Filter, RefreshCw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Cobranca } from "@shared/schema";
@@ -48,12 +48,37 @@ export default function Cobrancas() {
     return matchesSearch;
   });
 
+  const sendMessageMutation = useMutation({
+    mutationFn: async (cobrancaId: string) => {
+      const response = await fetch(`/api/cobrancas/${cobrancaId}/send-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao enviar mensagem');
+      }
+      return response.json();
+    },
+    onSuccess: (data, cobrancaId) => {
+      const cobranca = cobrancas.find(c => c.id === cobrancaId);
+      toast({
+        title: "Sucesso",
+        description: `Mensagem enviada para ${cobranca?.customerName}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSendMessage = (cobranca: Cobranca) => {
     console.log('Enviando mensagem para:', cobranca.customerName);
-    toast({
-      title: "Mensagem enviada",
-      description: `Mensagem enviada para ${cobranca.customerName}`,
-    });
+    sendMessageMutation.mutate(cobranca.id);
   };
 
   return (

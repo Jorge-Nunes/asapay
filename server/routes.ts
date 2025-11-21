@@ -104,6 +104,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send message for specific cobrança
+  app.post("/api/cobrancas/:id/send-message", async (req, res) => {
+    try {
+      const cobranca = await storage.getCobrancaById(req.params.id);
+      if (!cobranca) {
+        return res.status(404).json({ error: "Cobrança not found" });
+      }
+
+      const config = await storage.getConfig();
+      
+      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+        return res.status(400).json({ error: "Credenciais Evolution não configuradas" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        config.evolutionInstance
+      );
+
+      // Format phone number (remove special characters)
+      const phone = cobranca.customerPhone?.replace(/\D/g, '') || '';
+      if (!phone) {
+        return res.status(400).json({ error: "Telefone do cliente não encontrado" });
+      }
+
+      // Build message
+      const messageTemplate = `Olá ${cobranca.customerName}! Você tem uma cobrança pendente de R$ ${cobranca.value.toFixed(2)} com vencimento em ${new Date(cobranca.dueDate).toLocaleDateString('pt-BR')}. Clique aqui para pagar: ${cobranca.invoiceUrl}`;
+
+      const success = await evolutionService.sendTextMessage(phone, messageTemplate);
+
+      res.json({ 
+        success, 
+        message: success ? 'Mensagem enviada com sucesso!' : 'Erro ao enviar mensagem' 
+      });
+    } catch (error) {
+      console.error('[Routes] Error in send cobrança message:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao enviar mensagem" });
+    }
+  });
+
   // Executions routes
   app.get("/api/executions", async (req, res) => {
     try {
