@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { 
   configurations, 
   cobrancas, 

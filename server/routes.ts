@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./index";
 import { ExecutionService } from "./services/execution.service";
 import { setupCronJobs } from "./cron";
 
