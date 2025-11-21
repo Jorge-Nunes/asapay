@@ -684,4 +684,48 @@ export class PostgresStorage implements IStorage {
       throw error;
     }
   }
+
+  async getFinancialSummary(): Promise<import('@shared/schema').FinancialSummary> {
+    try {
+      const db = getDb();
+      const allCobrancas = await db.query.cobrancas.findMany();
+
+      const result: import('@shared/schema').FinancialSummary = {
+        received: { total: 0, netValue: 0, customers: 0, invoices: 0 },
+        confirmed: { total: 0, netValue: 0, customers: 0, invoices: 0 },
+        pending: { total: 0, netValue: 0, customers: 0, invoices: 0 },
+        overdue: { total: 0, netValue: 0, customers: 0, invoices: 0 },
+      };
+
+      const customerSets = {
+        RECEIVED: new Set<string>(),
+        CONFIRMED: new Set<string>(),
+        PENDING: new Set<string>(),
+        OVERDUE: new Set<string>(),
+      };
+
+      allCobrancas.forEach(c => {
+        const key = (c.status.toUpperCase() as keyof typeof customerSets);
+        const resultKey = c.status.toLowerCase() as keyof typeof result;
+        
+        if (result[resultKey]) {
+          const value = typeof c.value === 'string' ? parseFloat(c.value) : c.value;
+          result[resultKey].total += value;
+          result[resultKey].netValue += value * 0.99;
+          result[resultKey].invoices += 1;
+          customerSets[key].add(c.customer);
+        }
+      });
+
+      Object.entries(customerSets).forEach(([status, customers]) => {
+        const key = status.toLowerCase() as keyof typeof result;
+        if (result[key]) result[key].customers = customers.size;
+      });
+
+      return result;
+    } catch (error) {
+      console.error('[Storage] Error in getFinancialSummary:', error);
+      throw error;
+    }
+  }
 }
