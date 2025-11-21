@@ -167,18 +167,36 @@ export class WebhookService {
   }
 
   private async handlePaymentDeleted(payload: AsaasWebhookPayload): Promise<void> {
-    const paymentId = payload.data.id;
-    console.log(`[Webhook] Cobrança deletada: ${paymentId}`);
+    try {
+      if (!payload.data) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_DELETED - sem data`);
+        return;
+      }
 
-    const allCobrancas = await storage.getCobrancas();
-    const cobranca = allCobrancas.find(c => c.id === paymentId || c.id === payload.data.payment?.id);
+      const paymentId = payload.data.id || payload.data.payment?.id;
+      
+      if (!paymentId) {
+        console.log(`[Webhook] Payload inválido para PAYMENT_DELETED - sem ID`);
+        return;
+      }
 
-    if (cobranca) {
-      await storage.updateCobranca(cobranca.id, {
-        status: "DELETED",
-      });
+      console.log(`[Webhook] Cobrança deletada: ${paymentId}`);
 
-      console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para DELETED`);
+      const allCobrancas = await storage.getCobrancas();
+      const cobranca = allCobrancas.find(c => c.id === paymentId);
+
+      if (cobranca) {
+        await storage.updateCobranca(cobranca.id, {
+          status: "DELETED",
+        });
+
+        console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para DELETED`);
+      } else {
+        console.log(`[Webhook] Cobrança com ID ${paymentId} não encontrada`);
+      }
+    } catch (error) {
+      console.error(`[Webhook] Erro em handlePaymentDeleted:`, error);
+      throw error;
     }
   }
 }
