@@ -29,6 +29,7 @@ export default function Configuracoes() {
     messageTemplates: {
       venceHoje: '',
       aviso: '',
+      atraso: '',
     },
   });
 
@@ -256,6 +257,28 @@ export default function Configuracoes() {
               />
               <p className="text-xs text-muted-foreground">
                 Variáveis disponíveis: {'{'}{'{'} link_fatura {'}'}{'}'}, {'{'}{'{'} valor {'}'}{'}'}, {'{'}{'{'} vencimento {'}'}{'}'}, {'{'}{'{'} dias_aviso {'}'}{'}'}, {'{'}{'{'} cliente_nome {'}'}{'}'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Template - Atraso</CardTitle>
+              <CardDescription>Mensagem para cobranças vencidas</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                rows={8}
+                value={formData.messageTemplates.atraso}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  messageTemplates: { ...formData.messageTemplates, atraso: e.target.value }
+                })}
+                className="border-2"
+                data-testid="textarea-template-atraso"
+              />
+              <p className="text-xs text-muted-foreground">
+                Variáveis disponíveis: {'{'}{'{'} link_fatura {'}'}{'}'}, {'{'}{'{'} valor {'}'}{'}'}, {'{'}{'{'} vencimento {'}'}{'}'}, {'{'}{'{'} cliente_nome {'}'}{'}'}
               </p>
             </CardContent>
           </Card>

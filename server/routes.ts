@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Credenciais Evolution não configuradas" });
       }
 
-      if (!config.messageTemplates?.venceHoje || !config.messageTemplates?.aviso) {
+      if (!config.messageTemplates?.venceHoje || !config.messageTemplates?.aviso || !config.messageTemplates?.atraso) {
         return res.status(400).json({ error: "Templates de mensagem não configurados" });
       }
 
@@ -138,7 +138,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Select template based on tipo
       const template = cobranca.tipo === 'vence_hoje' 
         ? config.messageTemplates.venceHoje 
-        : config.messageTemplates.aviso;
+        : cobranca.tipo === 'aviso'
+        ? config.messageTemplates.aviso
+        : config.messageTemplates.atraso;
 
       // Generate message using template
       const processedCobranca = {

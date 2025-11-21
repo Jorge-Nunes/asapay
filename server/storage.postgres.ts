@@ -44,6 +44,7 @@ export class PostgresStorage implements IStorage {
         messageTemplates: (config?.messageTemplates as any) || {
           venceHoje: '',
           aviso: '',
+          atraso: '',
         },
       };
       
@@ -90,6 +91,7 @@ export class PostgresStorage implements IStorage {
           messageTemplates: config.messageTemplates || {
             venceHoje: '',
             aviso: '',
+            atraso: '',
           },
         });
       }

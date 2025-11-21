@@ -68,7 +68,7 @@ export const executionLogs = pgTable("execution_logs", {
   cobrancaId: text("cobranca_id").notNull(),
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
-  tipo: text("tipo").notNull(), // vence_hoje, aviso
+  tipo: text("tipo").notNull(), // vence_hoje, aviso, atraso
   status: text("status").notNull(), // success, error
   mensagem: text("mensagem"),
   erro: text("erro"),
@@ -86,6 +86,7 @@ export type Config = {
   messageTemplates: {
     venceHoje: string;
     aviso: string;
+    atraso: string;
   };
 };
 
