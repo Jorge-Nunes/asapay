@@ -37,6 +37,7 @@ const tipoConfig = {
   vence_hoje: { label: "Vence Hoje", variant: "destructive" as const },
   aviso: { label: "Aviso", variant: "secondary" as const },
   processada: { label: "Processada", variant: "outline" as const },
+  importada: { label: "Importada", variant: "default" as const },
 };
 
 export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirection, onSort, SortIcon }: CobrancaTableProps) {
@@ -133,13 +134,16 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
 
                 {/* Tipo com Badge melhorado */}
                 <TableCell>
-                  {cobranca.tipo ? (
-                    <Badge variant={tipoConfig[cobranca.tipo].variant} className="text-xs">
-                      {tipoConfig[cobranca.tipo].label}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs">Indefinido</Badge>
-                  )}
+                  {(() => {
+                    const config = cobranca.tipo ? tipoConfig[cobranca.tipo as keyof typeof tipoConfig] : null;
+                    return config ? (
+                      <Badge variant={config.variant} className="text-xs">
+                        {config.label}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">Indefinido</Badge>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Status com Indicador Visual */}
