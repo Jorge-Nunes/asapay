@@ -4,7 +4,7 @@ import { ExecutionLogTable } from "@/components/ExecutionLogTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Play, Clock, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { Play, Clock, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight, Lock, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -14,20 +14,49 @@ import type { Execution } from "@shared/schema";
 
 const ITEMS_PER_PAGE = 10;
 
+type SortField = 'timestamp' | 'status' | 'cobrancasProcessadas' | 'mensagensEnviadas' | 'usuariosBloqueados' | 'erros';
+type SortDirection = 'asc' | 'desc';
+
 export default function Execucoes() {
   const { toast } = useToast();
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<SortField>('timestamp');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const { data: executions = [] } = useQuery<Execution[]>({
     queryKey: ['/api/executions'],
   });
 
+  // Sorting function
+  const sortedExecutions = [...executions].sort((a, b) => {
+    let aValue: any = a[sortField];
+    let bValue: any = b[sortField];
+
+    // Handle timestamp specially
+    if (sortField === 'timestamp') {
+      aValue = new Date(aValue).getTime();
+      bValue = new Date(bValue).getTime();
+    }
+
+    if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+      return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+    }
+
+    if (typeof aValue === 'number') {
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+
+    return 0;
+  });
+
   // Pagination logic
-  const totalPages = Math.ceil(executions.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(sortedExecutions.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedExecutions = executions.slice(startIndex, endIndex);
+  const paginatedExecutions = sortedExecutions.slice(startIndex, endIndex);
 
   const handlePrevious = () => {
     setCurrentPage(prev => Math.max(prev - 1, 1));
@@ -73,6 +102,23 @@ export default function Execucoes() {
   };
 
   const selectedExecution = executions.find(e => e.id === selectedExecutionId) || executions[0];
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting changes
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 inline ml-1" />
+      : <ArrowDown className="h-4 w-4 inline ml-1" />;
+  };
 
   const getStatusIcon = (status: Execution['status']) => {
     switch (status) {
@@ -199,12 +245,48 @@ export default function Execucoes() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Processadas</TableHead>
-                    <TableHead className="text-right">Enviadas</TableHead>
-                    <TableHead className="text-right">Bloqueados</TableHead>
-                    <TableHead className="text-right">Erros</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-accent/50 select-none"
+                      onClick={() => handleSort('timestamp')}
+                      data-testid="header-timestamp"
+                    >
+                      Data/Hora <SortIcon field="timestamp" />
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-accent/50 select-none"
+                      onClick={() => handleSort('status')}
+                      data-testid="header-status"
+                    >
+                      Status <SortIcon field="status" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-accent/50 select-none"
+                      onClick={() => handleSort('cobrancasProcessadas')}
+                      data-testid="header-processadas"
+                    >
+                      Processadas <SortIcon field="cobrancasProcessadas" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-accent/50 select-none"
+                      onClick={() => handleSort('mensagensEnviadas')}
+                      data-testid="header-enviadas"
+                    >
+                      Enviadas <SortIcon field="mensagensEnviadas" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-accent/50 select-none"
+                      onClick={() => handleSort('usuariosBloqueados')}
+                      data-testid="header-bloqueados"
+                    >
+                      Bloqueados <SortIcon field="usuariosBloqueados" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-accent/50 select-none"
+                      onClick={() => handleSort('erros')}
+                      data-testid="header-erros"
+                    >
+                      Erros <SortIcon field="erros" />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
