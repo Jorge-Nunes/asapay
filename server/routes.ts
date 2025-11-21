@@ -89,7 +89,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cobranças routes
   app.get("/api/cobrancas", async (req, res) => {
     try {
-      const { status, tipo } = req.query;
+      const { status, tipo, limit = '50', offset = '0' } = req.query;
+      const pageLimit = Math.min(parseInt(limit as string) || 50, 100);
+      const pageOffset = Math.max(parseInt(offset as string) || 0, 0);
+      
       let cobrancas = await storage.getCobrancas();
 
       if (status && status !== 'all') {
@@ -100,7 +103,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cobrancas = cobrancas.filter(c => c.tipo === tipo);
       }
 
-      res.json(cobrancas);
+      const total = cobrancas.length;
+      const paginatedCobrancas = cobrancas.slice(pageOffset, pageOffset + pageLimit);
+
+      res.json({
+        data: paginatedCobrancas,
+        total,
+        limit: pageLimit,
+        offset: pageOffset,
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch cobranças" });
     }

@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, RefreshCw, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Filter, RefreshCw, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,13 @@ import type { Cobranca } from "@shared/schema";
 type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo' | 'description';
 type SortDirection = 'asc' | 'desc';
 
+interface PaginatedResponse {
+  data: Cobranca[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export default function Cobrancas() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,13 +33,17 @@ export default function Cobrancas() {
   const [tipoFilter, setTipoFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortFieldCobranca>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [page, setPage] = useState(0);
+  const pageSize = 50;
 
-  const { data: cobrancas = [], isLoading } = useQuery<Cobranca[]>({
-    queryKey: ['/api/cobrancas', statusFilter, tipoFilter],
+  const { data: paginatedData = { data: [], total: 0, limit: pageSize, offset: 0 }, isLoading } = useQuery<PaginatedResponse>({
+    queryKey: ['/api/cobrancas', statusFilter, tipoFilter, page],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (tipoFilter !== 'all') params.append('tipo', tipoFilter);
+      params.append('limit', pageSize.toString());
+      params.append('offset', (page * pageSize).toString());
       
       const response = await fetch(`/api/cobrancas?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch cobranças');
@@ -40,12 +51,33 @@ export default function Cobrancas() {
     },
   });
 
+  const cobrancas = paginatedData.data || [];
+  const total = paginatedData.total || 0;
+  const totalPages = Math.ceil(total / pageSize);
+
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/cobrancas'] });
+    setPage(0);
     toast({
       title: "Atualizado",
       description: "Lista de cobranças atualizada com sucesso.",
     });
+  };
+
+  const handleNextPage = () => {
+    if (page < totalPages - 1) {
+      setPage(page + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (page > 0) {
+      setPage(page - 1);
+    }
+  };
+
+  const handlePageClick = (pageNum: number) => {
+    setPage(pageNum);
   };
 
   const filteredCobrancas = cobrancas.filter((cobranca) => {
@@ -190,14 +222,70 @@ export default function Cobrancas() {
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Carregando cobranças...</div>
         ) : (
-          <CobrancaTable 
-            cobrancas={sortedCobrancas} 
-            onSendMessage={handleSendMessage}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            SortIcon={SortIcon}
-          />
+          <>
+            <CobrancaTable 
+              cobrancas={sortedCobrancas} 
+              onSendMessage={handleSendMessage}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              SortIcon={SortIcon}
+            />
+            
+            {/* Paginação */}
+            <div className="flex items-center justify-between p-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                {total === 0 ? (
+                  <span>Nenhuma cobrança encontrada</span>
+                ) : (
+                  <span>
+                    Exibindo {Math.min((page * pageSize) + 1, total)} a {Math.min((page + 1) * pageSize, total)} de {total}
+                  </span>
+                )}
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousPage}
+                    disabled={page === 0}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }).map((_, idx) => (
+                      <Button
+                        key={idx}
+                        variant={page === idx ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageClick(idx)}
+                        className="min-w-10"
+                        data-testid={`button-page-${idx}`}
+                      >
+                        {idx + 1}
+                      </Button>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextPage}
+                    disabled={page >= totalPages - 1}
+                    data-testid="button-next-page"
+                  >
+                    Próximo
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </Card>
     </div>
