@@ -42,6 +42,8 @@ export interface IStorage {
   syncClients(clients: InsertClient[]): Promise<void>;
   updateClientPreferences(clientId: string, blockDailyMessages: boolean, diasAtrasoNotificacao: number): Promise<void>;
   updateClientTraccarMapping(clientId: string, traccarUserId: string | null): Promise<void>;
+  blockClientTraccar(clientId: string): Promise<void>;
+  unblockClientTraccar(clientId: string): Promise<void>;
   getClientLastMessageAtraso(clientId: string): Promise<Date | undefined>;
   updateClientLastMessageAtraso(clientId: string): Promise<void>;
 }
