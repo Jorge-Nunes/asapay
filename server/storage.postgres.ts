@@ -32,9 +32,13 @@ export class PostgresStorage implements IStorage {
   async getConfig(): Promise<Config> {
     try {
       const db = getDb();
-      const config = await db.query.configurations.findFirst();
+      const client = postgres(process.env.DATABASE_URL!);
       
-      if (!config) {
+      // Use raw SQL to fetch config directly
+      const rows = await client`SELECT * FROM configurations LIMIT 1`;
+      
+      if (!rows || rows.length === 0) {
+        console.warn('[Storage] No config found in database, using defaults');
         return {
           asaasToken: process.env.ASAAS_TOKEN || '',
           asaasUrl: process.env.ASAAS_URL || 'https://api.asaas.com/v3',
@@ -65,15 +69,28 @@ Estamos aqui para ajudar no que precisar! 📞`,
         };
       }
 
-      return {
-        asaasToken: config.asaasToken,
-        asaasUrl: config.asaasUrl,
-        evolutionUrl: config.evolutionUrl,
-        evolutionInstance: config.evolutionInstance,
-        evolutionApiKey: config.evolutionApiKey,
-        diasAviso: config.diasAviso,
-        messageTemplates: config.messageTemplates as any,
+      const config = rows[0];
+      const result = {
+        asaasToken: config.asaas_token || '',
+        asaasUrl: config.asaas_url || 'https://api.asaas.com/v3',
+        evolutionUrl: config.evolution_url || '',
+        evolutionInstance: config.evolution_instance || '',
+        evolutionApiKey: config.evolution_api_key || '',
+        diasAviso: config.dias_aviso || 10,
+        messageTemplates: (config.message_templates as any) || {
+          venceHoje: '',
+          aviso: '',
+        },
       };
+      
+      console.log('[Storage] Config loaded from DB:', {
+        token: result.asaasToken ? `${result.asaasToken.substring(0, 15)}...` : 'EMPTY',
+        url: result.evolutionUrl ? 'SET' : 'EMPTY',
+        key: result.evolutionApiKey ? 'SET' : 'EMPTY',
+        instance: result.evolutionInstance ? 'SET' : 'EMPTY',
+      });
+
+      return result;
     } catch (error) {
       console.error('[Storage] Error in getConfig:', error);
       throw error;
