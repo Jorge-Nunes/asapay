@@ -486,6 +486,9 @@ Estamos aqui para ajudar no que precisar! 📞`,
       return result.map(u => ({
         id: u.id,
         username: u.username,
+        fullName: u.fullName,
+        phone: u.phone,
+        address: u.address,
         createdAt: u.createdAt?.toISOString(),
       }));
     } catch (error) {
@@ -504,6 +507,9 @@ Estamos aqui para ajudar no que precisar! 📞`,
       return {
         id: result.id,
         username: result.username,
+        fullName: result.fullName,
+        phone: result.phone,
+        address: result.address,
         createdAt: result.createdAt?.toISOString(),
       };
     } catch (error) {
@@ -525,17 +531,23 @@ Estamos aqui para ajudar no que precisar! 📞`,
     }
   }
 
-  async createUser(user: { username: string; password: string }): Promise<any> {
+  async createUser(user: { username: string; password: string; fullName: string; phone: string; address: string }): Promise<any> {
     try {
       const db = getDb();
       const result = await db.insert(schema.users).values({
         username: user.username,
         password: user.password,
+        fullName: user.fullName,
+        phone: user.phone,
+        address: user.address,
       }).returning();
 
       return {
         id: result[0].id,
         username: result[0].username,
+        fullName: result[0].fullName,
+        phone: result[0].phone,
+        address: result[0].address,
         createdAt: result[0].createdAt?.toISOString(),
       };
     } catch (error) {
@@ -544,13 +556,16 @@ Estamos aqui para ajudar no que precisar! 📞`,
     }
   }
 
-  async updateUser(id: string, data: { username?: string; password?: string }): Promise<any | undefined> {
+  async updateUser(id: string, data: { username?: string; password?: string; fullName?: string; phone?: string; address?: string }): Promise<any | undefined> {
     try {
       const db = getDb();
       
       const updateData: any = {};
       if (data.username) updateData.username = data.username;
       if (data.password) updateData.password = data.password;
+      if (data.fullName) updateData.fullName = data.fullName;
+      if (data.phone) updateData.phone = data.phone;
+      if (data.address) updateData.address = data.address;
 
       await db.update(schema.users)
         .set(updateData)

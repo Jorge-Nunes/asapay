@@ -20,19 +20,25 @@ export default function UsersManager() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [formData, setFormData] = useState({ 
+    username: "", 
+    password: "", 
+    fullName: "", 
+    phone: "", 
+    address: "" 
+  });
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["/api/users"],
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { username: string; password: string }) => {
+    mutationFn: async (data: { username: string; password: string; fullName: string; phone: string; address: string }) => {
       return await axios.post("/api/users", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setFormData({ username: "", password: "" });
+      setFormData({ username: "", password: "", fullName: "", phone: "", address: "" });
       setIsCreateDialogOpen(false);
       toast({
         title: "Sucesso",
@@ -49,12 +55,12 @@ export default function UsersManager() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { username: string; password: string }) => {
+    mutationFn: async (data: { username: string; password?: string; fullName: string; phone: string; address: string }) => {
       return await axios.put(`/api/users/${selectedUser.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setFormData({ username: "", password: "" });
+      setFormData({ username: "", password: "", fullName: "", phone: "", address: "" });
       setIsEditDialogOpen(false);
       toast({
         title: "Sucesso",
@@ -91,7 +97,7 @@ export default function UsersManager() {
   });
 
   const handleCreate = () => {
-    if (!formData.username || !formData.password) {
+    if (!formData.username || !formData.password || !formData.fullName || !formData.phone || !formData.address) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos",
@@ -104,15 +110,21 @@ export default function UsersManager() {
 
   const handleEdit = (user: any) => {
     setSelectedUser(user);
-    setFormData({ username: user.username, password: "" });
+    setFormData({ 
+      username: user.username, 
+      password: "", 
+      fullName: user.fullName || "", 
+      phone: user.phone || "", 
+      address: user.address || "" 
+    });
     setIsEditDialogOpen(true);
   };
 
   const handleUpdateUser = () => {
-    if (!formData.username) {
+    if (!formData.username || !formData.fullName || !formData.phone || !formData.address) {
       toast({
         title: "Erro",
-        description: "O nome de usuário é obrigatório",
+        description: "Preencha todos os campos obrigatórios",
         variant: "destructive",
       });
       return;
@@ -130,7 +142,7 @@ export default function UsersManager() {
         <Button
           data-testid="button-create-user"
           onClick={() => {
-            setFormData({ username: "", password: "" });
+            setFormData({ username: "", password: "", fullName: "", phone: "", address: "" });
             setIsCreateDialogOpen(true);
           }}
         >
@@ -151,7 +163,9 @@ export default function UsersManager() {
             <table className="w-full">
               <thead className="bg-muted border-b">
                 <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Nome Completo</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Usuário</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Telefone</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Data de Criação</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold">Ações</th>
                 </tr>
@@ -159,7 +173,9 @@ export default function UsersManager() {
               <tbody className="divide-y">
                 {users.map((user: any) => (
                   <tr key={user.id} className="hover:bg-muted/50">
+                    <td className="px-6 py-4 text-sm font-medium">{user.fullName}</td>
                     <td className="px-6 py-4 text-sm font-medium">{user.username}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">{user.phone}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
                       {new Date(user.createdAt).toLocaleDateString("pt-BR")}
                     </td>
@@ -198,12 +214,39 @@ export default function UsersManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Usuário</label>
+              <label className="text-sm font-medium mb-2 block">Nome Completo</label>
+              <Input
+                data-testid="input-new-fullname"
+                placeholder="Nome completo"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Usuário (Login)</label>
               <Input
                 data-testid="input-new-username"
                 placeholder="Nome de usuário"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Telefone</label>
+              <Input
+                data-testid="input-new-phone"
+                placeholder="(00) 00000-0000"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Endereço</label>
+              <Input
+                data-testid="input-new-address"
+                placeholder="Rua, Número, Cidade"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
             </div>
             <div>
@@ -237,12 +280,39 @@ export default function UsersManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Usuário</label>
+              <label className="text-sm font-medium mb-2 block">Nome Completo</label>
+              <Input
+                data-testid="input-edit-fullname"
+                placeholder="Nome completo"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Usuário (Login)</label>
               <Input
                 data-testid="input-edit-username"
                 placeholder="Nome de usuário"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Telefone</label>
+              <Input
+                data-testid="input-edit-phone"
+                placeholder="(00) 00000-0000"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Endereço</label>
+              <Input
+                data-testid="input-edit-address"
+                placeholder="Rua, Número, Cidade"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
             </div>
             <div>

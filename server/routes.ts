@@ -235,10 +235,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/users", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username, password, fullName, phone, address } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+      if (!username || !password || !fullName || !phone || !address) {
+        return res.status(400).json({ error: "Todos os campos são obrigatórios" });
       }
 
       const existingUser = await storage.getUserByUsername(username);
@@ -246,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Usuário já existe" });
       }
 
-      const user = await storage.createUser({ username, password });
+      const user = await storage.createUser({ username, password, fullName, phone, address });
       res.status(201).json(user);
     } catch (error) {
       console.error('[Routes] Error in createUser:', error);
@@ -257,9 +257,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/users/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { username, password } = req.body;
+      const { username, password, fullName, phone, address } = req.body;
 
-      const updated = await storage.updateUser(id, { username, password });
+      const updated = await storage.updateUser(id, { username, password, fullName, phone, address });
       res.json(updated);
     } catch (error) {
       console.error('[Routes] Error in updateUser:', error);
