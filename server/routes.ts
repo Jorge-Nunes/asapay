@@ -6,6 +6,7 @@ import { EvolutionService } from "./services/evolution.service";
 import { ProcessorService } from "./services/processor.service";
 import { AsaasService } from "./services/asaas.service";
 import { WebhookService } from "./services/webhook.service";
+import { TraccarService } from "./services/traccar.service";
 import { setupCronJobs } from "./cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -175,6 +176,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[Routes] Error in send cobrança message:', error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao enviar mensagem" });
+    }
+  });
+
+  // Block/Unblock client in Traccar
+  app.post("/api/clients/:id/block-traccar", async (req, res) => {
+    try {
+      const client = await storage.getClients().then(clients => clients.find(c => c.id === req.params.id));
+      if (!client) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+
+      if (!client.traccarUserId) {
+        return res.status(400).json({ error: "Cliente não possui mapeamento Traccar" });
+      }
+
+      const config = await storage.getConfig();
+      if (!config.traccarUrl || !config.traccarApiKey) {
+        return res.status(400).json({ error: "Traccar não configurado" });
+      }
+
+      const traccarService = new TraccarService(config);
+      
+      // Block user in Traccar
+      await traccarService.blockUser(parseInt(client.traccarUserId));
+      
+      // Update database
+      await storage.blockClientTraccar(client.id);
+
+      // Send blocking message if template exists
+      if (config.messageTemplates?.bloqueio && config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
+        try {
+          const evolutionService = new EvolutionService(
+            config.evolutionUrl,
+            config.evolutionApiKey,
+            config.evolutionInstance
+          );
+
+          const phone = client.mobilePhone || client.phone || '';
+          if (phone) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            const message = config.messageTemplates.bloqueio
+              .replace('{{nome}}', client.name)
+              .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
+            
+            await evolutionService.sendTextMessage(cleanPhone, message);
+          }
+        } catch (error) {
+          console.error('[Routes] Error sending blocking message:', error);
+        }
+      }
+
+      res.json({ success: true, message: `${client.name} foi bloqueado na Traccar` });
+    } catch (error) {
+      console.error('[Routes] Error blocking client:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao bloquear cliente" });
+    }
+  });
+
+  app.post("/api/clients/:id/unblock-traccar", async (req, res) => {
+    try {
+      const client = await storage.getClients().then(clients => clients.find(c => c.id === req.params.id));
+      if (!client) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+
+      if (!client.traccarUserId) {
+        return res.status(400).json({ error: "Cliente não possui mapeamento Traccar" });
+      }
+
+      const config = await storage.getConfig();
+      if (!config.traccarUrl || !config.traccarApiKey) {
+        return res.status(400).json({ error: "Traccar não configurado" });
+      }
+
+      const traccarService = new TraccarService(config);
+      
+      // Unblock user in Traccar
+      await traccarService.unblockUser(parseInt(client.traccarUserId));
+      
+      // Update database
+      await storage.unblockClientTraccar(client.id);
+
+      // Send unblocking message if template exists
+      if (config.messageTemplates?.desbloqueio && config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
+        try {
+          const evolutionService = new EvolutionService(
+            config.evolutionUrl,
+            config.evolutionApiKey,
+            config.evolutionInstance
+          );
+
+          const phone = client.mobilePhone || client.phone || '';
+          if (phone) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            const message = config.messageTemplates.desbloqueio
+              .replace('{{nome}}', client.name)
+              .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
+            
+            await evolutionService.sendTextMessage(cleanPhone, message);
+          }
+        } catch (error) {
+          console.error('[Routes] Error sending unblocking message:', error);
+        }
+      }
+
+      res.json({ success: true, message: `${client.name} foi desbloqueado na Traccar` });
+    } catch (error) {
+      console.error('[Routes] Error unblocking client:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao desbloquear cliente" });
     }
   });
 

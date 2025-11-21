@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Download, Edit2, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, RefreshCw, Download, Edit2, ArrowUp, ArrowDown, Lock, Unlock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,6 +22,7 @@ interface ClientWithPreferences extends ClientData {
   blockDailyMessages: number;
   diasAtrasoNotificacao: number;
   traccarUserId?: string | null;
+  isTraccarBlocked?: number;
 }
 
 type SortFieldClient = 'name' | 'email' | 'phone' | 'blockDailyMessages' | 'diasAtrasoNotificacao' | 'traccarUserId';
@@ -34,6 +35,7 @@ export default function Clientes() {
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
   const [sortField, setSortField] = useState<SortFieldClient>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
 
   const { data: clients = [], isLoading } = useQuery<ClientWithPreferences[]>({
     queryKey: ['/api/clients'],
@@ -112,6 +114,38 @@ export default function Clientes() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const blockTraccarMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      const action = blockingClientId?.includes('unblock-') ? 'unblock' : 'block';
+      const actualClientId = blockingClientId?.replace('unblock-', '') || clientId;
+      const response = await fetch(`/api/clients/${actualClientId}/${action}-traccar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao alterar bloqueio Traccar');
+      }
+      return response.json();
+    },
+    onSuccess: (data, clientId) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      setBlockingClientId(null);
+      toast({
+        title: "Sucesso",
+        description: data.message || "Status Traccar atualizado com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+      setBlockingClientId(null);
     },
   });
 
@@ -283,15 +317,38 @@ export default function Clientes() {
                     </td>
                     <td className="px-4 py-3 text-sm">{client.diasAtrasoNotificacao || 3} dias</td>
                     <td className="px-4 py-3 text-sm">
-                      {client.traccarUserId ? (
-                        <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded">
-                          Mapeado
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs rounded">
-                          Não Mapeado
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {client.traccarUserId ? (
+                          <>
+                            <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded">
+                              Mapeado
+                            </span>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                const action = Boolean(client.isTraccarBlocked) ? `unblock-${client.id}` : `block-${client.id}`;
+                                setBlockingClientId(action);
+                                blockTraccarMutation.mutate(client.id);
+                              }}
+                              disabled={blockTraccarMutation.isPending}
+                              title={Boolean(client.isTraccarBlocked) ? "Desbloquear na Traccar" : "Bloquear na Traccar"}
+                              data-testid={`button-toggle-traccar-${client.id}`}
+                            >
+                              {Boolean(client.isTraccarBlocked) ? (
+                                <Unlock className="h-3 w-3 text-green-600 dark:text-green-400" />
+                              ) : (
+                                <Lock className="h-3 w-3 text-red-600 dark:text-red-400" />
+                              )}
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs rounded">
+                            Não Mapeado
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Dialog open={editingClientId === client.id} onOpenChange={(open) => !open && setEditingClientId(null)}>
