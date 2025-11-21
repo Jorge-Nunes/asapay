@@ -203,3 +203,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return httpServer;
 }
+
+  // User Auth Routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user || user.password !== password) {
+        return res.status(401).json({ error: "Usuário ou senha incorretos" });
+      }
+
+      res.json({
+        token: Buffer.from(user.id).toString('base64'),
+        userId: user.id,
+      });
+    } catch (error) {
+      console.error('[Routes] Error in login:', error);
+      res.status(500).json({ error: "Erro ao fazer login" });
+    }
+  });
+
+  // User Management Routes
+  app.get("/api/users", async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/users", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Usuário já existe" });
+      }
+
+      const user = await storage.createUser({ username, password });
+      res.status(201).json(user);
+    } catch (error) {
+      console.error('[Routes] Error in createUser:', error);
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
+  app.put("/api/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { username, password } = req.body;
+
+      const updated = await storage.updateUser(id, { username, password });
+      res.json(updated);
+    } catch (error) {
+      console.error('[Routes] Error in updateUser:', error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteUser(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[Routes] Error in deleteUser:', error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });

@@ -24,6 +24,14 @@ export interface IStorage {
 
   // Dashboard
   getDashboardMetrics(): Promise<DashboardMetrics>;
+
+  // Users
+  getUsers(): Promise<any[]>;
+  getUserById(id: string): Promise<any | undefined>;
+  getUserByUsername(username: string): Promise<any | undefined>;
+  createUser(user: { username: string; password: string }): Promise<any>;
+  updateUser(id: string, data: { username?: string; password?: string }): Promise<any | undefined>;
+  deleteUser(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {

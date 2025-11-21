@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Settings, PlayCircle, MessageSquare } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, PlayCircle, MessageSquare, LogOut } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -41,18 +41,24 @@ const menuItems = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ onLogout }: { onLogout?: () => void }) {
   const [location] = useLocation();
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userId");
+    onLogout?.();
+  };
 
   return (
     <Sidebar>
       <SidebarHeader className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">T</span>
+            <span className="text-primary-foreground font-bold text-sm">A</span>
           </div>
           <div>
-            <h2 className="font-semibold text-sm">TEKSAT</h2>
+            <h2 className="font-semibold text-sm">AsaPay</h2>
             <p className="text-xs text-muted-foreground">Gestão de Cobranças</p>
           </div>
         </div>
@@ -76,7 +82,15 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-6 border-t border-sidebar-border">
+      <SidebarFooter className="p-6 border-t border-sidebar-border space-y-3">
+        <button
+          onClick={handleLogout}
+          data-testid="button-logout"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full p-2 rounded hover-elevate"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sair</span>
+        </button>
         <div className="text-xs text-muted-foreground">
           v1.0.0
         </div>

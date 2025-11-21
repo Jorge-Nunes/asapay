@@ -479,3 +479,98 @@ Estamos aqui para ajudar no que precisar! 📞`,
     }
   }
 }
+
+  async getUsers(): Promise<any[]> {
+    try {
+      const db = getDb();
+      const result = await db.query.users.findMany();
+      return result.map(u => ({
+        id: u.id,
+        username: u.username,
+        createdAt: u.createdAt?.toISOString(),
+      }));
+    } catch (error) {
+      console.error('[Storage] Error in getUsers:', error);
+      throw error;
+    }
+  }
+
+  async getUserById(id: string): Promise<any | undefined> {
+    try {
+      const db = getDb();
+      const result = await db.query.users.findFirst({
+        where: eq(schema.users.id, id),
+      });
+      if (!result) return undefined;
+      return {
+        id: result.id,
+        username: result.username,
+        createdAt: result.createdAt?.toISOString(),
+      };
+    } catch (error) {
+      console.error('[Storage] Error in getUserById:', error);
+      throw error;
+    }
+  }
+
+  async getUserByUsername(username: string): Promise<any | undefined> {
+    try {
+      const db = getDb();
+      const result = await db.query.users.findFirst({
+        where: eq(schema.users.username, username),
+      });
+      return result;
+    } catch (error) {
+      console.error('[Storage] Error in getUserByUsername:', error);
+      throw error;
+    }
+  }
+
+  async createUser(user: { username: string; password: string }): Promise<any> {
+    try {
+      const db = getDb();
+      const result = await db.insert(schema.users).values({
+        username: user.username,
+        password: user.password,
+      }).returning();
+
+      return {
+        id: result[0].id,
+        username: result[0].username,
+        createdAt: result[0].createdAt?.toISOString(),
+      };
+    } catch (error) {
+      console.error('[Storage] Error in createUser:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: string, data: { username?: string; password?: string }): Promise<any | undefined> {
+    try {
+      const db = getDb();
+      
+      const updateData: any = {};
+      if (data.username) updateData.username = data.username;
+      if (data.password) updateData.password = data.password;
+
+      await db.update(schema.users)
+        .set(updateData)
+        .where(eq(schema.users.id, id));
+
+      return this.getUserById(id);
+    } catch (error) {
+      console.error('[Storage] Error in updateUser:', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    try {
+      const db = getDb();
+      await db.delete(schema.users).where(eq(schema.users.id, id));
+    } catch (error) {
+      console.error('[Storage] Error in deleteUser:', error);
+      throw error;
+    }
+  }
+}
