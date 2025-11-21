@@ -167,3 +167,10 @@ export type DashboardMetrics = {
 
 export type ClientData = typeof clients.$inferSelect;
 export type InsertClient = Omit<typeof clients.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
+
+export type FinancialSummary = {
+  received: { total: number; netValue: number; customers: number; invoices: number };
+  confirmed: { total: number; netValue: number; customers: number; invoices: number };
+  pending: { total: number; netValue: number; customers: number; invoices: number };
+  overdue: { total: number; netValue: number; customers: number; invoices: number };
+};

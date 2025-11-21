@@ -2,9 +2,10 @@ import { MetricCard } from "@/components/MetricCard";
 import { ExecutionChart } from "@/components/ExecutionChart";
 import { StatusChart } from "@/components/StatusChart";
 import { ExecutionLogTable } from "@/components/ExecutionLogTable";
+import { FinancialSummarySection } from "@/components/FinancialSummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, FileText, MessageSquare, TrendingUp, Play, RefreshCw, Users } from "lucide-react";
+import { DollarSign, FileText, MessageSquare, TrendingUp, Play, RefreshCw } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +43,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/executions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/metrics'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/chart-data'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/financial-summary'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cobrancas'] });
       toast({
         title: "Execução concluída",
@@ -71,7 +73,6 @@ export default function Dashboard() {
 
   const latestLogs = executions[0]?.detalhes?.slice(0, 10) || [];
 
-  // Calculate status data
   const statusCounts = statusData.reduce((acc, item) => {
     if (item.name === 'Recebido') acc.received = item.value;
     if (item.name === 'Confirmado') acc.confirmed = item.value;
@@ -109,116 +110,46 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Situação das cobranças */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Situação das cobranças</h2>
-          <Button variant="ghost" size="sm">Versão gráfica</Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <MetricCard
-            title="Recebidas"
-            value={metricsLoading ? '...' : `R$ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}`}
-            subtitle={`${statusCounts.received} cliente${statusCounts.received !== 1 ? 's' : ''}`}
-            icon={DollarSign}
-            variant="received"
-          />
-          <MetricCard
-            title="Confirmadas"
-            value={metricsLoading ? '...' : `R$ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}`}
-            subtitle={`${statusCounts.confirmed} cliente${statusCounts.confirmed !== 1 ? 's' : ''}`}
-            icon={FileText}
-            variant="confirmed"
-          />
-          <MetricCard
-            title="Aguardando pagamento"
-            value={metricsLoading ? '...' : `R$ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics?.totalPendente || 0)}`}
-            subtitle={`${statusCounts.pending} cliente${statusCounts.pending !== 1 ? 's' : ''}`}
-            icon={MessageSquare}
-            variant="pending"
-          />
-          <MetricCard
-            title="Vencidas"
-            value={metricsLoading ? '...' : `R$ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}`}
-            subtitle={`${statusCounts.overdue} cliente${statusCounts.overdue !== 1 ? 's' : ''}`}
-            icon={TrendingUp}
-            variant="overdue"
-          />
-        </div>
-      </div>
+      <FinancialSummarySection />
 
-      {/* Métricas de execução */}
-      <div>
-        <h2 className="text-lg font-semibold text-foreground mb-4">Métricas de execução</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <Card className="border-2 hover-elevate">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Mensagens Enviadas</CardTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Mensagens Enviadas (7 dias)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{metricsLoading ? '...' : metrics?.mensagensEnviadas || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Últimos 30 dias</p>
+              <ExecutionChart data={chartData} />
             </CardContent>
           </Card>
-          <Card className="border-2 hover-elevate">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Vence Hoje</CardTitle>
+        </div>
+
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{metricsLoading ? '...' : metrics?.venceHoje || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Próxima execução</p>
-            </CardContent>
-          </Card>
-          <Card className="border-2 hover-elevate">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Conversão</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{metricsLoading ? '...' : `${(metrics?.taxaConversao || 0).toFixed(1)}%`}</div>
-              <p className="text-xs text-muted-foreground mt-1">Pagamentos realizados</p>
-            </CardContent>
-          </Card>
-          <Card className="border-2 hover-elevate">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Execuções</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{executions.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Neste mês</p>
+              <StatusChart data={statusData} />
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-2">
-          <CardHeader>
-            <CardTitle className="text-base">Execuções</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ExecutionChart data={chartData} />
-          </CardContent>
-        </Card>
-        <Card className="border-2">
-          <CardHeader>
-            <CardTitle className="text-base">Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StatusChart data={statusData} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Últimas execuções */}
-      <div>
-        <h2 className="text-lg font-semibold text-foreground mb-4">Últimas execuções</h2>
-        <Card className="border-2">
-          <CardContent className="pt-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Últimas Operações</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {latestLogs.length > 0 ? (
             <ExecutionLogTable logs={latestLogs} />
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma execução realizada ainda
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

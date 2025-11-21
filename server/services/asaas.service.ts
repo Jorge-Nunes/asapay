@@ -130,4 +130,32 @@ export class AsaasService {
       };
     });
   }
+
+  async getPaymentsByStatus(status: 'RECEIVED' | 'CONFIRMED' | 'PENDING' | 'OVERDUE'): Promise<AsaasPayment[]> {
+    const payments: AsaasPayment[] = [];
+    let offset = 0;
+    const limit = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const response = await this.client.get<AsaasListResponse<AsaasPayment>>('/payments', {
+          params: { limit, offset, status },
+        });
+
+        payments.push(...response.data.data);
+        hasMore = response.data.hasMore;
+        offset += limit;
+
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error(`Error fetching ${status} payments from Asaas:`, error);
+        throw error;
+      }
+    }
+
+    return payments;
+  }
 }

@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
 import type { Config, Cobranca, Execution, ExecutionLog, DashboardMetrics, ClientData, InsertClient } from "@shared/schema";
 
+import type { FinancialSummary } from "@shared/schema";
+
 export interface IStorage {
   // Config
   getConfig(): Promise<Config>;
@@ -24,6 +26,7 @@ export interface IStorage {
 
   // Dashboard
   getDashboardMetrics(): Promise<DashboardMetrics>;
+  getFinancialSummary(): Promise<FinancialSummary>;
 
   // Users
   getUsers(): Promise<any[]>;
@@ -252,6 +255,41 @@ Estamos aqui para ajudar no que precisar! 📞`,
 
   async updateClientLastMessageAtraso(clientId: string): Promise<void> {
     this.clientLastMessageAtraso.set(clientId, new Date());
+  }
+
+  async getFinancialSummary(): Promise<import('@shared/schema').FinancialSummary> {
+    const cobrancas = Array.from(this.cobrancas.values());
+    const statuses = ['RECEIVED', 'CONFIRMED', 'PENDING', 'OVERDUE'] as const;
+    const result: import('@shared/schema').FinancialSummary = {
+      received: { total: 0, netValue: 0, customers: new Set<string>().size, invoices: 0 },
+      confirmed: { total: 0, netValue: 0, customers: new Set<string>().size, invoices: 0 },
+      pending: { total: 0, netValue: 0, customers: new Set<string>().size, invoices: 0 },
+      overdue: { total: 0, netValue: 0, customers: new Set<string>().size, invoices: 0 },
+    };
+
+    const customerSets = {
+      RECEIVED: new Set<string>(),
+      CONFIRMED: new Set<string>(),
+      PENDING: new Set<string>(),
+      OVERDUE: new Set<string>(),
+    };
+
+    cobrancas.forEach(c => {
+      const key = (c.status as keyof typeof result).toLowerCase() as keyof typeof result;
+      if (result[key]) {
+        result[key].total += parseFloat(c.value.toString());
+        result[key].netValue += parseFloat(c.value.toString()) * 0.99;
+        result[key].invoices += 1;
+        customerSets[c.status as keyof typeof customerSets].add(c.customer);
+      }
+    });
+
+    Object.entries(customerSets).forEach(([status, customers]) => {
+      const key = status.toLowerCase() as keyof typeof result;
+      if (result[key]) result[key].customers = customers.size;
+    });
+
+    return result;
   }
 }
 

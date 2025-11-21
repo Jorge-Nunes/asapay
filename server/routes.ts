@@ -269,6 +269,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/dashboard/financial-summary", async (req, res) => {
+    try {
+      const summary = await storage.getFinancialSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error('[Routes] Error in getFinancialSummary:', error);
+      res.status(500).json({ error: "Failed to fetch financial summary" });
+    }
+  });
+
   // User Auth Routes
   app.post("/api/auth/login", async (req, res) => {
     try {
