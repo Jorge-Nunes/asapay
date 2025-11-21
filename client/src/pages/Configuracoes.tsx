@@ -25,6 +25,9 @@ export default function Configuracoes() {
     evolutionUrl: '',
     evolutionInstance: '',
     evolutionApiKey: '',
+    traccarUrl: '',
+    traccarApiKey: '',
+    traccarLimiteCobrancasVencidas: 3,
     diasAviso: 10,
     messageTemplates: {
       venceHoje: '',
@@ -68,6 +71,7 @@ export default function Configuracoes() {
       ...formData,
       asaasToken: formData.asaasToken === '••••••••' ? undefined : formData.asaasToken,
       evolutionApiKey: formData.evolutionApiKey === '••••••••' ? undefined : formData.evolutionApiKey,
+      traccarApiKey: formData.traccarApiKey === '••••••••' ? undefined : formData.traccarApiKey,
     };
     
     saveMutation.mutate(dataToSend);
@@ -106,6 +110,7 @@ export default function Configuracoes() {
         <TabsList className="border-2">
           <TabsTrigger value="asaas" data-testid="tab-asaas">Asaas</TabsTrigger>
           <TabsTrigger value="evolution" data-testid="tab-evolution">Evolution API</TabsTrigger>
+          <TabsTrigger value="traccar" data-testid="tab-traccar">Traccar</TabsTrigger>
           <TabsTrigger value="preferences" data-testid="tab-preferences">Preferências</TabsTrigger>
           <TabsTrigger value="templates" data-testid="tab-templates">Templates</TabsTrigger>
           <TabsTrigger value="usuarios" data-testid="tab-usuarios">Usuários</TabsTrigger>
@@ -186,6 +191,65 @@ export default function Configuracoes() {
                   className="border-2"
                   data-testid="input-evolution-apikey"
                 />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="traccar" className="space-y-6">
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Integração Traccar GPS</CardTitle>
+              <CardDescription>Configure bloqueio automático de usuários com cobranças vencidas</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="traccar-url">URL do Servidor Traccar</Label>
+                <Input
+                  id="traccar-url"
+                  value={formData.traccarUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, traccarUrl: e.target.value })}
+                  placeholder="http://localhost:8082"
+                  className="border-2"
+                  data-testid="input-traccar-url"
+                />
+                <p className="text-xs text-muted-foreground">
+                  URL completa do servidor Traccar (ex: http://localhost:8082)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="traccar-apikey">Token de Acesso Traccar</Label>
+                <Input
+                  id="traccar-apikey"
+                  type="password"
+                  value={formData.traccarApiKey || ''}
+                  onChange={(e) => setFormData({ ...formData, traccarApiKey: e.target.value })}
+                  className="border-2"
+                  data-testid="input-traccar-apikey"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Token de API do Traccar para autenticação
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="traccar-limite">Limite de Cobranças Vencidas</Label>
+                <Input
+                  id="traccar-limite"
+                  type="number"
+                  min="1"
+                  value={formData.traccarLimiteCobrancasVencidas || 3}
+                  onChange={(e) => setFormData({ ...formData, traccarLimiteCobrancasVencidas: parseInt(e.target.value) || 3 })}
+                  className="border-2"
+                  data-testid="input-traccar-limite"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Quantas cobranças vencidas são necessárias para bloquear um usuário no Traccar
+                </p>
+              </div>
+              <div className="pt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  <strong>Como funciona:</strong> Quando um usuário no Asaas tiver mais cobranças vencidas que o limite configurado, ele será bloqueado automaticamente no Traccar. A correspondência é feita por telefone e email.
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -31,6 +31,9 @@ export const configurations = pgTable("configurations", {
   evolutionUrl: text("evolution_url").notNull(),
   evolutionInstance: text("evolution_instance").notNull(),
   evolutionApiKey: text("evolution_api_key").notNull(),
+  traccarUrl: text("traccar_url"),
+  traccarApiKey: text("traccar_api_key"),
+  traccarLimiteCobrancasVencidas: integer("traccar_limite_cobrancas_vencidas").default(3),
   diasAviso: integer("dias_aviso").notNull().default(10),
   messageTemplates: json("message_templates").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -82,6 +85,9 @@ export type Config = {
   evolutionUrl: string;
   evolutionInstance: string;
   evolutionApiKey: string;
+  traccarUrl?: string;
+  traccarApiKey?: string;
+  traccarLimiteCobrancasVencidas?: number;
   diasAviso: number;
   messageTemplates: {
     venceHoje: string;
