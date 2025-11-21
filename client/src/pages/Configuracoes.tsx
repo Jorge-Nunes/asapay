@@ -154,6 +154,42 @@ export default function Configuracoes() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="border-2 border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950">
+            <CardHeader>
+              <CardTitle className="text-blue-900 dark:text-blue-100">Webhook Asaas</CardTitle>
+              <CardDescription className="text-blue-800 dark:text-blue-200">Configure a notificação automática de eventos</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">URL do Webhook:</p>
+                <div className="bg-white dark:bg-gray-900 p-3 rounded border border-blue-300 dark:border-blue-700 font-mono text-xs break-all">
+                  {window.location.origin}/api/webhook/asaas
+                </div>
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  Copie esta URL e configure no Asaas para receber eventos automáticos de pagamentos
+                </p>
+              </div>
+              
+              <div className="space-y-2 pt-4 border-t border-blue-300 dark:border-blue-700">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Como configurar:</p>
+                <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+                  <li>Acesse <span className="font-mono">app.asaas.com</span></li>
+                  <li>Vá em Configurações → Webhooks</li>
+                  <li>Clique em "Novo Webhook"</li>
+                  <li>Cole a URL do webhook acima</li>
+                  <li>Selecione os eventos: PAYMENT_RECEIVED, PAYMENT_CONFIRMED, PAYMENT_OVERDUE, PAYMENT_DELETED</li>
+                  <li>Salve e teste a conexão</li>
+                </ol>
+              </div>
+
+              <div className="space-y-2 pt-4 border-t border-blue-300 dark:border-blue-700">
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  <strong>Funcionalidades:</strong> O sistema receberá eventos automáticos de pagamentos, atualizando o status das cobranças em tempo real
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="evolution" className="space-y-6">

@@ -5,6 +5,7 @@ import { ExecutionService } from "./services/execution.service";
 import { EvolutionService } from "./services/evolution.service";
 import { ProcessorService } from "./services/processor.service";
 import { AsaasService } from "./services/asaas.service";
+import { WebhookService } from "./services/webhook.service";
 import { setupCronJobs } from "./cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -207,6 +208,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to run execution" 
       });
+    }
+  });
+
+  // Asaas Webhook endpoint
+  app.post("/api/webhook/asaas", async (req, res) => {
+    try {
+      console.log('[Webhook] Recebido evento do Asaas:', req.body.event);
+      const webhookService = new WebhookService();
+      await webhookService.processAsaasWebhook(req.body);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[Webhook] Erro ao processar webhook:', error);
+      res.status(500).json({ error: "Failed to process webhook" });
     }
   });
 
