@@ -172,6 +172,13 @@ export const clientLastMessageAtraso = pgTable("client_last_message_atraso", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const cobrancaMessagesSent = pgTable("cobranca_messages_sent", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cobrancaId: varchar("cobranca_id").notNull(),
+  sentDate: timestamp("sent_date").notNull().defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export type DashboardMetrics = {
   totalPendente: number;
   venceHoje: number;

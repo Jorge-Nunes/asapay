@@ -29,6 +29,42 @@ function getDb() {
 }
 
 export class PostgresStorage implements IStorage {
+  async hasCobrancaMessageBeenSentToday(cobrancaId: string): Promise<boolean> {
+    try {
+      const db = getDb();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const sent = await db.query.cobrancaMessagesSent.findFirst({
+        where: and(
+          eq(schema.cobrancaMessagesSent.cobrancaId, cobrancaId)
+        )
+      });
+
+      if (!sent) return false;
+      
+      const sentDate = new Date(sent.sentDate);
+      sentDate.setHours(0, 0, 0, 0);
+      
+      return sentDate.getTime() === today.getTime();
+    } catch (error) {
+      console.error('[Storage] Error in hasCobrancaMessageBeenSentToday:', error);
+      return false;
+    }
+  }
+
+  async recordCobrancaMessageSent(cobrancaId: string): Promise<void> {
+    try {
+      const db = getDb();
+      await db.insert(schema.cobrancaMessagesSent).values({
+        cobrancaId,
+        sentDate: new Date(),
+      });
+    } catch (error) {
+      console.error('[Storage] Error in recordCobrancaMessageSent:', error);
+    }
+  }
+
   async getConfig(): Promise<Config> {
     try {
       const db = getDb();

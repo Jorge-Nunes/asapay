@@ -72,7 +72,9 @@ export class ProcessorService {
     clientsMap?: Map<string, ClientData>,
     getLastMessageAtrasoDate?: (clientId: string) => Promise<Date | undefined>,
     recordMessageAtraso?: (clientId: string) => Promise<void>,
-    onProgress?: (log: Omit<ExecutionLog, 'id'>) => void
+    onProgress?: (log: Omit<ExecutionLog, 'id'>) => void,
+    hasCobrancaMessageBeenSentToday?: (cobrancaId: string) => Promise<boolean>,
+    recordCobrancaMessageSent?: (cobrancaId: string) => Promise<void>
   ): Promise<ExecutionLog[]> {
     const logs: ExecutionLog[] = [];
     const batchSize = 10; // Process 10 at a time to avoid overwhelming the API
@@ -86,6 +88,25 @@ export class ProcessorService {
       const batch = toProcess.slice(i, i + batchSize);
       
       const batchPromises = batch.map(async (cobranca) => {
+        // Check if message was already sent to this cobranca today
+        if (hasCobrancaMessageBeenSentToday) {
+          const alreadySent = await hasCobrancaMessageBeenSentToday(cobranca.id);
+          if (alreadySent) {
+            const log: Omit<ExecutionLog, 'id'> = {
+              cobrancaId: cobranca.id,
+              customerName: cobranca.customerName,
+              customerPhone: cobranca.customerPhone,
+              tipo: cobranca.tipo as 'vence_hoje' | 'aviso' | 'atraso',
+              status: 'error',
+              timestamp: new Date().toISOString(),
+              mensagem: 'Mensagem já foi enviada para esta cobrança hoje',
+            };
+            if (onProgress) {
+              onProgress(log);
+            }
+            return log;
+          }
+        }
         // Check if we should send message for overdue invoices
         if (cobranca.tipo === 'atraso' && clientsMap) {
           // Find client by looking for matching customer phone in clients
@@ -167,6 +188,11 @@ export class ProcessorService {
         try {
           await evolutionService.sendTextMessage(cobranca.customerPhone, message);
           log.mensagem = 'Mensagem enviada com sucesso';
+
+          // Record that we sent a message for this cobranca
+          if (recordCobrancaMessageSent) {
+            await recordCobrancaMessageSent(cobranca.id);
+          }
 
           // Record that we sent an overdue message for this client
           if (cobranca.tipo === 'atraso' && clientsMap && recordMessageAtraso) {
