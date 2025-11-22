@@ -104,7 +104,7 @@ export class ProcessorService {
               customerName: cobranca.customerName,
               customerPhone: cobranca.customerPhone,
               tipo: 'atraso',
-              status: 'skipped',
+              status: 'error',
               timestamp: new Date().toISOString(),
               mensagem: 'Cliente bloqueou mensagens de atraso',
             };
@@ -129,7 +129,7 @@ export class ProcessorService {
                   customerName: cobranca.customerName,
                   customerPhone: cobranca.customerPhone,
                   tipo: 'atraso',
-                  status: 'skipped',
+                  status: 'error',
                   timestamp: new Date().toISOString(),
                   mensagem: `Aguardando ${intervalDays - daysSinceLastMessage} dia(s) para próxima mensagem`,
                 };

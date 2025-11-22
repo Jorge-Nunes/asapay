@@ -1,7 +1,6 @@
 import { MetricCard } from "@/components/MetricCard";
 import { ExecutionChart } from "@/components/ExecutionChart";
 import { StatusChart } from "@/components/StatusChart";
-import { ExecutionLogTable } from "@/components/ExecutionLogTable";
 import { FinancialSummarySection } from "@/components/FinancialSummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,18 +70,7 @@ export default function Dashboard() {
     });
   };
 
-  const latestLogs = executions
-    .flatMap((exec) => {
-      const details = Array.isArray(exec.detalhes) ? exec.detalhes : [];
-      console.log('[Dashboard] Execution:', exec.id, 'Details:', details.length);
-      return details.map(log => ({ 
-        ...log, 
-        executionId: exec.id,
-        timestamp: log.timestamp || new Date().toISOString()
-      }));
-    })
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 10);
+  const latestExecutions = executions.slice(0, 5);
 
   const statusCounts = statusData.reduce((acc, item) => {
     if (item.name === 'Recebido') acc.received = item.value;
@@ -149,11 +137,31 @@ export default function Dashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Últimas Operações</CardTitle>
+          <CardTitle>Últimas Execuções</CardTitle>
         </CardHeader>
         <CardContent>
-          {latestLogs.length > 0 ? (
-            <ExecutionLogTable logs={latestLogs} />
+          {latestExecutions.length > 0 ? (
+            <div className="space-y-3">
+              {latestExecutions.map((exec) => (
+                <div key={exec.id} className="p-3 border rounded-md bg-card hover-elevate">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">{new Date(exec.timestamp).toLocaleString('pt-BR')}</p>
+                      <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                        <p data-testid={`text-messages-${exec.id}`}>Mensagens enviadas: <span className="font-medium text-foreground">{exec.mensagensEnviadas}</span></p>
+                        <p data-testid={`text-cobrancas-${exec.id}`}>Cobranças processadas: <span className="font-medium text-foreground">{exec.cobrancasProcessadas}</span></p>
+                        <p data-testid={`text-errors-${exec.id}`}>Erros: <span className="font-medium text-foreground">{exec.erros}</span></p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${exec.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : exec.status === 'running' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'}`}>
+                        {exec.status === 'completed' ? 'Concluído' : exec.status === 'running' ? 'Executando' : 'Falhou'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               Nenhuma execução realizada ainda

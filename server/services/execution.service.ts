@@ -45,6 +45,7 @@ export class ExecutionService {
       status: 'running',
       cobrancasProcessadas: 0,
       mensagensEnviadas: 0,
+      usuariosBloqueados: 0,
       erros: 0,
       detalhes: [],
     });
@@ -85,6 +86,7 @@ export class ExecutionService {
       console.log('Processing messages...');
       const logs: ExecutionLog[] = [];
       
+      console.log('[Execution] Starting processCobrancasInBatches with', categorized.length, 'cobrancas');
       const processedLogs = await ProcessorService.processCobrancasInBatches(
         categorized,
         config,
@@ -231,9 +233,10 @@ export class ExecutionService {
       const erros = processedLogs.filter(l => l.status === 'error').length;
       const usuariosBloqueados = logs.filter(l => l.id?.includes('blocked')).length;
 
-      // Update execution - combine processedLogs (messages) with logs (traccar operations)
+      // Combine all logs
       const allLogs = [...processedLogs, ...logs];
-      
+
+      // Update execution with final data
       await storage.updateExecution(execution.id, {
         status: 'completed',
         cobrancasProcessadas: categorized.filter(c => c.tipo !== 'processada').length,

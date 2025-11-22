@@ -223,7 +223,19 @@ Obrigado por sua confiança! 🙏`,
     const execution = this.executions.get(id);
     if (!execution) return undefined;
     
-    const updated = { ...execution, ...data };
+    // Create a new object with all fields, merging old and new data
+    // Make a DEEP COPY of detalhes array to prevent reference issues
+    const updated: Execution = {
+      id: execution.id,
+      timestamp: execution.timestamp,
+      status: data.status !== undefined ? data.status : execution.status,
+      cobrancasProcessadas: data.cobrancasProcessadas !== undefined ? data.cobrancasProcessadas : execution.cobrancasProcessadas,
+      mensagensEnviadas: data.mensagensEnviadas !== undefined ? data.mensagensEnviadas : execution.mensagensEnviadas,
+      usuariosBloqueados: data.usuariosBloqueados !== undefined ? data.usuariosBloqueados : execution.usuariosBloqueados,
+      erros: data.erros !== undefined ? data.erros : execution.erros,
+      detalhes: data.detalhes !== undefined ? JSON.parse(JSON.stringify(data.detalhes)) : execution.detalhes,
+    };
+    
     this.executions.set(id, updated);
     return updated;
   }
