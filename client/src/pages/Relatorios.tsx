@@ -16,7 +16,12 @@ export default function Relatorios() {
     queryKey: ['/api/dashboard/status-data'],
   });
 
-  const { data: cobrancas = [] } = useQuery<Cobranca[]>({
+  const { data: cobrancasResponse = { data: [], total: 0, limit: 50, offset: 0 } } = useQuery<{
+    data: Cobranca[];
+    total: number;
+    limit: number;
+    offset: number;
+  }>({
     queryKey: ['/api/cobrancas'],
   });
 
@@ -28,6 +33,7 @@ export default function Relatorios() {
     console.log('Exportando relatório...');
   };
 
+  const cobrancas = cobrancasResponse.data || [];
   const totalCobrancas = cobrancas.length;
   const totalMensagens = executions.reduce((sum, exec) => sum + exec.mensagensEnviadas, 0);
   const totalExecucoes = executions.length;
