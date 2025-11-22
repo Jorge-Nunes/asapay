@@ -57,12 +57,14 @@ export function AppSidebar({ onLogout }: { onLogout?: () => void }) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">A</span>
-          </div>
-          <div>
+      <SidebarHeader className="p-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/asapay-logo.png" 
+            alt="AsaPay Logo" 
+            className="h-10 w-auto object-contain"
+          />
+          <div className="flex-1">
             <h2 className="font-semibold text-sm">AsaPay</h2>
             <p className="text-xs text-muted-foreground">Gestão de Cobranças</p>
           </div>

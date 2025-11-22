@@ -43,9 +43,11 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-primary/80">
       <Card className="w-full max-w-md p-8 shadow-lg">
         <div className="text-center mb-8">
-          <div className="h-12 w-12 rounded-md bg-primary flex items-center justify-center mx-auto mb-4">
-            <span className="text-primary-foreground font-bold text-lg">A</span>
-          </div>
+          <img 
+            src="/asapay-logo.png" 
+            alt="AsaPay Logo" 
+            className="h-32 w-auto mx-auto mb-4 object-contain"
+          />
           <h1 className="text-2xl font-bold">AsaPay</h1>
           <p className="text-muted-foreground mt-2">Gestão de Cobranças</p>
         </div>
