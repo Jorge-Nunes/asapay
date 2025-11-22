@@ -36,6 +36,9 @@ export const configurations = pgTable("configurations", {
   traccarLimiteCobrancasVencidas: integer("traccar_limite_cobrancas_vencidas").default(3),
   diasAviso: integer("dias_aviso").notNull().default(10),
   messageTemplates: json("message_templates").notNull(),
+  webhookUrl: text("webhook_url"),
+  lastClientSyncTime: integer("last_client_sync_time").default(0),
+  lastCobrancasSyncTime: integer("last_cobrancas_sync_time").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

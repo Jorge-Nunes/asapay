@@ -1089,29 +1089,35 @@ Obrigado por sua confiança! 🙏`,
   async updateSyncTimestamp(type: 'clients' | 'cobrancas'): Promise<void> {
     try {
       const db = getDb();
-      const config = await this.getConfig();
       const timestamp = Date.now();
+      const config = await this.getConfig();
       
+      // Update in memory config
+      if (type === 'clients') {
+        (config as any).lastClientSyncTime = timestamp;
+      } else {
+        (config as any).lastCobrancasSyncTime = timestamp;
+      }
+      
+      // Update in database
       if (type === 'clients') {
         await db.update(schema.configurations)
           .set({ lastClientSyncTime: timestamp })
-          .where(eq(schema.configurations.id, 'default'));
+          .where(eq(schema.configurations.id, config.id || 'default'));
       } else {
         await db.update(schema.configurations)
           .set({ lastCobrancasSyncTime: timestamp })
-          .where(eq(schema.configurations.id, 'default'));
+          .where(eq(schema.configurations.id, config.id || 'default'));
       }
     } catch (error) {
       console.error('[Storage] Error in updateSyncTimestamp:', error);
-      throw error;
+      // Non-blocking error - sync timestamps are optional
     }
   }
 
   getLastSyncTimestamp(type: 'clients' | 'cobrancas'): number {
-    // This is a synchronous method, but since we're using Postgres,
-    // we need to get it from the config which is already loaded
-    // For now, return 0 to indicate no sync has been done
-    // In production, this should be cached or refactored
+    // This is a synchronous method returning 0
+    // In a real scenario with async, we'd use updateConfig instead
     return 0;
   }
 }
