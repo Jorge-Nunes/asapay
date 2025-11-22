@@ -158,6 +158,7 @@ export const clients = pgTable("clients", {
   postalCode: text("postal_code"),
   cpfCnpj: text("cpf_cnpj"),
   traccarUserId: text("traccar_user_id"),
+  traccarMappingMethod: text("traccar_mapping_method"), // email, phone, or null if unmapped
   isTraccarBlocked: integer("is_traccar_blocked").notNull().default(0),
   blockDailyMessages: integer("block_daily_messages").notNull().default(0),
   diasAtrasoNotificacao: integer("dias_atraso_notificacao").notNull().default(3),

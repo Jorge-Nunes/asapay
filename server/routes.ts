@@ -987,6 +987,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (traccarUser) {
           try {
             await storage.updateClientTraccarMapping(client.id, String(traccarUser.id));
+            // Update the mapping method using raw SQL
+            await storage.updateClientMappingMethod(client.id, matchMethod);
+            
             mapped.push({
               clientId: client.id,
               clientName: client.name,

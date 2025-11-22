@@ -950,6 +950,21 @@ Obrigado por sua confiança! 🙏`,
     }
   }
 
+  async updateClientMappingMethod(clientId: string, mappingMethod: string | null): Promise<void> {
+    try {
+      const db = getDb();
+      await db.update(schema.clients)
+        .set({
+          traccarMappingMethod: mappingMethod,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.clients.id, clientId));
+    } catch (error) {
+      console.error('[Storage] Error in updateClientMappingMethod:', error);
+      throw error;
+    }
+  }
+
   async blockClientTraccar(clientId: string): Promise<void> {
     try {
       const db = getDb();
