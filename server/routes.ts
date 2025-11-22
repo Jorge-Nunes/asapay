@@ -1068,6 +1068,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Load testing endpoints
+  const { LoadTestService } = await import('./services/load-test.service.js');
+
+  app.post("/api/test/load-test-data", async (req, res) => {
+    try {
+      const { clientsCount = 2000, cobrancasPerClient = 10 } = req.body;
+
+      if (clientsCount > 10000) {
+        return res.status(400).json({ error: "Máximo 10.000 clientes para teste" });
+      }
+
+      console.log(`[Routes] Starting load test: ${clientsCount} clients, ${cobrancasPerClient} cobrancas/client`);
+
+      const result = await LoadTestService.insertTestData(storage, {
+        clientsCount,
+        cobrancasPerClient,
+      });
+
+      res.json({
+        success: true,
+        message: `Teste concluído com sucesso`,
+        result,
+        speedMetrics: {
+          clientsPerSecond: (result.stats.totalClientsGenerated / (result.timing.insertionTime / 1000)).toFixed(2),
+          cobrancasPerSecond: (result.stats.totalCobrancasGenerated / (result.timing.insertionTime / 1000)).toFixed(2),
+          avgTimePerClient: (result.timing.insertionTime / result.stats.totalClientsGenerated).toFixed(2) + 'ms',
+        },
+      });
+    } catch (error) {
+      console.error('[Routes] Error in load-test-data:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao executar teste" });
+    }
+  });
+
+  app.get("/api/test/performance-report", async (req, res) => {
+    try {
+      console.log(`[Routes] Generating performance report`);
+
+      const perfResults = await LoadTestService.performanceTest(storage);
+
+      res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        performance: perfResults,
+        recommendations: generateRecommendations(perfResults),
+      });
+    } catch (error) {
+      console.error('[Routes] Error in performance-report:', error);
+      res.status(500).json({ error: "Erro ao gerar relatório" });
+    }
+  });
+
+  function generateRecommendations(perfResults: any): string[] {
+    const recs = [];
+    const avgQueryTime = perfResults.summary.avgQueryTime;
+
+    if (avgQueryTime > 500) {
+      recs.push("⚠️ Queries lentas (>500ms): Considere adicionar cache ou mais índices");
+    } else if (avgQueryTime < 100) {
+      recs.push("✅ Queries rápidas (<100ms): Índices estão otimizados");
+    }
+
+    if (perfResults.summary.totalCobrancas > 50000) {
+      recs.push("💡 Muitas cobranças: Implemente paginação no frontend");
+    }
+
+    return recs;
+  }
+
   const httpServer = createServer(app);
 
   return httpServer;
