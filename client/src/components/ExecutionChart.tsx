@@ -11,12 +11,7 @@ interface ExecutionChartProps {
 
 export function ExecutionChart({ data }: ExecutionChartProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Execuções dos Últimos 7 Dias</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={350}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
             <XAxis 
@@ -51,7 +46,5 @@ export function ExecutionChart({ data }: ExecutionChartProps) {
             />
           </LineChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
   );
 }

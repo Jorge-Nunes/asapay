@@ -108,7 +108,7 @@ export default function Relatorios() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="border-2">
               <CardHeader>
-                <CardTitle>Execuções</CardTitle>
+                <CardTitle>Execuções dos Últimos 7 Dias</CardTitle>
               </CardHeader>
               <CardContent>
                 <ExecutionChart data={chartData} />
@@ -116,7 +116,7 @@ export default function Relatorios() {
             </Card>
             <Card className="border-2">
               <CardHeader>
-                <CardTitle>Status</CardTitle>
+                <CardTitle>Cobranças por Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <StatusChart data={statusData} />
@@ -161,19 +161,19 @@ export default function Relatorios() {
             <CardHeader>
               <CardTitle>Gráfico de Execuções</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-96">
               <ExecutionChart data={chartData} />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="cobrancas" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-lg">Status das Cobranças</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="h-96">
                 <StatusChart data={statusData} />
               </CardContent>
             </Card>
@@ -230,7 +230,7 @@ export default function Relatorios() {
             <CardHeader>
               <CardTitle>Gráfico de Execuções</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-96">
               <ExecutionChart data={chartData} />
             </CardContent>
           </Card>
