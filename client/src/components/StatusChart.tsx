@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface StatusChartProps {
   data: Array<{
@@ -14,60 +14,43 @@ export function StatusChart({ data }: StatusChartProps) {
   const hasData = total > 0;
 
   return (
-    <div className="space-y-4 flex flex-col h-full">
+    <div className="space-y-6 flex flex-col h-full">
       {hasData ? (
-        <div className="flex-1" style={{ minHeight: '320px' }}>
+        <div style={{ width: '100%', height: '280px' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              layout="vertical"
-              margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-            >
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="hsl(var(--border))"
-                opacity={0.5}
-              />
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
               <XAxis 
-                type="number"
+                dataKey="name" 
+                tick={{ fontSize: 12, fontWeight: 500 }}
                 stroke="hsl(var(--muted-foreground))"
               />
               <YAxis 
-                dataKey="name" 
-                type="category"
-                width={100}
-                tick={{ fontSize: 13, fontWeight: 500 }}
                 stroke="hsl(var(--muted-foreground))"
+                label={{ value: 'Quantidade', angle: -90, position: 'insideLeft' }}
               />
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '8px',
-                  padding: '8px 12px',
+                  padding: '10px',
                 }}
                 formatter={(value: number) => {
                   const percentage = ((value / total) * 100).toFixed(1);
-                  return [`${value} registros (${percentage}%)`, 'Total'];
+                  return [`${value} (${percentage}%)`, 'Total'];
                 }}
-                cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
               />
-              <Bar dataKey="value" radius={[0, 8, 8, 0]} animationDuration={800}>
+              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                 {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={COLORS[index % COLORS.length]}
-                  />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <div
-          className="flex justify-center items-center flex-1 text-muted-foreground"
-          style={{ minHeight: '320px' }}
-        >
+        <div className="flex items-center justify-center text-muted-foreground" style={{ height: '280px' }}>
           Sem dados disponíveis
         </div>
       )}
@@ -90,13 +73,9 @@ export function StatusChart({ data }: StatusChartProps) {
                   className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
-                <span className="text-xs font-semibold text-foreground">
-                  {item.name}
-                </span>
+                <span className="text-xs font-semibold text-foreground">{item.name}</span>
               </div>
-              <div className="text-2xl font-bold tabular-nums text-foreground">
-                {item.value}
-              </div>
+              <div className="text-2xl font-bold tabular-nums text-foreground">{item.value}</div>
               <div className="text-sm font-semibold mt-1" style={{ color: COLORS[index % COLORS.length] }}>
                 {percentage}%
               </div>
