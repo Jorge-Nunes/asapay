@@ -54,6 +54,10 @@ export interface IStorage {
   // Message tracking
   hasCobrancaMessageBeenSentToday(cobrancaId: string): Promise<boolean>;
   recordCobrancaMessageSent(cobrancaId: string): Promise<void>;
+
+  // Sync tracking
+  updateSyncTimestamp(type: 'clients' | 'cobrancas'): Promise<void>;
+  getLastSyncTimestamp(type: 'clients' | 'cobrancas'): number;
 }
 
 export class MemStorage implements IStorage {
