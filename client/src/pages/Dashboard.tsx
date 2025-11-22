@@ -160,12 +160,12 @@ export default function Dashboard() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card className="hover-elevate transition-all">
+          <Card className="hover-elevate transition-all h-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle>Mensagens Enviadas (7 dias)</CardTitle>
               <Badge variant="outline" className="text-xs">Últimas 7 dias</Badge>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               {chartData.length === 0 ? (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
                   Sem dados disponível
@@ -178,17 +178,19 @@ export default function Dashboard() {
         </div>
 
         <div>
-          <Card className="hover-elevate transition-all">
+          <Card className="hover-elevate transition-all h-full flex flex-col">
             <CardHeader>
               <CardTitle className="text-lg">Distribuição de Status</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 flex items-stretch">
               {statusData.length === 0 ? (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
                   Sem dados disponível
                 </div>
               ) : (
-                <StatusChart data={statusData} />
+                <div className="w-full">
+                  <StatusChart data={statusData} />
+                </div>
               )}
             </CardContent>
           </Card>
