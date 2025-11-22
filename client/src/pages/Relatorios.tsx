@@ -168,6 +168,31 @@ export default function Relatorios() {
         </TabsContent>
 
         <TabsContent value="cobrancas" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-2 hover-elevate">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Cobranças</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tabular-nums">{totalCobrancas}</div>
+                <p className="text-xs text-muted-foreground mt-1">Cobranças registradas</p>
+              </CardContent>
+            </Card>
+            <Card className="border-2 hover-elevate">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Valor Total em Aberto</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tabular-nums">
+                  R$ {cobrancas.reduce((sum, c) => sum + (c.value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Pendente de recebimento</p>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="border-2">
               <CardHeader>
