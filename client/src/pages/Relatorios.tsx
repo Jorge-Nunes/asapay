@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Download, FileText, MessageSquare, PlayCircle, DollarSign, Clipboard } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Cobranca, Execution } from "@shared/schema";
+import { MessageTypeChart } from "@/components/MessageTypeChart";
 
 export default function Relatorios() {
   const { data: chartData = [] } = useQuery<Array<{ date: string; mensagens: number; erros: number }>>({
@@ -133,21 +134,12 @@ export default function Relatorios() {
 
         <TabsContent value="messages" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-2 hover-elevate">
+            <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-lg">Mensagens por Tipo</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Vence Hoje</span>
-                    <span className="text-sm font-semibold tabular-nums">{mensagensVenceHoje}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Aviso</span>
-                    <span className="text-sm font-semibold tabular-nums">{mensagensAviso}</span>
-                  </div>
-                </div>
+              <CardContent className="h-[450px]">
+                <MessageTypeChart venceHoje={mensagensVenceHoje} aviso={mensagensAviso} />
               </CardContent>
             </Card>
             <Card className="border-2 hover-elevate">
