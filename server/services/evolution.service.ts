@@ -1,10 +1,21 @@
 import axios, { type AxiosInstance } from 'axios';
 
+export interface EvolutionInstance {
+  instanceName: string;
+  status: 'open' | 'closed' | 'connecting' | 'qr' | 'unknown';
+  qrCode?: string;
+  connected: boolean;
+  phone?: string;
+  timestamp?: number;
+}
+
 export class EvolutionService {
   private client: AxiosInstance;
   private instance: string;
+  private apiUrl: string;
 
   constructor(apiUrl: string, apiKey: string, instance: string) {
+    this.apiUrl = apiUrl;
     this.client = axios.create({
       baseURL: apiUrl,
       headers: {
@@ -12,6 +23,75 @@ export class EvolutionService {
       },
     });
     this.instance = instance;
+  }
+
+  async getInstanceStatus(): Promise<EvolutionInstance> {
+    try {
+      const response = await this.client.get(`/instance/fetch/${this.instance}`);
+      const data = response.data;
+      
+      return {
+        instanceName: data.instance?.instanceName || this.instance,
+        status: data.instance?.state || 'unknown',
+        qrCode: data.qrcode?.qr,
+        connected: data.instance?.state === 'open',
+        phone: data.instance?.wid,
+        timestamp: Date.now(),
+      };
+    } catch (error) {
+      console.error('Error fetching instance status:', error);
+      throw error;
+    }
+  }
+
+  async getQrCode(): Promise<string | null> {
+    try {
+      const response = await this.client.get(`/instance/fetch/${this.instance}`);
+      return response.data?.qrcode?.qr || null;
+    } catch (error) {
+      console.error('Error fetching QR code:', error);
+      return null;
+    }
+  }
+
+  async restartInstance(): Promise<boolean> {
+    try {
+      const response = await this.client.post(`/instance/restart/${this.instance}`);
+      return response.status === 200 || response.status === 201;
+    } catch (error) {
+      console.error('Error restarting instance:', error);
+      throw error;
+    }
+  }
+
+  async stopInstance(): Promise<boolean> {
+    try {
+      const response = await this.client.delete(`/instance/logout/${this.instance}`);
+      return response.status === 200 || response.status === 201;
+    } catch (error) {
+      console.error('Error stopping instance:', error);
+      throw error;
+    }
+  }
+
+  async createInstance(instanceName: string): Promise<EvolutionInstance> {
+    try {
+      const response = await this.client.post(`/instance/create`, {
+        instanceName,
+        token: this.client.defaults.headers.apikey,
+      });
+      
+      return {
+        instanceName,
+        status: 'qr',
+        qrCode: response.data?.qrcode?.qr,
+        connected: false,
+        timestamp: Date.now(),
+      };
+    } catch (error) {
+      console.error('Error creating instance:', error);
+      throw error;
+    }
   }
 
   async sendTextMessage(phone: string, message: string): Promise<boolean> {

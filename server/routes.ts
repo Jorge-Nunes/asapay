@@ -1492,6 +1492,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return recs;
   }
 
+  // Evolution API endpoints
+  app.get("/api/evolution/instance/status", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+        return res.status(400).json({ error: "Evolution não configurada" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        config.evolutionInstance
+      );
+
+      const status = await evolutionService.getInstanceStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('[Evolution] Error getting instance status:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao obter status" });
+    }
+  });
+
+  app.get("/api/evolution/instance/qrcode", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+        return res.status(400).json({ error: "Evolution não configurada" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        config.evolutionInstance
+      );
+
+      const qrCode = await evolutionService.getQrCode();
+      res.json({ qrCode });
+    } catch (error) {
+      console.error('[Evolution] Error getting QR code:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao obter QR code" });
+    }
+  });
+
+  app.post("/api/evolution/instance/restart", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+        return res.status(400).json({ error: "Evolution não configurada" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        config.evolutionInstance
+      );
+
+      const success = await evolutionService.restartInstance();
+      if (success) {
+        res.json({ success: true, message: "Instância reiniciada com sucesso" });
+      } else {
+        res.status(400).json({ error: "Falha ao reiniciar instância" });
+      }
+    } catch (error) {
+      console.error('[Evolution] Error restarting instance:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao reiniciar" });
+    }
+  });
+
+  app.post("/api/evolution/instance/stop", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+        return res.status(400).json({ error: "Evolution não configurada" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        config.evolutionInstance
+      );
+
+      const success = await evolutionService.stopInstance();
+      if (success) {
+        res.json({ success: true, message: "Instância parada com sucesso" });
+      } else {
+        res.status(400).json({ error: "Falha ao parar instância" });
+      }
+    } catch (error) {
+      console.error('[Evolution] Error stopping instance:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao parar" });
+    }
+  });
+
+  app.post("/api/evolution/instance/create", async (req, res) => {
+    try {
+      const { instanceName } = req.body;
+      if (!instanceName) {
+        return res.status(400).json({ error: "Nome da instância é obrigatório" });
+      }
+
+      const config = await storage.getConfig();
+      if (!config.evolutionUrl || !config.evolutionApiKey) {
+        return res.status(400).json({ error: "Evolution não configurada" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        instanceName
+      );
+
+      const instance = await evolutionService.createInstance(instanceName);
+      res.json(instance);
+    } catch (error) {
+      console.error('[Evolution] Error creating instance:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao criar instância" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
