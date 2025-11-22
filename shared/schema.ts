@@ -110,6 +110,8 @@ export type Config = {
     desbloqueio?: string;
     pagamentoConfirmado?: string;
   };
+  lastClientSyncTime?: number;
+  lastCobrancasSyncTime?: number;
 };
 
 export type Cliente = {

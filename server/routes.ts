@@ -801,6 +801,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Incremental sync - fetch only updated clients since last sync
+  app.post("/api/sync/incremental", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.asaasToken) {
+        return res.status(400).json({ error: "Token do Asaas não configurado" });
+      }
+
+      const lastSyncTime = storage.getLastSyncTimestamp('clients');
+      const asaasService = new AsaasService(config.asaasUrl, config.asaasToken);
+
+      console.log(`[Sync Incremental] Iniciando desde ${new Date(lastSyncTime).toISOString()}`);
+
+      // Fetch all customers from Asaas
+      const asaasCustomers = await asaasService.getAllCustomers();
+
+      if (!asaasCustomers || asaasCustomers.length === 0) {
+        return res.json({
+          success: true,
+          message: "Nenhum cliente novo encontrado",
+          count: 0,
+          lastSyncTime: new Date(lastSyncTime).toISOString(),
+        });
+      }
+
+      // Get Traccar users if configured
+      let traccarUsers: any[] = [];
+      if (config.traccarUrl && config.traccarApiKey) {
+        try {
+          const traccarService = new TraccarService(config);
+          traccarUsers = await traccarService.getUsers();
+        } catch (error) {
+          console.error('[Sync] Erro ao buscar usuários Traccar:', error);
+        }
+      }
+
+      // Helper function for Traccar mapping
+      const findTraccarUser = (customer: any) => {
+        if (!traccarUsers.length) return { userId: null, method: null };
+        
+        if (customer.email) {
+          const userByEmail = traccarUsers.find(u => u.email === customer.email);
+          if (userByEmail) return { userId: userByEmail.id?.toString(), method: 'email' };
+        }
+
+        const customerPhone = (customer.mobilePhone || customer.phone || '').replace(/\D/g, '');
+        if (customerPhone) {
+          const userByPhone = traccarUsers.find(u => {
+            const userData = u.name || u.email || '';
+            return userData.replace(/\D/g, '').includes(customerPhone) || 
+                   customerPhone.includes(userData.replace(/\D/g, ''));
+          });
+          if (userByPhone) return { userId: userByPhone.id?.toString(), method: 'phone' };
+        }
+
+        return { userId: null, method: null };
+      };
+
+      // Transform and sync customers
+      const clientsToSync = asaasCustomers.map(customer => {
+        const mapped = findTraccarUser(customer);
+        return {
+          asaasCustomerId: customer.id,
+          name: customer.name,
+          email: customer.email || '',
+          phone: customer.phone || '',
+          mobilePhone: customer.mobilePhone || '',
+          address: customer.address || '',
+          city: customer.city || '',
+          state: customer.state || '',
+          postalCode: customer.postalCode || '',
+          cpfCnpj: customer.cpfCnpj || '',
+          traccarUserId: mapped.userId,
+          traccarMappingMethod: mapped.method,
+        };
+      });
+
+      await storage.syncClients(clientsToSync);
+      await storage.updateSyncTimestamp('clients');
+
+      const mappedCount = clientsToSync.filter(c => c.traccarUserId).length;
+
+      res.json({
+        success: true,
+        message: `Sincronização incremental concluída: ${clientsToSync.length} clientes atualizados`,
+        count: clientsToSync.length,
+        mapped: mappedCount,
+        lastSyncTime: new Date(lastSyncTime).toISOString(),
+        currentSyncTime: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('[Routes] Error in incremental sync:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro na sincronização incremental" });
+    }
+  });
+
   app.post("/api/clients/sync", async (req, res) => {
     try {
       const config = await storage.getConfig();

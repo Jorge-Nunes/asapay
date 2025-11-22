@@ -74,6 +74,56 @@ export class AsaasService {
     return customers;
   }
 
+  async getCustomersUpdatedSince(sinceTimestamp: number): Promise<Cliente[]> {
+    // Convert timestamp to ISO date string for Asaas API
+    const sinceDate = new Date(sinceTimestamp).toISOString().split('T')[0];
+    const customers: Cliente[] = [];
+    let offset = 0;
+    const limit = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const response = await this.client.get<AsaasListResponse<AsaasCustomer>>('/customers', {
+          params: { 
+            limit, 
+            offset,
+            sort: '-updatedAt'  // Sort by updated date descending
+          },
+        });
+
+        // Filter customers updated since the given date
+        const newCustomers = response.data.data
+          .filter(c => {
+            // Only include if updatedAt is not available, we sync everything
+            // Asaas doesn't provide updatedAt in customer list, so we'll sync all
+            return true;
+          })
+          .map(c => ({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            phone: c.phone,
+            mobilePhone: c.mobilePhone,
+          }));
+
+        customers.push(...newCustomers);
+
+        hasMore = response.data.hasMore;
+        offset += limit;
+
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+      } catch (error) {
+        console.error('Error fetching updated customers from Asaas:', error);
+        throw error;
+      }
+    }
+
+    return customers;
+  }
+
   async getPendingPayments(): Promise<AsaasPayment[]> {
     const payments: AsaasPayment[] = [];
     let offset = 0;

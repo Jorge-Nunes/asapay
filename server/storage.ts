@@ -155,6 +155,23 @@ Obrigado por sua confiança! 🙏`,
     return this.config;
   }
 
+  async updateSyncTimestamp(type: 'clients' | 'cobrancas'): Promise<void> {
+    const timestamp = Date.now();
+    if (type === 'clients') {
+      this.config.lastClientSyncTime = timestamp;
+    } else {
+      this.config.lastCobrancasSyncTime = timestamp;
+    }
+  }
+
+  getLastSyncTimestamp(type: 'clients' | 'cobrancas'): number {
+    if (type === 'clients') {
+      return this.config.lastClientSyncTime || 0;
+    } else {
+      return this.config.lastCobrancasSyncTime || 0;
+    }
+  }
+
   async getCobrancas(limit?: number, offset?: number): Promise<Cobranca[]> {
     let cobrancas = Array.from(this.cobrancas.values());
     

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Download, Edit2, Lock, Unlock } from "lucide-react";
+import { Search, Download, Edit2, Lock, Unlock, RefreshCw, Clock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -41,6 +41,7 @@ export default function Clientes() {
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
   const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   const { data: paginatedResponse = { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false } }, isLoading, refetch } = useQuery<PaginatedResponse>({
     queryKey: ['/api/clients', currentPage],
@@ -75,10 +76,40 @@ export default function Clientes() {
       return response.json();
     },
     onSuccess: (data) => {
+      setLastSyncTime(new Date());
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       toast({
         title: "Sucesso",
         description: `${data.count} clientes sincronizados com sucesso!`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const incrementalSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/sync/incremental', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro na sincronização incremental');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setLastSyncTime(new Date());
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      toast({
+        title: "Sucesso",
+        description: `Sincronização incremental: ${data.count} clientes atualizados`,
       });
     },
     onError: (error: Error) => {
@@ -171,6 +202,10 @@ export default function Clientes() {
     syncMutation.mutate();
   };
 
+  const handleIncrementalSync = () => {
+    incrementalSyncMutation.mutate();
+  };
+
   const handleEditClick = (client: ClientWithPreferences) => {
     setEditingClientId(client.id);
     setEditFormData({
@@ -191,20 +226,38 @@ export default function Clientes() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground text-sm">Gerencie as preferências de notificação</p>
+          {lastSyncTime && (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Última sincronização: {lastSyncTime.toLocaleTimeString('pt-BR')}
+            </p>
+          )}
         </div>
-        <Button 
-          onClick={handleSync}
-          disabled={syncMutation.isPending}
-          size="sm"
-          data-testid="button-sync-clients"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {syncMutation.isPending ? "Sincronizando..." : "Sincronizar"}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleIncrementalSync}
+            disabled={incrementalSyncMutation.isPending}
+            variant="outline"
+            size="sm"
+            data-testid="button-sync-incremental"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${incrementalSyncMutation.isPending ? 'animate-spin' : ''}`} />
+            {incrementalSyncMutation.isPending ? "Sincronizando..." : "Sync Incremental"}
+          </Button>
+          <Button 
+            onClick={handleSync}
+            disabled={syncMutation.isPending}
+            size="sm"
+            data-testid="button-sync-clients"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {syncMutation.isPending ? "Sincronizando..." : "Sincronizar Tudo"}
+          </Button>
+        </div>
       </div>
 
       {/* Informações de Paginação */}
