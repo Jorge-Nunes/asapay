@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 interface StatusChartProps {
   data: Array<{
@@ -8,45 +8,61 @@ interface StatusChartProps {
   }>;
 }
 
-const COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--destructive))',
-];
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 export function StatusChart({ data }: StatusChartProps) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx="45%"
-          cy="50%"
-          labelLine={false}
-          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-          outerRadius={100}
-          fill="#8884d8"
-          dataKey="value"
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip 
-          contentStyle={{
-            backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '6px',
-          }}
-        />
-        <Legend 
-          layout="vertical" 
-          align="right" 
-          verticalAlign="middle"
-          wrapperStyle={{ paddingLeft: '10px' }}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="space-y-6">
+      <ResponsiveContainer width="100%" height={350}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="40%"
+            cy="50%"
+            innerRadius={70}
+            outerRadius={120}
+            paddingAngle={2}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip 
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              padding: '8px 12px',
+            }}
+            formatter={(value: number) => [value, 'Registros']}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {data.map((item, index) => (
+          <div key={item.name} className="p-3 bg-muted rounded-lg border border-border">
+            <div className="flex items-center gap-2 mb-1">
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+              />
+              <span className="text-xs font-medium text-muted-foreground truncate">
+                {item.name}
+              </span>
+            </div>
+            <div className="text-lg font-bold tabular-nums">
+              {item.value}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {((item.value / total) * 100).toFixed(1)}%
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
