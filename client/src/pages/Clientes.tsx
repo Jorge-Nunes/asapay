@@ -399,19 +399,48 @@ export default function Clientes() {
             ← Anterior
           </Button>
 
-          <div className="flex gap-1">
-            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                variant={page === pagination.page ? "default" : "outline"}
-                size="sm"
-                className="min-w-10"
-                data-testid={`button-page-${page}`}
-              >
-                {page}
-              </Button>
-            ))}
+          <div className="flex gap-1 items-center">
+            {(() => {
+              const pages = [];
+              const maxVisible = 7;
+              const halfWindow = 3;
+              
+              if (pagination.pages <= maxVisible) {
+                for (let i = 1; i <= pagination.pages; i++) {
+                  pages.push(i);
+                }
+              } else {
+                const start = Math.max(1, pagination.page - halfWindow);
+                const end = Math.min(pagination.pages, pagination.page + halfWindow);
+                
+                if (start > 1) pages.push(1);
+                if (start > 2) pages.push('...');
+                
+                for (let i = start; i <= end; i++) {
+                  pages.push(i);
+                }
+                
+                if (end < pagination.pages - 1) pages.push('...');
+                if (end < pagination.pages) pages.push(pagination.pages);
+              }
+              
+              return pages.map((page, idx) => (
+                page === '...' ? (
+                  <span key={`ellipsis-${idx}`} className="text-xs text-muted-foreground">•••</span>
+                ) : (
+                  <Button
+                    key={page}
+                    onClick={() => handlePageChange(page as number)}
+                    variant={page === pagination.page ? "default" : "outline"}
+                    size="sm"
+                    className="min-w-8 h-8"
+                    data-testid={`button-page-${page}`}
+                  >
+                    {page}
+                  </Button>
+                )
+              ));
+            })()}
           </div>
 
           <Button 
