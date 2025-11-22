@@ -157,11 +157,11 @@ export default function Cobrancas() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Cobranças</h1>
-          <p className="text-muted-foreground mt-1">Gerencie todas as cobranças pendentes</p>
+          <p className="text-muted-foreground text-sm">Gerencie todas as cobranças pendentes</p>
         </div>
         <Button 
           variant="outline" 
@@ -234,42 +234,71 @@ export default function Cobrancas() {
             
             {/* Paginação */}
             <div className="flex items-center justify-between p-4 border-t">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {total === 0 ? (
-                  <span>Nenhuma cobrança encontrada</span>
+                  <span>Nenhuma cobrança</span>
                 ) : (
                   <span>
-                    Exibindo {Math.min((page * pageSize) + 1, total)} a {Math.min((page + 1) * pageSize, total)} de {total}
+                    {Math.min((page * pageSize) + 1, total)}-{Math.min((page + 1) * pageSize, total)} de {total}
                   </span>
                 )}
               </div>
               
               {totalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePreviousPage}
                     disabled={page === 0}
                     data-testid="button-prev-page"
+                    className="h-8"
                   >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Anterior
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
 
-                  <div className="flex gap-1">
-                    {Array.from({ length: totalPages }).map((_, idx) => (
-                      <Button
-                        key={idx}
-                        variant={page === idx ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageClick(idx)}
-                        className="min-w-10"
-                        data-testid={`button-page-${idx}`}
-                      >
-                        {idx + 1}
-                      </Button>
-                    ))}
+                  <div className="flex gap-1 items-center">
+                    {(() => {
+                      const pages = [];
+                      const maxVisible = 7;
+                      const halfWindow = 3;
+                      
+                      if (totalPages <= maxVisible) {
+                        for (let i = 0; i < totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        const start = Math.max(0, page - halfWindow);
+                        const end = Math.min(totalPages - 1, page + halfWindow);
+                        
+                        if (start > 0) pages.push(0);
+                        if (start > 1) pages.push('...');
+                        
+                        for (let i = start; i <= end; i++) {
+                          pages.push(i);
+                        }
+                        
+                        if (end < totalPages - 2) pages.push('...');
+                        if (end < totalPages - 1) pages.push(totalPages - 1);
+                      }
+                      
+                      return pages.map((pageNum, idx) => (
+                        pageNum === '...' ? (
+                          <span key={`ellipsis-${idx}`} className="text-xs text-muted-foreground">•••</span>
+                        ) : (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageClick(pageNum as number)}
+                            className="min-w-8 h-8"
+                            data-testid={`button-page-${pageNum}`}
+                          >
+                            {(pageNum as number) + 1}
+                          </Button>
+                        )
+                      ));
+                    })()}
                   </div>
 
                   <Button
@@ -278,9 +307,9 @@ export default function Cobrancas() {
                     onClick={handleNextPage}
                     disabled={page >= totalPages - 1}
                     data-testid="button-next-page"
+                    className="h-8"
                   >
-                    Próximo
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               )}
