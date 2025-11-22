@@ -56,48 +56,48 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead 
-              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              className={`px-2 py-2 text-xs ${onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}`}
               onClick={() => onSort?.('customerName')}
               data-testid="header-cliente"
             >
               Cliente {SortIcon && sortField === 'customerName' && <SortIcon field="customerName" />}
             </TableHead>
             <TableHead 
-              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              className={`px-2 py-2 text-xs ${onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}`}
               onClick={() => onSort?.('value')}
               data-testid="header-valor"
             >
               Valor {SortIcon && sortField === 'value' && <SortIcon field="value" />}
             </TableHead>
             <TableHead 
-              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              className={`px-2 py-2 text-xs ${onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}`}
               onClick={() => onSort?.('description')}
               data-testid="header-descricao"
             >
-              Descrição {SortIcon && sortField === 'description' && <SortIcon field="description" />}
+              Desc. {SortIcon && sortField === 'description' && <SortIcon field="description" />}
             </TableHead>
             <TableHead 
-              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              className={`px-2 py-2 text-xs ${onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}`}
               onClick={() => onSort?.('tipo')}
               data-testid="header-tipo"
             >
               Tipo {SortIcon && sortField === 'tipo' && <SortIcon field="tipo" />}
             </TableHead>
             <TableHead 
-              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              className={`px-2 py-2 text-xs ${onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}`}
               onClick={() => onSort?.('status')}
               data-testid="header-status"
             >
               Status {SortIcon && sortField === 'status' && <SortIcon field="status" />}
             </TableHead>
             <TableHead 
-              className={onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}
+              className={`px-2 py-2 text-xs ${onSort ? "cursor-pointer hover:bg-accent/50 select-none" : ""}`}
               onClick={() => onSort?.('dueDate')}
               data-testid="header-vencimento"
             >
               Vencimento {SortIcon && sortField === 'dueDate' && <SortIcon field="dueDate" />}
             </TableHead>
-            <TableHead className="text-right w-24">Ações</TableHead>
+            <TableHead className="text-right px-2 py-2 text-xs">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -111,29 +111,29 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
             cobrancas.map((cobranca) => (
               <TableRow key={cobranca.id} data-testid={`row-cobranca-${cobranca.id}`} className="hover:bg-muted/50 transition-colors">
                 {/* Cliente com Avatar */}
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
+                <TableCell className="px-2 py-2 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-xs bg-primary/10 text-primary">
                         {getInitials(cobranca.customerName)}
                       </AvatarFallback>
                     </Avatar>
-                    <span>{cobranca.customerName}</span>
+                    <span className="text-xs truncate">{cobranca.customerName}</span>
                   </div>
                 </TableCell>
 
                 {/* Valor */}
-                <TableCell className="tabular-nums font-semibold text-foreground">
+                <TableCell className="px-2 py-2 tabular-nums font-semibold text-foreground text-xs">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cobranca.value)}
                 </TableCell>
 
                 {/* Descrição/ID */}
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="px-2 py-2 text-xs text-muted-foreground truncate">
                   {cobranca.description || cobranca.id.slice(0, 8)}
                 </TableCell>
 
                 {/* Tipo com Badge melhorado */}
-                <TableCell>
+                <TableCell className="px-2 py-2">
                   {(() => {
                     const config = cobranca.tipo ? tipoConfig[cobranca.tipo as keyof typeof tipoConfig] : null;
                     return config ? (
@@ -147,17 +147,17 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
                 </TableCell>
 
                 {/* Status com Indicador Visual */}
-                <TableCell>
-                  <div className="flex items-center gap-2">
+                <TableCell className="px-2 py-2">
+                  <div className="flex items-center gap-1">
                     <Circle 
                       className={`h-3 w-3 fill-current ${statusConfig[cobranca.status].color}`}
                     />
-                    <span className="text-sm font-medium">{statusConfig[cobranca.status].label}</span>
+                    <span className="text-xs font-medium">{statusConfig[cobranca.status].label}</span>
                   </div>
                 </TableCell>
 
                 {/* Data de Vencimento */}
-                <TableCell className="text-sm tabular-nums">
+                <TableCell className="px-2 py-2 text-xs tabular-nums">
                   <div className="flex items-center gap-1">
                     {format(new Date(cobranca.dueDate), 'dd/MM/yyyy', { locale: ptBR })}
                     {(() => {
@@ -176,7 +176,7 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
                 </TableCell>
 
                 {/* Ações */}
-                <TableCell className="text-right">
+                <TableCell className="text-right px-2 py-2">
                   <div className="flex items-center justify-end gap-1">
                     {onSendMessage && (
                       <Button

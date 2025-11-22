@@ -21,9 +21,6 @@ import type { ClientData } from "@shared/schema";
 interface ClientWithPreferences extends ClientData {
   blockDailyMessages: number;
   diasAtrasoNotificacao: number;
-  traccarUserId?: string | null;
-  traccarMappingMethod?: string | null;
-  isTraccarBlocked?: number;
 }
 
 interface PaginatedResponse {
@@ -231,33 +228,33 @@ export default function Clientes() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-nome">
+                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-nome">
                     Nome
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-email">
+                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-email">
                     Email
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-telefone">
+                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-telefone">
                     Telefone
                   </th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold" data-testid="header-dias-atraso">
+                  <th className="px-2 py-2 text-center text-xs font-semibold" data-testid="header-dias-atraso">
                     Atraso
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-mapeado">
+                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-mapeado">
                     Mapeado
                   </th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold">Bloqueado</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold">Ações</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold">Bloqueado</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {clients.map((client) => (
                   <tr key={client.id} className="border-b hover:bg-muted/30 transition-colors" data-testid={`row-client-${client.id}`}>
-                    <td className="px-3 py-2 text-xs font-medium">{client.name}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{client.email || '-'}</td>
-                    <td className="px-3 py-2 text-xs">{client.mobilePhone || client.phone || '-'}</td>
-                    <td className="px-3 py-2 text-xs text-center">{client.diasAtrasoNotificacao || 3}</td>
-                    <td className="px-3 py-2 text-xs">
+                    <td className="px-2 py-2 text-xs font-medium">{client.name}</td>
+                    <td className="px-2 py-2 text-xs text-muted-foreground">{client.email || '-'}</td>
+                    <td className="px-2 py-2 text-xs">{client.mobilePhone || client.phone || '-'}</td>
+                    <td className="px-2 py-2 text-xs text-center">{client.diasAtrasoNotificacao || 3}</td>
+                    <td className="px-2 py-2 text-xs">
                       {client.traccarUserId ? (
                         <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded whitespace-nowrap" title={`ID: ${client.traccarUserId}`}>
                           {client.traccarMappingMethod === 'email' ? 'Email' : client.traccarMappingMethod === 'phone' ? 'Celular' : 'Manual'}
@@ -266,7 +263,7 @@ export default function Clientes() {
                         <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-2 py-2 text-center">
                       {Boolean(client.isTraccarBlocked) && (
                         <Button
                           size="icon"
@@ -300,7 +297,7 @@ export default function Clientes() {
                         </Button>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-2 py-2 text-center">
                       <Dialog open={editingClientId === client.id} onOpenChange={(open) => !open && setEditingClientId(null)}>
                         <DialogTrigger asChild>
                           <Button
