@@ -193,11 +193,11 @@ export default function Clientes() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
-          <p className="text-muted-foreground mt-1">Gerencie as preferências de notificação dos clientes</p>
+          <p className="text-muted-foreground text-sm">Gerencie as preferências de notificação</p>
         </div>
         <Button 
           onClick={handleSync}
@@ -206,18 +206,17 @@ export default function Clientes() {
           data-testid="button-sync-clients"
         >
           <Download className="h-4 w-4 mr-2" />
-          {syncMutation.isPending ? "Sincronizando..." : "Sincronizar com Asaas"}
+          {syncMutation.isPending ? "Sincronizando..." : "Sincronizar"}
         </Button>
       </div>
 
       {/* Informações de Paginação */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <div>
-          Mostrando {clients.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} a{' '}
-          {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} clientes
+          Mostrando {clients.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}-{Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total}
         </div>
         <div className="text-xs">
-          Página {pagination.page} de {pagination.pages}
+          Pág {pagination.page}/{pagination.pages}
         </div>
       </div>
 
@@ -232,51 +231,47 @@ export default function Clientes() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-nome">
+                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-nome">
                     Nome
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-email">
+                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-email">
                     Email
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-telefone">
+                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-telefone">
                     Telefone
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-dias-atraso">
-                    Dias Atraso
+                  <th className="px-3 py-2 text-center text-xs font-semibold" data-testid="header-dias-atraso">
+                    Atraso
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-mapeado">
+                  <th className="px-3 py-2 text-left text-xs font-semibold" data-testid="header-mapeado">
                     Mapeado
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold">Bloqueado Traccar</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold">Ações</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold">Bloqueado</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {clients.map((client) => (
                   <tr key={client.id} className="border-b hover:bg-muted/30 transition-colors" data-testid={`row-client-${client.id}`}>
-                    <td className="px-4 py-3 text-sm font-medium">{client.name}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{client.email || '-'}</td>
-                    <td className="px-4 py-3 text-sm">{client.mobilePhone || client.phone || '-'}</td>
-                    <td className="px-4 py-3 text-sm">{client.diasAtrasoNotificacao || 3} dias</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        {client.traccarUserId ? (
-                          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded" title={`ID: ${client.traccarUserId}`}>
-                            Mapeado por {client.traccarMappingMethod === 'email' ? 'Email' : client.traccarMappingMethod === 'phone' ? 'Celular' : 'ID Manual'}
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs rounded">
-                            Não Mapeado
-                          </span>
-                        )}
-                      </div>
+                    <td className="px-3 py-2 text-xs font-medium">{client.name}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{client.email || '-'}</td>
+                    <td className="px-3 py-2 text-xs">{client.mobilePhone || client.phone || '-'}</td>
+                    <td className="px-3 py-2 text-xs text-center">{client.diasAtrasoNotificacao || 3}</td>
+                    <td className="px-3 py-2 text-xs">
+                      {client.traccarUserId ? (
+                        <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded whitespace-nowrap" title={`ID: ${client.traccarUserId}`}>
+                          {client.traccarMappingMethod === 'email' ? 'Email' : client.traccarMappingMethod === 'phone' ? 'Celular' : 'Manual'}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 py-2 text-center">
                       {Boolean(client.isTraccarBlocked) && (
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 mx-auto"
+                          className="h-5 w-5 mx-auto"
                           onClick={() => {
                             setBlockingClientId(`unblock-${client.id}`);
                             blockTraccarMutation.mutate(client.id);
@@ -285,14 +280,14 @@ export default function Clientes() {
                           title="Desbloquear na Traccar"
                           data-testid={`button-unblock-traccar-${client.id}`}
                         >
-                          <Lock className="h-4 w-4 text-red-600 dark:text-red-400" />
+                          <Lock className="h-3 w-3 text-red-600 dark:text-red-400" />
                         </Button>
                       )}
                       {!Boolean(client.isTraccarBlocked) && client.traccarUserId && (
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 mx-auto"
+                          className="h-5 w-5 mx-auto"
                           onClick={() => {
                             setBlockingClientId(`block-${client.id}`);
                             blockTraccarMutation.mutate(client.id);
@@ -301,11 +296,11 @@ export default function Clientes() {
                           title="Bloquear na Traccar"
                           data-testid={`button-block-traccar-${client.id}`}
                         >
-                          <Unlock className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          <Unlock className="h-3 w-3 text-green-600 dark:text-green-400" />
                         </Button>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 py-2 text-center">
                       <Dialog open={editingClientId === client.id} onOpenChange={(open) => !open && setEditingClientId(null)}>
                         <DialogTrigger asChild>
                           <Button
