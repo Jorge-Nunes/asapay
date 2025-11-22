@@ -409,91 +409,89 @@ export default function Configuracoes() {
           {formData.evolutionUrl && formData.evolutionApiKey && formData.evolutionInstance && (
             <Card className="border-2 hover-elevate transition-all">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Status da Instância</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => refetchStatus()}
-                    disabled={statusLoading}
-                    data-testid="button-refresh-evolution"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${statusLoading ? 'animate-spin' : ''}`} />
-                  </Button>
-                </CardTitle>
+                <CardTitle>Controles da Instância</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {statusLoading ? (
-                  <div className="flex items-center justify-center h-40 text-muted-foreground">
-                    Carregando...
+                  <div className="flex items-center justify-center h-20 text-muted-foreground">
+                    Carregando status...
                   </div>
                 ) : instanceStatus ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Nome</p>
-                        <p className="text-lg font-bold text-foreground">{instanceStatus.instanceName}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
-                        <Badge className={`text-sm font-semibold border ${getStatusColor(instanceStatus.status)}`}>
-                          {getStatusLabel(instanceStatus.status)}
-                        </Badge>
-                      </div>
-                      {instanceStatus.phone && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">Telefone</p>
-                          <p className="text-lg font-bold text-foreground">{instanceStatus.phone}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Conexão</p>
-                        <Badge variant={instanceStatus.connected ? 'default' : 'secondary'}>
-                          {instanceStatus.connected ? '✓ Online' : '✕ Offline'}
-                        </Badge>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Nome</p>
+                      <p className="text-lg font-bold text-foreground">{instanceStatus.instanceName}</p>
                     </div>
-
-                    <div className="flex gap-3 flex-wrap pt-4 border-t">
-                      <Button
-                        onClick={() => qrMutation.mutate()}
-                        disabled={qrMutation.isPending}
-                        variant="outline"
-                        data-testid="button-qrcode"
-                        className="gap-2"
-                      >
-                        <QrCode className="h-4 w-4" />
-                        {qrMutation.isPending ? 'Obtendo...' : 'Ver QR Code'}
-                      </Button>
-
-                      <Button
-                        onClick={() => restartMutation.mutate()}
-                        disabled={restartMutation.isPending}
-                        variant="outline"
-                        data-testid="button-restart-evolution"
-                        className="gap-2"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        {restartMutation.isPending ? 'Reiniciando...' : 'Reiniciar'}
-                      </Button>
-
-                      <Button
-                        onClick={() => stopMutation.mutate()}
-                        disabled={stopMutation.isPending}
-                        variant="destructive"
-                        data-testid="button-stop-evolution"
-                        className="gap-2"
-                      >
-                        <Power className="h-4 w-4" />
-                        {stopMutation.isPending ? 'Parando...' : 'Parar'}
-                      </Button>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
+                      <Badge className={`text-sm font-semibold border ${getStatusColor(instanceStatus.status)}`}>
+                        {getStatusLabel(instanceStatus.status)}
+                      </Badge>
+                    </div>
+                    {instanceStatus.phone && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Telefone</p>
+                        <p className="text-lg font-bold text-foreground">{instanceStatus.phone}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Conexão</p>
+                      <Badge variant={instanceStatus.connected ? 'default' : 'secondary'}>
+                        {instanceStatus.connected ? '✓ Online' : '✕ Offline'}
+                      </Badge>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-40 text-muted-foreground">
-                    Sem dados disponíveis
+                  <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted rounded">
+                    Clique em "Atualizar" para carregar o status da instância
                   </div>
                 )}
+
+                <div className="flex gap-3 flex-wrap pt-2 border-t">
+                  <Button
+                    onClick={() => refetchStatus()}
+                    disabled={statusLoading}
+                    variant="outline"
+                    data-testid="button-refresh-evolution"
+                    className="gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${statusLoading ? 'animate-spin' : ''}`} />
+                    {statusLoading ? 'Atualizando...' : 'Atualizar'}
+                  </Button>
+
+                  <Button
+                    onClick={() => qrMutation.mutate()}
+                    disabled={qrMutation.isPending}
+                    variant="outline"
+                    data-testid="button-qrcode"
+                    className="gap-2"
+                  >
+                    <QrCode className="h-4 w-4" />
+                    {qrMutation.isPending ? 'Obtendo...' : 'Ver QR Code'}
+                  </Button>
+
+                  <Button
+                    onClick={() => restartMutation.mutate()}
+                    disabled={restartMutation.isPending}
+                    variant="outline"
+                    data-testid="button-restart-evolution"
+                    className="gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    {restartMutation.isPending ? 'Reiniciando...' : 'Reiniciar'}
+                  </Button>
+
+                  <Button
+                    onClick={() => stopMutation.mutate()}
+                    disabled={stopMutation.isPending}
+                    variant="destructive"
+                    data-testid="button-stop-evolution"
+                    className="gap-2"
+                  >
+                    <Power className="h-4 w-4" />
+                    {stopMutation.isPending ? 'Parando...' : 'Parar'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
