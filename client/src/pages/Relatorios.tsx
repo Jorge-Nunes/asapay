@@ -168,30 +168,32 @@ export default function Relatorios() {
         </TabsContent>
 
         <TabsContent value="cobrancas" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-lg">Status das Cobranças</CardTitle>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-[450px]">
                 <StatusChart data={statusData} />
               </CardContent>
             </Card>
-            <Card className="border-2 hover-elevate">
-              <CardHeader>
-                <CardTitle className="text-lg">Resumo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {statusData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
-                      <span className="text-sm">{item.name}</span>
-                      <span className="text-sm font-semibold tabular-nums">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Card className="border-2 hover-elevate">
+                <CardHeader>
+                  <CardTitle className="text-lg">Resumo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {statusData.map((item) => (
+                      <div key={item.name} className="flex items-center justify-between">
+                        <span className="text-sm">{item.name}</span>
+                        <span className="text-sm font-semibold tabular-nums">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
