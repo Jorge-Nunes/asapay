@@ -72,7 +72,15 @@ export default function Dashboard() {
   };
 
   const latestLogs = executions
-    .flatMap((exec) => (exec.detalhes || []).map(log => ({ ...log, executionId: exec.id })))
+    .flatMap((exec) => {
+      const details = Array.isArray(exec.detalhes) ? exec.detalhes : [];
+      console.log('[Dashboard] Execution:', exec.id, 'Details:', details.length);
+      return details.map(log => ({ 
+        ...log, 
+        executionId: exec.id,
+        timestamp: log.timestamp || new Date().toISOString()
+      }));
+    })
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 10);
 

@@ -231,14 +231,16 @@ export class ExecutionService {
       const erros = processedLogs.filter(l => l.status === 'error').length;
       const usuariosBloqueados = logs.filter(l => l.id?.includes('blocked')).length;
 
-      // Update execution
+      // Update execution - combine processedLogs (messages) with logs (traccar operations)
+      const allLogs = [...processedLogs, ...logs];
+      
       await storage.updateExecution(execution.id, {
         status: 'completed',
         cobrancasProcessadas: categorized.filter(c => c.tipo !== 'processada').length,
         mensagensEnviadas,
         usuariosBloqueados,
         erros,
-        detalhes: logs,
+        detalhes: allLogs,
       });
 
       console.log(`Execution completed: ${mensagensEnviadas} messages sent, ${usuariosBloqueados} users blocked/unblocked, ${erros} errors`);
