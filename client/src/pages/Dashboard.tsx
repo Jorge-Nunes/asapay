@@ -71,7 +71,10 @@ export default function Dashboard() {
     });
   };
 
-  const latestLogs = executions[0]?.detalhes?.slice(0, 10) || [];
+  const latestLogs = executions
+    .flatMap((exec) => (exec.detalhes || []).map(log => ({ ...log, executionId: exec.id })))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 10);
 
   const statusCounts = statusData.reduce((acc, item) => {
     if (item.name === 'Recebido') acc.received = item.value;
