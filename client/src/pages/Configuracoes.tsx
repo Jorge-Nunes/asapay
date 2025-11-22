@@ -406,7 +406,7 @@ export default function Configuracoes() {
             </CardContent>
           </Card>
 
-          {config?.evolutionUrl && config?.evolutionApiKey && config?.evolutionInstance && (
+          {formData.evolutionUrl && formData.evolutionApiKey && formData.evolutionInstance && (
             <Card className="border-2 hover-elevate transition-all">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
