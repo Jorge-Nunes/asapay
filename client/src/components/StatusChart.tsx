@@ -15,39 +15,41 @@ export function StatusChart({ data }: StatusChartProps) {
 
   return (
     <div className="space-y-6">
-      <ResponsiveContainer width="100%" height={350}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="40%"
-            cy="50%"
-            innerRadius={70}
-            outerRadius={120}
-            paddingAngle={2}
-            dataKey="value"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip 
-            contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              padding: '8px 12px',
-            }}
-            formatter={(value: number) => [value, 'Registros']}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="flex justify-center">
+        <ResponsiveContainer width="100%" height={350} maxWidth={500}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={70}
+              outerRadius={120}
+              paddingAngle={2}
+              dataKey="value"
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                padding: '8px 12px',
+              }}
+              formatter={(value: number) => [value, 'Registros']}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {data.map((item, index) => (
           <div key={item.name} className="p-3 bg-muted rounded-lg border border-border">
             <div className="flex items-center gap-2 mb-1">
               <div 
-                className="w-3 h-3 rounded-full" 
+                className="w-3 h-3 rounded-full flex-shrink-0" 
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
               <span className="text-xs font-medium text-muted-foreground truncate">
