@@ -12,7 +12,7 @@ export function StatusChart({ data }: StatusChartProps) {
   const maxValue = Math.max(...data.map(d => d.value), 1);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-[350px] flex flex-col justify-center">
       {data.map((item, index) => {
         const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
         const barWidth = ((item.value / maxValue) * 100) || 5;
