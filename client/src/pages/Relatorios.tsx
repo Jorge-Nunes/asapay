@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExecutionChart } from "@/components/ExecutionChart";
 import { StatusChart } from "@/components/StatusChart";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, MessageSquare, PlayCircle } from "lucide-react";
+import { Download, FileText, MessageSquare, PlayCircle, DollarSign, Clipboard } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Cobranca, Execution } from "@shared/schema";
 
@@ -178,7 +178,7 @@ export default function Relatorios() {
             <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Cobranças</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                <Clipboard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold tabular-nums">{totalCobrancas}</div>
@@ -188,7 +188,7 @@ export default function Relatorios() {
             <Card className="border-2 hover-elevate">
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Valor Total em Aberto</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold tabular-nums">
