@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, integer, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, integer, json, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -53,7 +53,11 @@ export const cobrancas = pgTable("cobrancas", {
   tipo: text("tipo"), // vence_hoje, aviso, processada
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  customerIdx: index("idx_cobrancas_customer").on(table.customer),
+  statusIdx: index("idx_cobrancas_status").on(table.status),
+  dueDateIdx: index("idx_cobrancas_due_date").on(table.dueDate),
+}));
 
 export const executions = pgTable("executions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -64,7 +68,10 @@ export const executions = pgTable("executions", {
   usuariosBloqueados: integer("usuarios_bloqueados").notNull().default(0),
   erros: integer("erros").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  timestampIdx: index("idx_executions_timestamp").on(table.timestamp),
+  statusIdx: index("idx_executions_status").on(table.status),
+}));
 
 export const executionLogs = pgTable("execution_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -78,7 +85,11 @@ export const executionLogs = pgTable("execution_logs", {
   erro: text("erro"),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  executionIdIdx: index("idx_execution_logs_execution_id").on(table.executionId),
+  cobrancaIdIdx: index("idx_execution_logs_cobranca_id").on(table.cobrancaId),
+  statusIdx: index("idx_execution_logs_status").on(table.status),
+}));
 
 export type Config = {
   asaasToken: string;
@@ -164,21 +175,31 @@ export const clients = pgTable("clients", {
   diasAtrasoNotificacao: integer("dias_atraso_notificacao").notNull().default(3),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  asaasCustomerIdIdx: index("idx_clients_asaas_customer_id").on(table.asaasCustomerId),
+  traccarUserIdIdx: index("idx_clients_traccar_user_id").on(table.traccarUserId),
+  emailIdx: index("idx_clients_email").on(table.email),
+  mobilePhoneIdx: index("idx_clients_mobile_phone").on(table.mobilePhone),
+}));
 
 export const clientLastMessageAtraso = pgTable("client_last_message_atraso", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull(),
   lastMessageDate: timestamp("last_message_date").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  clientIdIdx: index("idx_client_last_message_client_id").on(table.clientId),
+}));
 
 export const cobrancaMessagesSent = pgTable("cobranca_messages_sent", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   cobrancaId: varchar("cobranca_id").notNull(),
   sentDate: timestamp("sent_date").notNull().defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  cobrancaIdIdx: index("idx_cobranca_messages_sent_cobranca_id").on(table.cobrancaId),
+  sentDateIdx: index("idx_cobranca_messages_sent_sent_date").on(table.sentDate),
+}));
 
 export type DashboardMetrics = {
   totalPendente: number;
