@@ -118,7 +118,7 @@ export default function Relatorios() {
               <CardHeader>
                 <CardTitle>Cobranças por Status</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-col">
                 <StatusChart data={statusData} />
               </CardContent>
             </Card>

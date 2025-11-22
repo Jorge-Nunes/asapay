@@ -14,9 +14,9 @@ export function StatusChart({ data }: StatusChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-center">
-        <ResponsiveContainer width="100%" height={350} maxWidth={500}>
+    <div className="space-y-4 flex flex-col h-full">
+      <div className="flex justify-center flex-1">
+        <ResponsiveContainer width="100%" height="100%" maxWidth={500}>
           <PieChart>
             <Pie
               data={data}
