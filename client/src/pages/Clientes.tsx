@@ -210,10 +210,7 @@ export default function Clientes() {
       {/* Informações de Paginação */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <div>
-          Mostrando {clients.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}-{Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total}
-        </div>
-        <div className="text-xs">
-          Pág {pagination.page}/{pagination.pages}
+          {clients.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}-{Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total}
         </div>
       </div>
 
