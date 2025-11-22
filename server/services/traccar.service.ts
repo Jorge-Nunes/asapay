@@ -42,6 +42,28 @@ export class TraccarService {
     });
   }
 
+  async getUserById(userId: string | number) {
+    if (!this.baseUrl || !this.apiKey) {
+      throw new Error('Traccar não configurado');
+    }
+
+    const response = await fetch(`${this.baseUrl}/api/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return undefined;
+      }
+      throw new Error(`Erro ao buscar usuário Traccar: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
   async blockUser(userId: number) {
     if (!this.baseUrl || !this.apiKey) {
       throw new Error('Traccar não configurado');

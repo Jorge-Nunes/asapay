@@ -108,24 +108,35 @@ export class ExecutionService {
         try {
           const traccarService = new TraccarService(config);
           
-          // Count overdue invoices per customer (by email and phone)
-          const overdueByCustomer = new Map<string, number>();
+          // Count overdue invoices per customer (by asaasCustomerId)
+          const overdueByAsaasId = new Map<string, { count: number; customerPhone: string }>();
           
           cobrancas.forEach(cobranca => {
             if (cobranca.status === 'OVERDUE') {
-              // Use email/phone as identifier
-              const key = `${cobranca.customerPhone}`;
-              overdueByCustomer.set(key, (overdueByCustomer.get(key) || 0) + 1);
+              // Use Asaas customer ID as identifier (unique)
+              const current = overdueByAsaasId.get(cobranca.customer) || { count: 0, customerPhone: cobranca.customerPhone };
+              overdueByAsaasId.set(cobranca.customer, {
+                count: current.count + 1,
+                customerPhone: cobranca.customerPhone
+              });
             }
           });
 
           const limiteCobrancas = config.traccarLimiteCobrancasVencidas || 3;
           
           // Process blocking/unblocking
-          for (const [customerPhone, overdueCount] of overdueByCustomer.entries()) {
+          for (const [asaasCustomerId, { count: overdueCount, customerPhone }] of overdueByAsaasId.entries()) {
             try {
-              // Try to find user by phone in Traccar
-              const traccarUser = await traccarService.getUserByPhone(customerPhone);
+              // Get client from Asaas ID to find Traccar mapping
+              const client = await storage.getClientByAsaasId(asaasCustomerId);
+              
+              if (!client?.traccarUserId) {
+                console.log(`[Traccar] Cliente ${asaasCustomerId} não tem usuário Traccar mapeado`);
+                continue;
+              }
+
+              // Get user directly by ID (not by phone) - more reliable
+              const traccarUser = await traccarService.getUserById(client.traccarUserId);
               
               if (traccarUser) {
                 const shouldBlock = overdueCount >= limiteCobrancas;
@@ -133,8 +144,8 @@ export class ExecutionService {
                 
                 if (shouldBlock && !isCurrentlyBlocked) {
                   // Block user
-                  console.log(`[Traccar] Bloqueando usuário ${customerPhone} - ${overdueCount} cobranças vencidas`);
-                  await traccarService.blockUser(traccarUser.id);
+                  console.log(`[Traccar] Bloqueando usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId}) - ${overdueCount} cobranças vencidas`);
+                  await traccarService.blockUser(parseInt(client.traccarUserId));
                   
                   // Send blocking message
                   try {
@@ -173,8 +184,8 @@ export class ExecutionService {
                   }
                 } else if (!shouldBlock && isCurrentlyBlocked) {
                   // Unblock user if they no longer meet the blocking criteria
-                  console.log(`[Traccar] Desbloqueando usuário ${customerPhone}`);
-                  await traccarService.unblockUser(traccarUser.id);
+                  console.log(`[Traccar] Desbloqueando usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId})`);
+                  await traccarService.unblockUser(parseInt(client.traccarUserId));
                   
                   // Send unblocking message
                   try {
