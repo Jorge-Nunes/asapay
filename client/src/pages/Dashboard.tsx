@@ -4,7 +4,8 @@ import { StatusChart } from "@/components/StatusChart";
 import { FinancialSummarySection } from "@/components/FinancialSummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, FileText, MessageSquare, TrendingUp, Play, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DollarSign, FileText, MessageSquare, TrendingUp, Play, RefreshCw, AlertCircle, CheckCircle, Clock, MoreVertical } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -81,26 +82,28 @@ export default function Dashboard() {
   }, { received: 0, confirmed: 0, pending: 0, overdue: 0 });
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Header com Status e Ações */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Situação das cobranças</p>
+          <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Visão completa da situação das cobranças</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleRefresh}
             data-testid="button-refresh"
+            className="transition-all hover:scale-105"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className={`h-4 w-4 mr-2 ${metricsLoading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
           <Button 
             onClick={handleRunExecution} 
             disabled={runExecutionMutation.isPending}
-            className="bg-primary hover:bg-primary/90"
+            className="bg-primary hover:bg-primary/90 transition-all hover:scale-105"
             data-testid="button-run-execution"
           >
             <Play className="h-4 w-4 mr-2" />
@@ -109,62 +112,134 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* KPI Cards - Resumo Executivo */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metricsLoading ? (
+          <>
+            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
+            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
+            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
+            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
+          </>
+        ) : (
+          <>
+            <MetricCard
+              title="Total Pendente"
+              value={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              subtitle={`${statusCounts.pending} cobranças`}
+              icon={DollarSign}
+              variant="pending"
+            />
+            <MetricCard
+              title="Vence Hoje"
+              value={metrics?.venceHoje || 0}
+              subtitle={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              icon={AlertCircle}
+              variant="overdue"
+            />
+            <MetricCard
+              title="Recebido"
+              value={`R$ ${(metrics?.totalRecebido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              subtitle={`${statusCounts.received} cobranças`}
+              icon={CheckCircle}
+              variant="received"
+            />
+            <MetricCard
+              title="Taxa Conversão"
+              value={`${metrics?.taxaConversao?.toFixed(1) || '0'}%`}
+              subtitle="Recebido vs Pendente"
+              icon={TrendingUp}
+              variant="confirmed"
+            />
+          </>
+        )}
+      </div>
+
       <FinancialSummarySection />
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
+          <Card className="hover-elevate transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle>Mensagens Enviadas (7 dias)</CardTitle>
+              <Badge variant="outline" className="text-xs">Últimas 7 dias</Badge>
             </CardHeader>
             <CardContent>
-              <ExecutionChart data={chartData} />
+              {chartData.length === 0 ? (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  Sem dados disponível
+                </div>
+              ) : (
+                <ExecutionChart data={chartData} />
+              )}
             </CardContent>
           </Card>
         </div>
 
         <div>
-          <Card>
+          <Card className="hover-elevate transition-all">
             <CardHeader>
-              <CardTitle>Status</CardTitle>
+              <CardTitle className="text-lg">Distribuição de Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <StatusChart data={statusData} />
+              {statusData.length === 0 ? (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  Sem dados disponível
+                </div>
+              ) : (
+                <StatusChart data={statusData} />
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Últimas Execuções</CardTitle>
+      {/* Latest Executions - Aprimorado */}
+      <Card className="hover-elevate transition-all">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Histórico de Execuções</CardTitle>
+          <Badge variant="secondary" className="text-xs">{executions.length} total</Badge>
         </CardHeader>
         <CardContent>
           {latestExecutions.length > 0 ? (
             <div className="space-y-3">
               {latestExecutions.map((exec) => (
-                <div key={exec.id} className="p-3 border rounded-md bg-card hover-elevate">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">{new Date(exec.timestamp).toLocaleString('pt-BR')}</p>
-                      <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                        <p data-testid={`text-messages-${exec.id}`}>Mensagens enviadas: <span className="font-medium text-foreground">{exec.mensagensEnviadas}</span></p>
-                        <p data-testid={`text-cobrancas-${exec.id}`}>Cobranças processadas: <span className="font-medium text-foreground">{exec.cobrancasProcessadas}</span></p>
-                        <p data-testid={`text-errors-${exec.id}`}>Erros: <span className="font-medium text-foreground">{exec.erros}</span></p>
+                <div key={exec.id} className="p-4 border rounded-lg bg-gradient-to-r from-card to-muted/30 hover:from-muted hover:to-muted/50 hover-elevate transition-all">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <p className="text-sm font-semibold text-foreground">{new Date(exec.timestamp).toLocaleString('pt-BR')}</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 mt-3 text-xs">
+                        <div className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded border border-blue-200 dark:border-blue-900">
+                          <p className="text-muted-foreground">Mensagens</p>
+                          <p className="font-bold text-blue-700 dark:text-blue-300" data-testid={`text-messages-${exec.id}`}>{exec.mensagensEnviadas}</p>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-950/30 p-2 rounded border border-green-200 dark:border-green-900">
+                          <p className="text-muted-foreground">Processadas</p>
+                          <p className="font-bold text-green-700 dark:text-green-300" data-testid={`text-cobrancas-${exec.id}`}>{exec.cobrancasProcessadas}</p>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-950/30 p-2 rounded border border-red-200 dark:border-red-900">
+                          <p className="text-muted-foreground">Erros</p>
+                          <p className="font-bold text-red-700 dark:text-red-300" data-testid={`text-errors-${exec.id}`}>{exec.erros}</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${exec.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : exec.status === 'running' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'}`}>
-                        {exec.status === 'completed' ? 'Concluído' : exec.status === 'running' ? 'Executando' : 'Falhou'}
-                      </span>
+                    <div className="flex-shrink-0">
+                      <Badge variant={exec.status === 'completed' ? 'default' : exec.status === 'running' ? 'secondary' : 'destructive'} className="text-xs">
+                        {exec.status === 'completed' ? '✓ Concluído' : exec.status === 'running' ? '⟳ Executando' : '✕ Falhou'}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhuma execução realizada ainda
+            <div className="text-center py-12">
+              <Clock className="h-8 w-8 mx-auto text-muted-foreground mb-2 opacity-50" />
+              <p className="text-muted-foreground">Nenhuma execução realizada ainda</p>
             </div>
           )}
         </CardContent>

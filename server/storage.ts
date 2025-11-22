@@ -292,11 +292,29 @@ Obrigado por sua confiança! 🙏`,
     const total = cobrancas.length || 1;
     const taxaConversao = (recebidas / total) * 100;
 
+    const recebidosValue = cobrancas.filter(c => c.status === 'RECEIVED').reduce((sum, c) => sum + c.value, 0);
+    const executions = Array.from(this.executions.values());
+    const erros = executions.reduce((sum, e) => sum + e.erros, 0);
+    const cobrancasProcessadas = executions.reduce((sum, e) => sum + e.cobrancasProcessadas, 0);
+
     return {
       totalPendente,
       venceHoje,
       mensagensEnviadas,
       taxaConversao,
+      venceHojeValue: cobrancas
+        .filter(c => c.status === 'PENDING')
+        .filter(c => {
+          const dueDate = new Date(c.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return dueDate.getTime() === today.getTime();
+        })
+        .reduce((sum, c) => sum + c.value, 0),
+      totalRecebido: recebidosValue,
+      cobrancasProcessadas,
+      erros,
     };
   }
 

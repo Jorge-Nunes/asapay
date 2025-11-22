@@ -204,8 +204,12 @@ export const cobrancaMessagesSent = pgTable("cobranca_messages_sent", {
 export type DashboardMetrics = {
   totalPendente: number;
   venceHoje: number;
-  mensagensEnviadas: number;
+  venceHojeValue: number;
+  totalRecebido: number;
   taxaConversao: number;
+  cobrancasProcessadas: number;
+  mensagensEnviadas: number;
+  erros: number;
 };
 
 export type ClientData = typeof clients.$inferSelect;
