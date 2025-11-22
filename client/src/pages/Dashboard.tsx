@@ -70,7 +70,7 @@ export default function Dashboard() {
     });
   };
 
-  const latestExecutions = executions.slice(0, 5);
+  const latestExecutions = executions.slice(0, 2);
 
   const statusCounts = statusData.reduce((acc, item) => {
     if (item.name === 'Recebido') acc.received = item.value;
