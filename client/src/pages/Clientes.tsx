@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Download, Edit2, ArrowUp, ArrowDown, Lock, Unlock } from "lucide-react";
+import { Search, RefreshCw, Download, Edit2, Lock, Unlock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,25 +29,47 @@ interface ClientWithPreferences extends ClientData {
 type SortFieldClient = 'name' | 'email' | 'phone' | 'blockDailyMessages' | 'diasAtrasoNotificacao' | 'traccarUserId';
 type SortDirection = 'asc' | 'desc';
 
+interface PaginatedResponse {
+  data: ClientWithPreferences[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
 export default function Clientes() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
   const [sortField, setSortField] = useState<SortFieldClient>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
 
-  const { data: clients = [], isLoading, refetch } = useQuery<ClientWithPreferences[]>({
-    queryKey: ['/api/clients'],
+  const { data: paginatedResponse = { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false } }, isLoading, refetch } = useQuery<PaginatedResponse>({
+    queryKey: ['/api/clients', currentPage, 'name', 'asc'],
     queryFn: async () => {
-      const response = await fetch('/api/clients');
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '10',
+        sortBy: 'name',
+        sortOrder: 'asc',
+      });
+      const response = await fetch(`/api/clients?${params}`);
       if (!response.ok) throw new Error('Failed to fetch clients');
       return response.json();
     },
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
-    refetchOnWindowFocus: true, // Refresh when window regains focus
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
+
+  const clients = paginatedResponse.data || [];
+  const pagination = paginatedResponse.pagination || { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false };
 
   const syncMutation = useMutation({
     mutationFn: async () => {
@@ -152,45 +174,13 @@ export default function Clientes() {
     },
   });
 
-  const filteredClients = clients.filter((client) => {
-    const matchesSearch = 
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm);
-    return matchesSearch;
-  });
-
-  const sortedClients = [...filteredClients].sort((a, b) => {
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
-
-    if (typeof aValue === 'string') {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-      return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    }
-
-    if (typeof aValue === 'number') {
-      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-    }
-
-    return 0;
-  });
-
-  const handleSort = (field: SortFieldClient) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
   };
 
-  const SortIcon = ({ field }: { field: SortFieldClient }) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="h-4 w-4 inline ml-1" />
-      : <ArrowDown className="h-4 w-4 inline ml-1" />;
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page on search
   };
 
   const handleSync = () => {
@@ -240,18 +230,29 @@ export default function Clientes() {
           <Input
             placeholder="Buscar por nome, email ou telefone..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-9 border-2"
             data-testid="input-search-cliente"
           />
         </div>
       </Card>
 
+      {/* Informações de Paginação */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div>
+          Mostrando {clients.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} a{' '}
+          {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} clientes
+        </div>
+        <div className="text-xs">
+          Página {pagination.page} de {pagination.pages}
+        </div>
+      </div>
+
       {/* Tabela de Clientes */}
       <Card className="border-2 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground">Carregando clientes...</div>
-        ) : filteredClients.length === 0 ? (
+        ) : clients.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">Nenhum cliente encontrado</div>
         ) : (
           <div className="overflow-x-auto">
@@ -259,46 +260,41 @@ export default function Clientes() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th 
-                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
-                    onClick={() => handleSort('name')}
+                    className="px-4 py-3 text-left text-sm font-semibold"
                     data-testid="header-nome"
                   >
-                    Nome <SortIcon field="name" />
+                    Nome ⬆️
                   </th>
                   <th 
-                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
-                    onClick={() => handleSort('email')}
+                    className="px-4 py-3 text-left text-sm font-semibold"
                     data-testid="header-email"
                   >
-                    Email <SortIcon field="email" />
+                    Email
                   </th>
                   <th 
-                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
-                    onClick={() => handleSort('phone')}
+                    className="px-4 py-3 text-left text-sm font-semibold"
                     data-testid="header-telefone"
                   >
-                    Telefone <SortIcon field="phone" />
+                    Telefone
                   </th>
                   <th 
-                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
-                    onClick={() => handleSort('diasAtrasoNotificacao')}
+                    className="px-4 py-3 text-left text-sm font-semibold"
                     data-testid="header-dias-atraso"
                   >
-                    Dias Atraso <SortIcon field="diasAtrasoNotificacao" />
+                    Dias Atraso
                   </th>
                   <th 
-                    className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-accent/50 select-none"
-                    onClick={() => handleSort('traccarUserId')}
+                    className="px-4 py-3 text-left text-sm font-semibold"
                     data-testid="header-mapeado"
                   >
-                    Mapeado <SortIcon field="traccarUserId" />
+                    Mapeado
                   </th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Bloqueado Traccar</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedClients.map((client) => (
+                {clients.map((client) => (
                   <tr key={client.id} className="border-b hover:bg-muted/30 transition-colors" data-testid={`row-client-${client.id}`}>
                     <td className="px-4 py-3 text-sm">{client.name}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{client.email || '-'}</td>
@@ -452,12 +448,52 @@ export default function Clientes() {
         )}
       </Card>
 
+      {/* Pagination Controls */}
+      {pagination.pages > 1 && (
+        <div className="flex items-center justify-between gap-2">
+          <Button 
+            onClick={() => handlePageChange(pagination.page - 1)}
+            disabled={!pagination.hasPreviousPage}
+            size="sm"
+            variant="outline"
+            data-testid="button-previous-page"
+          >
+            ← Anterior
+          </Button>
+
+          <div className="flex gap-1">
+            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                variant={page === pagination.page ? "default" : "outline"}
+                size="sm"
+                className="min-w-10"
+                data-testid={`button-page-${page}`}
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+
+          <Button 
+            onClick={() => handlePageChange(pagination.page + 1)}
+            disabled={!pagination.hasNextPage}
+            size="sm"
+            variant="outline"
+            data-testid="button-next-page"
+          >
+            Próxima →
+          </Button>
+        </div>
+      )}
+
       {/* Stats */}
-      {clients.length > 0 && (
+      {pagination.total > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="p-4 border-2">
             <div className="text-sm text-muted-foreground">Total de Clientes</div>
-            <div className="text-2xl font-bold">{clients.length}</div>
+            <div className="text-2xl font-bold">{pagination.total}</div>
           </Card>
           <Card className="p-4 border-2">
             <div className="text-sm text-muted-foreground">Mapeados</div>

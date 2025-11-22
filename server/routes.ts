@@ -532,11 +532,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Clients Management Routes
+  // Clients Management Routes - With Pagination
   app.get("/api/clients", async (req, res) => {
     try {
-      const clients = await storage.getClients();
-      res.json(clients);
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 10));
+      const sortBy = (req.query.sortBy as string) || 'name';
+      const sortOrder = ((req.query.sortOrder as string) || 'asc').toLowerCase() as 'asc' | 'desc';
+
+      let clients = await storage.getClients();
+
+      // Sort by field
+      clients.sort((a, b) => {
+        let aVal: any = a[sortBy as keyof typeof a];
+        let bVal: any = b[sortBy as keyof typeof b];
+
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+        }
+        if (typeof bVal === 'string') {
+          bVal = bVal.toLowerCase();
+        }
+
+        if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      // Calculate pagination
+      const total = clients.length;
+      const pages = Math.ceil(total / limit);
+      const validPage = Math.min(page, Math.max(1, pages));
+      const skip = (validPage - 1) * limit;
+      const paginatedClients = clients.slice(skip, skip + limit);
+
+      res.json({
+        data: paginatedClients,
+        pagination: {
+          page: validPage,
+          limit,
+          total,
+          pages,
+          hasNextPage: validPage < pages,
+          hasPreviousPage: validPage > 1,
+        },
+      });
     } catch (error) {
       console.error('[Routes] Error in getClients:', error);
       res.status(500).json({ error: "Failed to fetch clients" });
