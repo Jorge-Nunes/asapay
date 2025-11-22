@@ -830,6 +830,202 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-mapping routes
+  app.get("/api/traccar/preview-mapping", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.traccarUrl || !config.traccarApiKey) {
+        return res.status(400).json({ error: "Traccar não configurado" });
+      }
+
+      const traccarService = new TraccarService(config);
+      const clients = await storage.getClients();
+
+      // Find clients without mapping
+      const unmappedClients = clients.filter(c => !c.traccarUserId);
+
+      if (unmappedClients.length === 0) {
+        return res.json({
+          message: "Todos os clientes já estão mapeados",
+          toMap: [],
+          unmappable: [],
+        });
+      }
+
+      const toMap = [];
+      const unmappable = [];
+
+      for (const client of unmappedClients) {
+        let traccarUser = null;
+        let matchMethod = null;
+
+        // Try email first
+        if (client.email) {
+          try {
+            const emailUsers = await traccarService.getUsers().then(users =>
+              users.filter((u: any) => u.email === client.email)
+            );
+            if (emailUsers.length === 1) {
+              traccarUser = emailUsers[0];
+              matchMethod = "email";
+            }
+          } catch (e) {
+            console.error(`[Preview] Error searching by email for ${client.name}:`, e);
+          }
+        }
+
+        // Try mobile phone if email didn't work
+        if (!traccarUser && client.mobilePhone) {
+          try {
+            const cleanPhone = client.mobilePhone.replace(/\D/g, '');
+            const phoneUsers = await traccarService.getUsers().then(users =>
+              users.filter((u: any) => {
+                const userPhone = u.name?.replace(/\D/g, '') || '';
+                return userPhone === cleanPhone;
+              })
+            );
+            if (phoneUsers.length === 1) {
+              traccarUser = phoneUsers[0];
+              matchMethod = "phone";
+            }
+          } catch (e) {
+            console.error(`[Preview] Error searching by phone for ${client.name}:`, e);
+          }
+        }
+
+        if (traccarUser) {
+          toMap.push({
+            clientId: client.id,
+            clientName: client.name,
+            clientEmail: client.email,
+            clientPhone: client.mobilePhone,
+            traccarUserId: traccarUser.id,
+            traccarUserName: traccarUser.name,
+            traccarUserEmail: traccarUser.email,
+            matchMethod,
+          });
+        } else {
+          unmappable.push({
+            clientId: client.id,
+            clientName: client.name,
+            clientEmail: client.email,
+            clientPhone: client.mobilePhone,
+            reason: "Sem correspondência única no Traccar",
+          });
+        }
+      }
+
+      res.json({
+        summary: {
+          total: unmappedClients.length,
+          canMap: toMap.length,
+          unmappable: unmappable.length,
+        },
+        toMap,
+        unmappable,
+      });
+    } catch (error) {
+      console.error('[Routes] Error in preview-mapping:', error);
+      res.status(500).json({ error: "Erro ao gerar preview de mapeamento" });
+    }
+  });
+
+  app.post("/api/traccar/auto-mapping", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.traccarUrl || !config.traccarApiKey) {
+        return res.status(400).json({ error: "Traccar não configurado" });
+      }
+
+      const traccarService = new TraccarService(config);
+      const clients = await storage.getClients();
+
+      // Find clients without mapping
+      const unmappedClients = clients.filter(c => !c.traccarUserId);
+
+      const mapped = [];
+      const failed = [];
+
+      for (const client of unmappedClients) {
+        let traccarUser = null;
+        let matchMethod = null;
+
+        // Try email first
+        if (client.email) {
+          try {
+            const emailUsers = await traccarService.getUsers().then(users =>
+              users.filter((u: any) => u.email === client.email)
+            );
+            if (emailUsers.length === 1) {
+              traccarUser = emailUsers[0];
+              matchMethod = "email";
+            }
+          } catch (e) {
+            console.error(`[AutoMapping] Error searching by email for ${client.name}:`, e);
+          }
+        }
+
+        // Try mobile phone if email didn't work
+        if (!traccarUser && client.mobilePhone) {
+          try {
+            const cleanPhone = client.mobilePhone.replace(/\D/g, '');
+            const phoneUsers = await traccarService.getUsers().then(users =>
+              users.filter((u: any) => {
+                const userPhone = u.name?.replace(/\D/g, '') || '';
+                return userPhone === cleanPhone;
+              })
+            );
+            if (phoneUsers.length === 1) {
+              traccarUser = phoneUsers[0];
+              matchMethod = "phone";
+            }
+          } catch (e) {
+            console.error(`[AutoMapping] Error searching by phone for ${client.name}:`, e);
+          }
+        }
+
+        if (traccarUser) {
+          try {
+            await storage.updateClientTraccarMapping(client.id, String(traccarUser.id));
+            mapped.push({
+              clientId: client.id,
+              clientName: client.name,
+              traccarUserId: traccarUser.id,
+              traccarUserName: traccarUser.name,
+              matchMethod,
+            });
+            console.log(`[AutoMapping] Mapped ${client.name} → Traccar ${traccarUser.id} (${matchMethod})`);
+          } catch (e) {
+            failed.push({
+              clientId: client.id,
+              clientName: client.name,
+              reason: "Erro ao atualizar banco de dados",
+            });
+          }
+        } else {
+          failed.push({
+            clientId: client.id,
+            clientName: client.name,
+            reason: "Sem correspondência única no Traccar",
+          });
+        }
+      }
+
+      res.json({
+        summary: {
+          total: unmappedClients.length,
+          mapped: mapped.length,
+          failed: failed.length,
+        },
+        mapped,
+        failed,
+      });
+    } catch (error) {
+      console.error('[Routes] Error in auto-mapping:', error);
+      res.status(500).json({ error: "Erro ao executar mapeamento automático" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
