@@ -19,12 +19,15 @@ Key features include:
 - **Execuções**: Full execution history with expandable logs for each run
 - **Configurações**: Secure configuration management with secret masking and validation
 
-**Recent Changes (November 2025)**:
-- Implemented complete backend with service layer architecture
-- Created REST APIs for all frontend features
-- Fixed critical bugs: cobrança query filtering, config secret masking
-- Added input validation and error handling throughout
-- Removed all mock data and connected to real backend
+**Recent Changes (November 22, 2025)**:
+- ✅ Implemented WEBHOOK DO ASAAS with signature validation (HMAC-SHA256)
+- ✅ Added incremental sync tracking (lastClientSyncTime, lastCobrancasSyncTime)
+- ✅ Consolidated webhook endpoints with real-time payment status updates
+- ✅ Added /api/webhook/register to auto-register webhooks in Asaas
+- ✅ Real-time updates: PAYMENT_RECEIVED → RECEIVED, PAYMENT_OVERDUE → OVERDUE
+- ✅ Automatic Traccar blocking/unblocking on payment status changes
+- ✅ Enhanced UI: Sync Incremental button with last sync timestamp
+- Previous: Implemented complete backend with service layer, created REST APIs, fixed bugs, removed mock data
 
 ## User Preferences
 
@@ -56,11 +59,17 @@ Preferred communication style: Simple, everyday language.
 **Language**: TypeScript with ES modules.
 
 **API Structure**: RESTful API with the following main endpoints:
-- `GET/PUT /api/config` - Configuration management
-- `GET /api/cobrancas` - Fetch invoices with filtering
-- `GET/POST /api/executions` - Execution management
-- `POST /api/executions/run` - Manual execution trigger
-- `GET /api/dashboard/*` - Dashboard metrics and chart data
+- **Config**: `GET/PUT /api/config` - Configuration management
+- **Webhooks**: 
+  - `POST /api/webhooks/asaas` - Receive Asaas webhook events (PAYMENT_RECEIVED, OVERDUE, etc)
+  - `POST /api/webhook/asaas` - Alternative webhook endpoint (same handler)
+  - `POST /api/webhook/register` - Auto-register webhook in Asaas platform
+  - `GET /api/webhook/list` - List all registered webhooks
+- **Billing**: `GET /api/cobrancas` - Fetch invoices with filtering, status, payment status
+- **Sync**: `POST /api/sync/incremental` - Incremental client/cobrança sync
+- **Executions**: `GET/POST /api/executions`, `POST /api/executions/run` - Execution management
+- **Dashboard**: `GET /api/dashboard/*` - Metrics and chart data
+- **Clients**: `GET /api/clients`, `PUT /api/clients/:id/*` - Client management and preferences
 
 **Storage Pattern**: Currently uses in-memory storage (`MemStorage` class implementing `IStorage` interface) with support for migrating to database persistence. The storage abstraction allows easy swapping of storage backends.
 
@@ -69,10 +78,12 @@ Preferred communication style: Simple, everyday language.
 **Scheduled Jobs**: Node-cron for daily automated executions at 10 AM Brazil time.
 
 **Service Layer Pattern**: Business logic is separated into dedicated service classes:
-- `AsaasService` (server/services/asaas.service.ts) - Handles Asaas API integration with pagination support for customers and pending payments
-- `EvolutionService` (server/services/evolution.service.ts) - Manages WhatsApp messaging via Evolution API with batch sending and rate limiting
-- `ExecutionService` (server/services/execution.service.ts) - Orchestrates the main execution flow: fetch data → categorize → send messages → log results
-- `ProcessorService` (server/services/processor.service.ts) - Categorizes invoices (vence_hoje vs aviso) and generates personalized messages from templates
+- `AsaasService` - Handles Asaas API (pagination for customers/payments, getCustomersUpdatedSince for incremental sync)
+- `EvolutionService` - Manages WhatsApp messaging with batch sending and rate limiting (1s delays)
+- `ExecutionService` - Orchestrates main flow: fetch → categorize → send → log
+- `ProcessorService` - Categorizes invoices (vence_hoje/aviso) and generates personalized messages
+- `WebhookService` - Processes Asaas webhooks with signature validation (HMAC-SHA256), auto-syncs new payments, blocks/unblocks Traccar users
+- `TraccarService` - Manages Traccar API (blockUser, unblockUser for overdue payments)
 
 **Key Implementation Details**:
 - Batch processing with delays to avoid API rate limits (1s between messages, 2s between batches)

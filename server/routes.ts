@@ -108,76 +108,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
-  // Webhook routes
-  app.post("/api/webhooks/asaas", async (req, res) => {
+  // Consolidated Asaas webhook endpoint - accepts both /api/webhooks/asaas and /api/webhook/asaas
+  const handleAsaasWebhook = async (req: any, res: any) => {
     try {
-      const event = req.body;
-      
-      // Validate webhook (basic validation)
-      if (!event.event || !event.id) {
-        return res.status(400).json({ error: "Invalid webhook payload" });
+      const payload = req.body;
+      const signature = req.headers['asaas-signature'] || req.headers['x-asaas-signature'];
+
+      console.log(`[Webhook] Recebido evento: ${payload.event}`, { id: payload.id });
+
+      // Validate webhook signature
+      const config = await storage.getConfig();
+      const isValidSignature = WebhookService.validateWebhookSignature(
+        payload,
+        signature,
+        config.asaasToken
+      );
+
+      if (!isValidSignature) {
+        console.error('[Webhook] Webhook signature validation failed');
+        return res.status(401).json({ error: "Webhook signature validation failed" });
       }
 
-      console.log(`[Webhook] Received Asaas event: ${event.event}`, { id: event.id });
-
-      // Handle different Asaas events
-      switch (event.event) {
-        case "PAYMENT_RECEIVED":
-          // Cobrança foi paga
-          if (event.payment?.id) {
-            const cobranca = await storage.getCobrancaById(event.payment.id);
-            if (cobranca) {
-              await storage.updateCobranca(event.payment.id, {
-                status: "RECEIVED"
-              });
-              console.log(`[Webhook] Updated cobrança ${event.payment.id} to RECEIVED`);
-            }
-          }
-          break;
-
-        case "PAYMENT_CONFIRMED":
-          // Pagamento confirmado (saque realizado)
-          if (event.payment?.id) {
-            const cobranca = await storage.getCobrancaById(event.payment.id);
-            if (cobranca) {
-              await storage.updateCobranca(event.payment.id, {
-                status: "CONFIRMED"
-              });
-              console.log(`[Webhook] Updated cobrança ${event.payment.id} to CONFIRMED`);
-            }
-          }
-          break;
-
-        case "PAYMENT_OVERDUE":
-          // Cobrança vencida
-          if (event.payment?.id) {
-            const cobranca = await storage.getCobrancaById(event.payment.id);
-            if (cobranca) {
-              await storage.updateCobranca(event.payment.id, {
-                status: "OVERDUE"
-              });
-              console.log(`[Webhook] Updated cobrança ${event.payment.id} to OVERDUE`);
-            }
-          }
-          break;
-
-        case "PAYMENT_DELETED":
-          // Cobrança deletada no Asaas
-          if (event.payment?.id) {
-            console.log(`[Webhook] Payment ${event.payment.id} was deleted in Asaas`);
-          }
-          break;
-
-        default:
-          console.log(`[Webhook] Unhandled event: ${event.event}`);
-      }
+      // Process webhook using service
+      const webhookService = new WebhookService();
+      await webhookService.processAsaasWebhook(payload);
 
       res.json({ success: true, processed: true });
     } catch (error) {
-      console.error('[Webhook] Error processing Asaas webhook:', error);
-      res.status(500).json({ error: "Error processing webhook" });
+      console.error('[Webhook] Erro ao processar webhook:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao processar webhook" });
     }
-  });
+  };
+
+  // Both endpoints use the same handler
+  app.post("/api/webhooks/asaas", handleAsaasWebhook);
+  app.post("/api/webhook/asaas", handleAsaasWebhook);
 
   // Config routes
   app.get("/api/config", async (req, res) => {
@@ -523,17 +488,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asaas Webhook endpoint
-  app.post("/api/webhook/asaas", async (req, res) => {
+  // Endpoint para registrar webhook no Asaas automaticamente
+  app.post("/api/webhook/register", async (req, res) => {
     try {
-      console.log('[Webhook] Recebido evento do Asaas:', req.body.event);
-      console.log('[Webhook] Payload completo:', JSON.stringify(req.body, null, 2));
-      const webhookService = new WebhookService();
-      await webhookService.processAsaasWebhook(req.body);
-      res.json({ success: true });
+      const config = await storage.getConfig();
+      
+      if (!config.asaasToken || !config.asaasUrl) {
+        return res.status(400).json({ error: "Token do Asaas não configurado" });
+      }
+
+      if (!config.webhookUrl) {
+        return res.status(400).json({ error: "URL do webhook não configurada" });
+      }
+
+      console.log('[Webhook] Registrando webhook no Asaas...');
+
+      // Register webhook in Asaas
+      const response = await fetch(`${config.asaasUrl}/webhooks`, {
+        method: 'POST',
+        headers: {
+          'access_token': config.asaasToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: config.webhookUrl,
+          event: [
+            'PAYMENT_CREATED',
+            'PAYMENT_RECEIVED',
+            'PAYMENT_CONFIRMED',
+            'PAYMENT_OVERDUE',
+            'PAYMENT_DELETED',
+          ],
+          sendType: 'SEQUENTIALLY',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('[Webhook] Erro ao registrar webhook:', error);
+        return res.status(response.status).json({ 
+          error: "Erro ao registrar webhook no Asaas",
+          details: error.message 
+        });
+      }
+
+      const result = await response.json();
+      console.log('[Webhook] Webhook registrado com sucesso:', result);
+
+      res.json({
+        success: true,
+        message: "Webhook registrado com sucesso no Asaas",
+        webhookId: result.id,
+        webhookUrl: config.webhookUrl,
+      });
     } catch (error) {
-      console.error('[Webhook] Erro ao processar webhook:', error);
-      res.status(500).json({ error: "Failed to process webhook" });
+      console.error('[Webhook] Erro ao registrar webhook:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Erro ao registrar webhook" 
+      });
+    }
+  });
+
+  // Endpoint para listar webhooks registrados
+  app.get("/api/webhook/list", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      
+      if (!config.asaasToken || !config.asaasUrl) {
+        return res.status(400).json({ error: "Token do Asaas não configurado" });
+      }
+
+      console.log('[Webhook] Listando webhooks do Asaas...');
+
+      const response = await fetch(`${config.asaasUrl}/webhooks`, {
+        headers: {
+          'access_token': config.asaasToken,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        return res.status(response.status).json({ 
+          error: "Erro ao listar webhooks",
+          details: error.message 
+        });
+      }
+
+      const result = await response.json();
+      console.log('[Webhook] Webhooks listados:', result.data?.length || 0);
+
+      res.json({
+        success: true,
+        webhooks: result.data || [],
+        total: result.totalCount || 0,
+      });
+    } catch (error) {
+      console.error('[Webhook] Erro ao listar webhooks:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Erro ao listar webhooks" 
+      });
     }
   });
 
