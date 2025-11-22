@@ -636,16 +636,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn('[Sync] Traccar não está configurado - pulando auto-mapeamento');
       }
 
-      // Function to find matching Traccar user by email or phone
+      // Function to find matching Traccar user by email or phone (returns { userId, method })
       const findTraccarUser = (customer: any) => {
-        if (!traccarUsers.length) return null;
+        if (!traccarUsers.length) return { userId: null, method: null };
 
         // Try to match by email first
         if (customer.email) {
           const userByEmail = traccarUsers.find(u => u.email === customer.email);
           if (userByEmail) {
             console.log(`[Sync] Mapeamento encontrado por email: ${customer.email} → ${userByEmail.id}`);
-            return userByEmail.id?.toString();
+            return { userId: userByEmail.id?.toString(), method: 'email' };
           }
         }
 
@@ -659,11 +659,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           if (userByPhone) {
             console.log(`[Sync] Mapeamento encontrado por telefone: ${customerPhone} → ${userByPhone.id}`);
-            return userByPhone.id?.toString();
+            return { userId: userByPhone.id?.toString(), method: 'phone' };
           }
         }
 
-        return null;
+        return { userId: null, method: null };
       };
 
       // Transform Asaas customers to our InsertClient format with Traccar mapping
@@ -680,7 +680,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           state: customer.state || '',
           postalCode: customer.postalCode || '',
           cpfCnpj: customer.cpfCnpj || '',
-          traccarUserId: mapped,
+          traccarUserId: mapped.userId,
+          traccarMappingMethod: mapped.method,
         };
       });
 

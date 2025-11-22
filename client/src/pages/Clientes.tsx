@@ -308,7 +308,7 @@ export default function Clientes() {
                       <div className="flex items-center gap-2">
                         {client.traccarUserId ? (
                           <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded" title={`ID: ${client.traccarUserId}`}>
-                            Mapeado por {client.traccarMappingMethod === 'email' ? 'Email' : client.traccarMappingMethod === 'phone' ? 'Celular' : 'Manual'}
+                            Mapeado por {client.traccarMappingMethod === 'email' ? 'Email' : client.traccarMappingMethod === 'phone' ? 'Celular' : 'ID Manual'}
                           </span>
                         ) : (
                           <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs rounded">
