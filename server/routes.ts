@@ -737,6 +737,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analyze Traccar mapping status
+  app.get("/api/traccar/mapping-status", async (req, res) => {
+    try {
+      const clients = await storage.getClients();
+      
+      // Group clients by traccarUserId
+      const mappingGroups = new Map<string | null, any[]>();
+      
+      clients.forEach(client => {
+        const traccarId = client.traccarUserId;
+        if (!mappingGroups.has(traccarId)) {
+          mappingGroups.set(traccarId, []);
+        }
+        mappingGroups.get(traccarId)!.push({
+          id: client.id,
+          name: client.name,
+          asaasCustomerId: client.asaasCustomerId,
+          email: client.email,
+          phone: client.phone,
+          mobilePhone: client.mobilePhone,
+        });
+      });
+
+      // Analyze mappings
+      const analysis = {
+        totalClients: clients.length,
+        clientsWithMapping: clients.filter(c => c.traccarUserId).length,
+        clientsWithoutMapping: clients.filter(c => !c.traccarUserId).length,
+        duplicateMappings: Array.from(mappingGroups.entries())
+          .filter(([traccarId, clientList]) => traccarId && clientList.length > 1)
+          .map(([traccarId, clientList]) => ({
+            traccarUserId: traccarId,
+            clientCount: clientList.length,
+            clients: clientList,
+          })),
+        invalidMappings: Array.from(mappingGroups.entries())
+          .filter(([traccarId, clientList]) => traccarId && clientList.length === 1)
+          .map(([traccarId, clientList]) => ({
+            traccarUserId: traccarId,
+            client: clientList[0],
+          })),
+      };
+
+      res.json(analysis);
+    } catch (error) {
+      console.error('[Routes] Error in mapping-status:', error);
+      res.status(500).json({ error: "Erro ao analisar mapeamentos" });
+    }
+  });
+
+  // Clear duplicate Traccar mappings - keeps first, clears rest
+  app.post("/api/traccar/clear-duplicate-mappings", async (req, res) => {
+    try {
+      const clients = await storage.getClients();
+      
+      // Group clients by traccarUserId
+      const mappingGroups = new Map<string, any[]>();
+      
+      clients.forEach(client => {
+        if (client.traccarUserId) {
+          const traccarId = client.traccarUserId;
+          if (!mappingGroups.has(traccarId)) {
+            mappingGroups.set(traccarId, []);
+          }
+          mappingGroups.get(traccarId)!.push(client);
+        }
+      });
+
+      // Find and clear duplicates
+      let cleared = 0;
+      for (const [traccarId, clientList] of mappingGroups.entries()) {
+        if (clientList.length > 1) {
+          // Keep first, clear the rest
+          for (let i = 1; i < clientList.length; i++) {
+            const clientToClear = clientList[i];
+            await storage.updateClientTraccarMapping(clientToClear.id, null);
+            cleared++;
+            console.log(`[Routes] Cleared Traccar mapping for client ${clientToClear.name} (was pointing to ${traccarId})`);
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Limpeza concluída: ${cleared} mapeamentos duplicados removidos`,
+        cleared,
+      });
+    } catch (error) {
+      console.error('[Routes] Error in clear-duplicate-mappings:', error);
+      res.status(500).json({ error: "Erro ao limpar mapeamentos" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

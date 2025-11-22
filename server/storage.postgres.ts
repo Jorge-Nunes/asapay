@@ -1060,4 +1060,16 @@ Obrigado por sua confiança! 🙏`,
       throw error;
     }
   }
+
+  async updateClientTraccarMapping(clientId: string, traccarUserId: string | null): Promise<void> {
+    try {
+      const db = getDb();
+      await db.update(schema.clients)
+        .set({ traccarUserId })
+        .where(eq(schema.clients.id, clientId));
+    } catch (error) {
+      console.error('[Storage] Error in updateClientTraccarMapping:', error);
+      throw error;
+    }
+  }
 }
