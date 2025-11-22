@@ -106,19 +106,19 @@ export default function Relatorios() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-2">
+            <Card className="border-2 h-full">
               <CardHeader>
                 <CardTitle>Execuções dos Últimos 7 Dias</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="h-[400px]">
                 <ExecutionChart data={chartData} />
               </CardContent>
             </Card>
-            <Card className="border-2">
+            <Card className="border-2 h-full">
               <CardHeader>
                 <CardTitle>Cobranças por Status</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col">
+              <CardContent>
                 <StatusChart data={statusData} />
               </CardContent>
             </Card>
