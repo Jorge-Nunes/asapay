@@ -1,0 +1,46 @@
+[Execution] Starting processCobrancasInBatches with 20 cobrancas
+Error sending WhatsApp message: AxiosError: Request failed with status code 400
+    at settle (file:///home/runner/workspace/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (file:///home/runner/workspace/node_modules/axios/lib/adapters/http.js:793:11)
+    at IncomingMessage.emit (node:events:536:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+    at Axios.request (file:///home/runner/workspace/node_modules/axios/lib/core/Axios.js:45:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async EvolutionService.sendTextMessage (/home/runner/workspace/server/services/evolution.service.ts:22:24)
+    at async <anonymous> (/home/runner/workspace/server/services/processor.service.ts:189:11)
+    at async Promise.all (index 0)
+    at async Function.processCobrancasInBatches (/home/runner/workspace/server/services/processor.service.ts:222:28)
+    at async Function.runExecution (/home/runner/workspace/server/services/execution.service.ts:90:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:350:25) {
+  code: 'ERR_BAD_REQUEST',
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [ 'xhr', 'http', 'fetch' ],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function [FormData]], Blob: [class Blob] },
+    validateStatus: [Function: validateStatus],
+    headers: Object [AxiosHeaders] {
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      apikey: 'ab12cd34',
+      'User-Agent': 'axios/1.13.2',
+      'Content-Length': '411',
+      'Accept-Encoding': 'gzip, compress, deflate, br'
+    },
+    baseURL: 'http://contabo.rastrear.dedyn.io:6001',
+    method: 'post',
+    url: '/message/sendText/finantracker',
+    data: '{"number":"+55","textMessage":{"text":"🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!\\nNotamos que sua fatura vence *hoje* 📅.\\nPara evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.\\n\\n🔗 Link da fatura: https://sandbox.asaas.com/i/urc2h4ek3w0oqvrx\\n💰 Valor: R$ 10,00\\n📆 Vencimento: 22/11/2025\\n\\nQualquer dúvida, nossa equipe está à disposição! 🤝"}}',
+    allowAbsoluteUrls: true
+  },

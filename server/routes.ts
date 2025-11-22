@@ -1030,6 +1030,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Phone validation report - Check clients without valid phone numbers
+  app.get("/api/reports/missing-phones", async (req, res) => {
+    try {
+      const clients = await storage.getClients();
+      
+      const withoutPhone = clients.filter(client => {
+        const phone = client.mobilePhone || client.phone || '';
+        const cleanedPhone = phone.replace(/\D/g, '');
+        return !cleanedPhone || cleanedPhone.length < 10;
+      });
+
+      const withValidPhone = clients.filter(client => {
+        const phone = client.mobilePhone || client.phone || '';
+        const cleanedPhone = phone.replace(/\D/g, '');
+        return cleanedPhone && cleanedPhone.length >= 10;
+      });
+
+      res.json({
+        summary: {
+          totalClients: clients.length,
+          withValidPhone: withValidPhone.length,
+          withoutPhone: withoutPhone.length,
+          percentage: clients.length > 0 ? ((withoutPhone.length / clients.length) * 100).toFixed(2) + '%' : '0%',
+        },
+        withoutPhone: withoutPhone.map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone || 'Vazio',
+          mobilePhone: c.mobilePhone || 'Vazio',
+        })),
+      });
+    } catch (error) {
+      console.error('[Routes] Error in missing-phones report:', error);
+      res.status(500).json({ error: "Erro ao gerar relatório" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

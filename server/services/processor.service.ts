@@ -163,6 +163,30 @@ export class ProcessorService {
           }
         }
 
+        // Validate phone number
+        const isValidPhone = cobranca.customerPhone && /\d{10,}/.test(cobranca.customerPhone.replace(/\D/g, ''));
+
+        const log: Omit<ExecutionLog, 'id'> = {
+          cobrancaId: cobranca.id,
+          customerName: cobranca.customerName,
+          customerPhone: cobranca.customerPhone,
+          tipo: cobranca.tipo as 'vence_hoje' | 'aviso' | 'atraso',
+          status: 'success',
+          timestamp: new Date().toISOString(),
+        };
+
+        // Skip if no valid phone number
+        if (!isValidPhone) {
+          log.status = 'error';
+          log.erro = 'Telefone não informado ou inválido (mínimo 10 dígitos)';
+          
+          if (onProgress) {
+            onProgress(log);
+          }
+          
+          return log;
+        }
+
         const template = 
           cobranca.tipo === 'vence_hoje'
             ? config.messageTemplates.venceHoje
@@ -175,15 +199,6 @@ export class ProcessorService {
           template,
           config.diasAviso
         );
-
-        const log: Omit<ExecutionLog, 'id'> = {
-          cobrancaId: cobranca.id,
-          customerName: cobranca.customerName,
-          customerPhone: cobranca.customerPhone,
-          tipo: cobranca.tipo as 'vence_hoje' | 'aviso' | 'atraso',
-          status: 'success',
-          timestamp: new Date().toISOString(),
-        };
 
         try {
           await evolutionService.sendTextMessage(cobranca.customerPhone, message);
