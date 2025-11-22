@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Settings, PlayCircle, MessageSquare, LogOut, Users, MessageCircle } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, PlayCircle, MessageSquare, LogOut, Users } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -38,11 +38,6 @@ const menuItems = [
     title: "Execuções",
     url: "/execucoes",
     icon: PlayCircle,
-  },
-  {
-    title: "Evolution",
-    url: "/evolution",
-    icon: MessageCircle,
   },
   {
     title: "Configurações",

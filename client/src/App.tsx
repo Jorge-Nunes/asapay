@@ -13,7 +13,6 @@ import Clientes from "@/pages/Clientes";
 import Relatorios from "@/pages/Relatorios";
 import Execucoes from "@/pages/Execucoes";
 import Configuracoes from "@/pages/Configuracoes";
-import Evolution from "@/pages/Evolution";
 import { useEffect, useState } from "react";
 
 function Router() {
@@ -41,7 +40,6 @@ function Router() {
       <Route path="/clientes" component={Clientes} />
       <Route path="/relatorios" component={Relatorios} />
       <Route path="/execucoes" component={Execucoes} />
-      <Route path="/evolution" component={Evolution} />
       <Route path="/configuracoes" component={Configuracoes} />
     </Switch>
   );
