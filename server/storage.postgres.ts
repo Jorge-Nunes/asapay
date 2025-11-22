@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { 
   configurations, 
   cobrancas, 
@@ -871,50 +871,46 @@ Obrigado por sua confiança! 🙏`,
   async syncClients(clients: schema.InsertClient[]): Promise<void> {
     try {
       const db = getDb();
-      
-      for (const client of clients) {
-        const existing = await db.query.clients.findFirst({
-          where: eq(schema.clients.asaasCustomerId, client.asaasCustomerId),
-        });
+      if (clients.length === 0) return;
 
-        if (existing) {
-          await db.update(schema.clients)
-            .set({
-              name: client.name,
-              email: client.email,
-              phone: client.phone,
-              mobilePhone: client.mobilePhone,
-              address: client.address,
-              city: client.city,
-              state: client.state,
-              postalCode: client.postalCode,
-              cpfCnpj: client.cpfCnpj,
-              traccarUserId: client.traccarUserId ?? existing.traccarUserId,
-              traccarMappingMethod: client.traccarMappingMethod ?? existing.traccarMappingMethod,
-              isTraccarBlocked: client.isTraccarBlocked ?? existing.isTraccarBlocked,
-              updatedAt: new Date(),
-            })
-            .where(eq(schema.clients.asaasCustomerId, client.asaasCustomerId));
-        } else {
-          await db.insert(schema.clients).values({
-            asaasCustomerId: client.asaasCustomerId,
-            name: client.name,
-            email: client.email,
-            phone: client.phone,
-            mobilePhone: client.mobilePhone,
-            address: client.address,
-            city: client.city,
-            state: client.state,
-            postalCode: client.postalCode,
-            cpfCnpj: client.cpfCnpj,
-            traccarUserId: client.traccarUserId || null,
-            traccarMappingMethod: client.traccarMappingMethod || null,
-            blockDailyMessages: 0,
-            diasAtrasoNotificacao: 3,
-            isTraccarBlocked: 0,
-          });
-        }
-      }
+      const startTime = Date.now();
+      console.log(`[Storage] Starting batch sync of ${clients.length} clients...`);
+
+      // Use PostgreSQL UPSERT for bulk insert/update in a single query
+      await db.execute(sql`
+        INSERT INTO clients (
+          asaas_customer_id, name, email, phone, mobile_phone, address, city, state, 
+          postal_code, cpf_cnpj, traccar_user_id, traccar_mapping_method, 
+          block_daily_messages, dias_atraso_notificacao, is_traccar_blocked, updated_at
+        ) VALUES ${sql.join(
+          clients.map(client => 
+            sql`(
+              ${client.asaasCustomerId}, ${client.name}, ${client.email || ''}, 
+              ${client.phone || ''}, ${client.mobilePhone || ''}, ${client.address || ''}, 
+              ${client.city || ''}, ${client.state || ''}, ${client.postalCode || ''}, 
+              ${client.cpfCnpj || ''}, ${client.traccarUserId || null}, 
+              ${client.traccarMappingMethod || null}, 0, 3, 0, NOW()
+            )`
+          ),
+          sql`, `
+        )}
+        ON CONFLICT (asaas_customer_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          email = EXCLUDED.email,
+          phone = EXCLUDED.phone,
+          mobile_phone = EXCLUDED.mobile_phone,
+          address = EXCLUDED.address,
+          city = EXCLUDED.city,
+          state = EXCLUDED.state,
+          postal_code = EXCLUDED.postal_code,
+          cpf_cnpj = EXCLUDED.cpf_cnpj,
+          traccar_user_id = COALESCE(EXCLUDED.traccar_user_id, clients.traccar_user_id),
+          traccar_mapping_method = COALESCE(EXCLUDED.traccar_mapping_method, clients.traccar_mapping_method),
+          updated_at = NOW()
+      `);
+
+      const duration = Date.now() - startTime;
+      console.log(`[Storage] Batch sync completed in ${duration}ms (${clients.length} clients)`);
     } catch (error) {
       console.error('[Storage] Error in syncClients:', error);
       throw error;
