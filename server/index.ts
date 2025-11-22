@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { PostgresStorage } from "./storage.postgres";
+import bcrypt from "bcryptjs";
 
 // Initialize PostgreSQL storage
 export const storage = new PostgresStorage();
@@ -51,6 +52,24 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize default admin user
+  try {
+    const adminUser = await storage.getUserByUsername("admin");
+    if (!adminUser) {
+      const hashedPassword = await bcrypt.hash("admin123", 10);
+      await storage.createUser({
+        username: "admin",
+        password: hashedPassword,
+        fullName: "Administrator",
+        phone: "(11) 0000-0000",
+        address: "São Paulo, SP"
+      });
+      console.log("[Auth] Default admin user created: admin / admin123");
+    }
+  } catch (error) {
+    console.error("[Auth] Error initializing default user:", error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

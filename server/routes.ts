@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./index";
 import { ExecutionService } from "./services/execution.service";
@@ -8,10 +8,176 @@ import { AsaasService } from "./services/asaas.service";
 import { WebhookService } from "./services/webhook.service";
 import { TraccarService } from "./services/traccar.service";
 import { setupCronJobs } from "./cron";
+import bcrypt from "bcryptjs";
+
+// Middleware para verificar autenticação
+interface AuthRequest extends Request {
+  userId?: string;
+}
+
+const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (token) {
+    try {
+      const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+      req.userId = decoded.userId;
+    } catch (e) {
+      // Token inválido, continuar sem autenticação
+    }
+  }
+  next();
+};
+
+// Função para gerar token simples
+function generateToken(userId: string): string {
+  return Buffer.from(JSON.stringify({ userId, iat: Date.now() })).toString('base64');
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup cron jobs
   setupCronJobs();
+
+  // Apply auth middleware globalmente
+  app.use(authMiddleware);
+
+  // Auth routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ error: "Usuário ou senha incorretos" });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Usuário ou senha incorretos" });
+      }
+
+      const token = generateToken(user.id);
+      res.json({ 
+        token, 
+        userId: user.id,
+        username: user.username 
+      });
+    } catch (error) {
+      console.error('[Auth] Login error:', error);
+      res.status(500).json({ error: "Erro no servidor" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { username, password, fullName, phone, address } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Usuário já existe" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = await storage.createUser({
+        username,
+        password: hashedPassword,
+        fullName: fullName || username,
+        phone: phone || "",
+        address: address || ""
+      });
+
+      const token = generateToken(newUser.id);
+      res.json({ 
+        token, 
+        userId: newUser.id,
+        username: newUser.username 
+      });
+    } catch (error) {
+      console.error('[Auth] Register error:', error);
+      res.status(500).json({ error: "Erro no servidor" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ success: true });
+  });
+
+  // Webhook routes
+  app.post("/api/webhooks/asaas", async (req, res) => {
+    try {
+      const event = req.body;
+      
+      // Validate webhook (basic validation)
+      if (!event.event || !event.id) {
+        return res.status(400).json({ error: "Invalid webhook payload" });
+      }
+
+      console.log(`[Webhook] Received Asaas event: ${event.event}`, { id: event.id });
+
+      // Handle different Asaas events
+      switch (event.event) {
+        case "PAYMENT_RECEIVED":
+          // Cobrança foi paga
+          if (event.payment?.id) {
+            const cobranca = await storage.getCobrancaById(event.payment.id);
+            if (cobranca) {
+              await storage.updateCobranca(event.payment.id, {
+                status: "RECEIVED"
+              });
+              console.log(`[Webhook] Updated cobrança ${event.payment.id} to RECEIVED`);
+            }
+          }
+          break;
+
+        case "PAYMENT_CONFIRMED":
+          // Pagamento confirmado (saque realizado)
+          if (event.payment?.id) {
+            const cobranca = await storage.getCobrancaById(event.payment.id);
+            if (cobranca) {
+              await storage.updateCobranca(event.payment.id, {
+                status: "CONFIRMED"
+              });
+              console.log(`[Webhook] Updated cobrança ${event.payment.id} to CONFIRMED`);
+            }
+          }
+          break;
+
+        case "PAYMENT_OVERDUE":
+          // Cobrança vencida
+          if (event.payment?.id) {
+            const cobranca = await storage.getCobrancaById(event.payment.id);
+            if (cobranca) {
+              await storage.updateCobranca(event.payment.id, {
+                status: "OVERDUE"
+              });
+              console.log(`[Webhook] Updated cobrança ${event.payment.id} to OVERDUE`);
+            }
+          }
+          break;
+
+        case "PAYMENT_DELETED":
+          // Cobrança deletada no Asaas
+          if (event.payment?.id) {
+            console.log(`[Webhook] Payment ${event.payment.id} was deleted in Asaas`);
+          }
+          break;
+
+        default:
+          console.log(`[Webhook] Unhandled event: ${event.event}`);
+      }
+
+      res.json({ success: true, processed: true });
+    } catch (error) {
+      console.error('[Webhook] Error processing Asaas webhook:', error);
+      res.status(500).json({ error: "Error processing webhook" });
+    }
+  });
 
   // Config routes
   app.get("/api/config", async (req, res) => {

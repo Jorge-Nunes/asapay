@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, RefreshCw, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, RefreshCw, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,8 @@ export default function Cobrancas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tipoFilter, setTipoFilter] = useState<string>("all");
+  const [minValue, setMinValue] = useState<string>("");
+  const [maxValue, setMaxValue] = useState<string>("");
   const [sortField, setSortField] = useState<SortFieldCobranca>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [page, setPage] = useState(0);
@@ -81,8 +83,11 @@ export default function Cobrancas() {
   };
 
   const filteredCobrancas = cobrancas.filter((cobranca) => {
-    const matchesSearch = cobranca.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    const matchesSearch = cobranca.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (cobranca.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+    const matchesMinValue = minValue ? cobranca.value >= parseFloat(minValue) : true;
+    const matchesMaxValue = maxValue ? cobranca.value <= parseFloat(maxValue) : true;
+    return matchesSearch && matchesMinValue && matchesMaxValue;
   });
 
   const sortedCobrancas = [...filteredCobrancas].sort((a, b) => {
@@ -156,6 +161,28 @@ export default function Cobrancas() {
     sendMessageMutation.mutate(cobranca.id);
   };
 
+  const handleExportCSV = () => {
+    const headers = ["Cliente", "Valor", "Descrição", "Tipo", "Status", "Vencimento"];
+    const rows = sortedCobrancas.map(c => [
+      c.customerName,
+      `R$ ${c.value.toFixed(2)}`,
+      c.description || '-',
+      c.tipo || '-',
+      c.status,
+      c.dueDate
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(","   )).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cobrancas-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Exportado", description: `${sortedCobrancas.length} cobranças exportadas em CSV` });
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -210,9 +237,32 @@ export default function Cobrancas() {
               <SelectItem value="processada">Processada</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="border-2" data-testid="button-filter">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
+          <div className="flex gap-2">
+            <Input
+              placeholder="Min valor"
+              type="number"
+              value={minValue}
+              onChange={(e) => setMinValue(e.target.value)}
+              className="w-24 border-2"
+              data-testid="input-min-value"
+            />
+            <Input
+              placeholder="Max valor"
+              type="number"
+              value={maxValue}
+              onChange={(e) => setMaxValue(e.target.value)}
+              className="w-24 border-2"
+              data-testid="input-max-value"
+            />
+          </div>
+          <Button 
+            onClick={handleExportCSV}
+            variant="outline" 
+            className="border-2" 
+            data-testid="button-export-csv"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
         </div>
       </Card>
