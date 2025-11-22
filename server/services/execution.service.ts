@@ -97,7 +97,9 @@ export class ExecutionService {
         (log) => {
           // Add log to execution in real-time
           logs.push(log as ExecutionLog);
-        }
+        },
+        async (cobrancaId) => await storage.hasCobrancaMessageBeenSentToday(cobrancaId),
+        async (cobrancaId) => await storage.recordCobrancaMessageSent(cobrancaId)
       );
 
       // Handle Traccar blocking logic

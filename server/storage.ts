@@ -49,6 +49,10 @@ export interface IStorage {
   unblockClientTraccar(clientId: string): Promise<void>;
   getClientLastMessageAtraso(clientId: string): Promise<Date | undefined>;
   updateClientLastMessageAtraso(clientId: string): Promise<void>;
+
+  // Message tracking
+  hasCobrancaMessageBeenSentToday(cobrancaId: string): Promise<boolean>;
+  recordCobrancaMessageSent(cobrancaId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -58,8 +62,10 @@ export class MemStorage implements IStorage {
   private executionLogs: ExecutionLog[];
   private clients: Map<string, ClientData>;
   private clientLastMessageAtraso: Map<string, Date>;
+  private cobrancaLastMessageSent: Map<string, Date>; // Track last message sent for each cobranca
 
   constructor() {
+    this.cobrancaLastMessageSent = new Map();
     this.config = {
       asaasToken: process.env.ASAAS_TOKEN || '',
       asaasUrl: process.env.ASAAS_URL || 'https://api.asaas.com/v3',
@@ -382,6 +388,22 @@ Obrigado por sua confiança! 🙏`,
 
   async updateClientLastMessageAtraso(clientId: string): Promise<void> {
     this.clientLastMessageAtraso.set(clientId, new Date());
+  }
+
+  async hasCobrancaMessageBeenSentToday(cobrancaId: string): Promise<boolean> {
+    const lastSent = this.cobrancaLastMessageSent.get(cobrancaId);
+    if (!lastSent) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastSentDate = new Date(lastSent);
+    lastSentDate.setHours(0, 0, 0, 0);
+    
+    return lastSentDate.getTime() === today.getTime();
+  }
+
+  async recordCobrancaMessageSent(cobrancaId: string): Promise<void> {
+    this.cobrancaLastMessageSent.set(cobrancaId, new Date());
   }
 
   async getFinancialSummary(startDate?: string, endDate?: string): Promise<import('@shared/schema').FinancialSummary> {
