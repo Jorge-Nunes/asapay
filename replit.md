@@ -20,14 +20,25 @@ Key features include:
 - **Configurações**: Secure configuration management with secret masking and validation
 
 **Recent Changes (November 22, 2025)**:
-- ✅ Implemented WEBHOOK DO ASAAS with signature validation (HMAC-SHA256)
-- ✅ Added incremental sync tracking (lastClientSyncTime, lastCobrancasSyncTime)
-- ✅ Consolidated webhook endpoints with real-time payment status updates
-- ✅ Added /api/webhook/register to auto-register webhooks in Asaas
-- ✅ Real-time updates: PAYMENT_RECEIVED → RECEIVED, PAYMENT_OVERDUE → OVERDUE
-- ✅ Automatic Traccar blocking/unblocking on payment status changes
-- ✅ Enhanced UI: Sync Incremental button with last sync timestamp
-- Previous: Implemented complete backend with service layer, created REST APIs, fixed bugs, removed mock data
+✅ **WEBHOOK DO ASAAS** - Receives real-time payment notifications:
+  - Signature validation (HMAC-SHA256) for security
+  - Auto-syncs new payments to system database
+  - Real-time status updates: PAYMENT_RECEIVED → RECEIVED, PAYMENT_OVERDUE → OVERDUE
+  - Automatic Traccar blocking/unblocking on payment status changes
+  - Endpoints: `/api/webhooks/asaas`, `/api/webhook/register`, `/api/webhook/list`
+
+✅ **INCREMENTAL SYNC** - Optimized client synchronization:
+  - Tracks `lastClientSyncTime` and `lastCobrancasSyncTime`
+  - `/api/sync/incremental` endpoint for efficient updates
+  - UI buttons "Sync Incremental" and "Sincronizar Tudo" with timestamp display
+  - Batch processing for performance (10 clients at a time)
+
+✅ **Database Schema Updated**:
+  - Added `webhookUrl`, `lastClientSyncTime`, `lastCobrancasSyncTime` to configurations
+  - Used `bigint` for timestamps to handle millisecond precision
+  - Migrated successfully with zero data loss
+
+**Impact**: Eliminates up to 24h delay in payment status updates. System now processes payments in real-time via webhooks.
 
 ## User Preferences
 

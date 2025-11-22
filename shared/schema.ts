@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, integer, json, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, integer, bigint, json, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -37,8 +37,8 @@ export const configurations = pgTable("configurations", {
   diasAviso: integer("dias_aviso").notNull().default(10),
   messageTemplates: json("message_templates").notNull(),
   webhookUrl: text("webhook_url"),
-  lastClientSyncTime: integer("last_client_sync_time").default(0),
-  lastCobrancasSyncTime: integer("last_cobrancas_sync_time").default(0),
+  lastClientSyncTime: bigint("last_client_sync_time", { mode: 'number' }).default(0),
+  lastCobrancasSyncTime: bigint("last_cobrancas_sync_time", { mode: 'number' }).default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
