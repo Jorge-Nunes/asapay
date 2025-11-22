@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Download, Edit2, Lock, Unlock } from "lucide-react";
+import { Search, Download, Edit2, Lock, Unlock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,9 +26,6 @@ interface ClientWithPreferences extends ClientData {
   isTraccarBlocked?: number;
 }
 
-type SortFieldClient = 'name' | 'email' | 'phone' | 'blockDailyMessages' | 'diasAtrasoNotificacao' | 'traccarUserId';
-type SortDirection = 'asc' | 'desc';
-
 interface PaginatedResponse {
   data: ClientWithPreferences[];
   pagination: {
@@ -43,16 +40,13 @@ interface PaginatedResponse {
 
 export default function Clientes() {
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
-  const [sortField, setSortField] = useState<SortFieldClient>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
 
   const { data: paginatedResponse = { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false } }, isLoading, refetch } = useQuery<PaginatedResponse>({
-    queryKey: ['/api/clients', currentPage, 'name', 'asc'],
+    queryKey: ['/api/clients', currentPage],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -101,7 +95,6 @@ export default function Clientes() {
 
   const updatePreferencesMutation = useMutation({
     mutationFn: async ({ clientId, blockDailyMessages, diasAtrasoNotificacao, traccarUserId }: { clientId: string; blockDailyMessages: boolean; diasAtrasoNotificacao: number; traccarUserId: string }) => {
-      // Update preferences
       const response1 = await fetch(`/api/clients/${clientId}/preferences`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -112,7 +105,6 @@ export default function Clientes() {
         throw new Error(error.error || 'Erro ao atualizar preferências');
       }
 
-      // Update traccar mapping
       const response2 = await fetch(`/api/clients/${clientId}/traccar-mapping`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -125,12 +117,12 @@ export default function Clientes() {
 
       return response2.json();
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       setEditingClientId(null);
       toast({
         title: "Sucesso",
-        description: "Preferências e mapeamento atualizados com sucesso!",
+        description: "Preferências atualizadas com sucesso!",
       });
     },
     onError: (error: Error) => {
@@ -156,7 +148,7 @@ export default function Clientes() {
       }
       return response.json();
     },
-    onSuccess: (data, clientId) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       setBlockingClientId(null);
       toast({
@@ -176,11 +168,6 @@ export default function Clientes() {
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1); // Reset to first page on search
   };
 
   const handleSync = () => {
@@ -223,20 +210,6 @@ export default function Clientes() {
         </Button>
       </div>
 
-      {/* Filtros */}
-      <Card className="border-2 p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, email ou telefone..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-9 border-2"
-            data-testid="input-search-cliente"
-          />
-        </div>
-      </Card>
-
       {/* Informações de Paginação */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
@@ -259,34 +232,19 @@ export default function Clientes() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th 
-                    className="px-4 py-3 text-left text-sm font-semibold"
-                    data-testid="header-nome"
-                  >
-                    Nome ⬆️
+                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-nome">
+                    Nome
                   </th>
-                  <th 
-                    className="px-4 py-3 text-left text-sm font-semibold"
-                    data-testid="header-email"
-                  >
+                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-email">
                     Email
                   </th>
-                  <th 
-                    className="px-4 py-3 text-left text-sm font-semibold"
-                    data-testid="header-telefone"
-                  >
+                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-telefone">
                     Telefone
                   </th>
-                  <th 
-                    className="px-4 py-3 text-left text-sm font-semibold"
-                    data-testid="header-dias-atraso"
-                  >
+                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-dias-atraso">
                     Dias Atraso
                   </th>
-                  <th 
-                    className="px-4 py-3 text-left text-sm font-semibold"
-                    data-testid="header-mapeado"
-                  >
+                  <th className="px-4 py-3 text-left text-sm font-semibold" data-testid="header-mapeado">
                     Mapeado
                   </th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Bloqueado Traccar</th>
@@ -296,7 +254,7 @@ export default function Clientes() {
               <tbody>
                 {clients.map((client) => (
                   <tr key={client.id} className="border-b hover:bg-muted/30 transition-colors" data-testid={`row-client-${client.id}`}>
-                    <td className="px-4 py-3 text-sm">{client.name}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{client.name}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{client.email || '-'}</td>
                     <td className="px-4 py-3 text-sm">{client.mobilePhone || client.phone || '-'}</td>
                     <td className="px-4 py-3 text-sm">{client.diasAtrasoNotificacao || 3} dias</td>
@@ -320,8 +278,7 @@ export default function Clientes() {
                           variant="ghost"
                           className="h-6 w-6 mx-auto"
                           onClick={() => {
-                            const action = `unblock-${client.id}`;
-                            setBlockingClientId(action);
+                            setBlockingClientId(`unblock-${client.id}`);
                             blockTraccarMutation.mutate(client.id);
                           }}
                           disabled={blockTraccarMutation.isPending}
@@ -337,8 +294,7 @@ export default function Clientes() {
                           variant="ghost"
                           className="h-6 w-6 mx-auto"
                           onClick={() => {
-                            const action = `block-${client.id}`;
-                            setBlockingClientId(action);
+                            setBlockingClientId(`block-${client.id}`);
                             blockTraccarMutation.mutate(client.id);
                           }}
                           disabled={blockTraccarMutation.isPending}
@@ -361,65 +317,58 @@ export default function Clientes() {
                             <Edit2 className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-md">
                           <DialogHeader>
-                            <DialogTitle>Editar Preferências</DialogTitle>
+                            <DialogTitle>Editar Preferências - {client.name}</DialogTitle>
                             <DialogDescription>
-                              Ajuste as preferências de notificação para {client.name}
+                              Configure as preferências de notificação para este cliente
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-6">
-                            <div className="space-y-2">
-                              <Label htmlFor="blockMessages" className="text-base">Bloquear mensagens de atraso?</Label>
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  id="blockMessages"
-                                  checked={editFormData.blockDailyMessages}
-                                  onCheckedChange={(checked) =>
-                                    setEditFormData(prev => ({ ...prev, blockDailyMessages: checked }))
-                                  }
-                                  data-testid="switch-block-messages"
-                                />
-                                <span className="text-sm text-muted-foreground">
-                                  {editFormData.blockDailyMessages ? "Mensagens bloqueadas" : "Mensagens ativas"}
-                                </span>
-                              </div>
+
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`block-${client.id}`} className="flex-1">
+                                Bloquear Mensagens Diárias
+                              </Label>
+                              <Switch
+                                id={`block-${client.id}`}
+                                checked={editFormData.blockDailyMessages}
+                                onCheckedChange={(checked) => 
+                                  setEditFormData(prev => ({ ...prev, blockDailyMessages: checked }))
+                                }
+                                data-testid="toggle-block-daily-messages"
+                              />
                             </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="diasAtraso" className="text-base">Intervalo entre mensagens de atraso (dias)</Label>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  id="diasAtraso"
-                                  type="number"
-                                  min="1"
-                                  max="30"
-                                  value={editFormData.diasAtrasoNotificacao}
-                                  onChange={(e) =>
-                                    setEditFormData(prev => ({
-                                      ...prev,
-                                      diasAtrasoNotificacao: Math.max(1, parseInt(e.target.value) || 1)
-                                    }))
-                                  }
-                                  data-testid="input-dias-atraso"
-                                  className="w-24"
-                                />
-                                <span className="text-sm text-muted-foreground">dias</span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="traccarUserId" className="text-base">ID do Usuário Traccar (mapeamento)</Label>
+                            <div>
+                              <Label htmlFor={`dias-${client.id}`}>Dias de Atraso para Notificar</Label>
                               <Input
-                                id="traccarUserId"
+                                id={`dias-${client.id}`}
+                                type="number"
+                                min="1"
+                                max="30"
+                                value={editFormData.diasAtrasoNotificacao}
+                                onChange={(e) => setEditFormData(prev => ({
+                                  ...prev,
+                                  diasAtrasoNotificacao: Math.max(1, parseInt(e.target.value) || 1)
+                                }))}
+                                data-testid="input-dias-atraso"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Notificar quando tiver atraso igual ou superior a este número de dias
+                              </p>
+                            </div>
+
+                            <div>
+                              <Label htmlFor={`traccar-${client.id}`}>ID Traccar Manual</Label>
+                              <Input
+                                id={`traccar-${client.id}`}
                                 type="text"
-                                placeholder="Ex: 12345"
                                 value={editFormData.traccarUserId}
-                                onChange={(e) =>
-                                  setEditFormData(prev => ({
-                                    ...prev,
-                                    traccarUserId: e.target.value
-                                  }))
+                                onChange={(e) => setEditFormData(prev => ({
+                                  ...prev,
+                                  traccarUserId: e.target.value
+                                }))
                                 }
                                 data-testid="input-traccar-user-id"
                               />
