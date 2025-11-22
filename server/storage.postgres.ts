@@ -679,26 +679,38 @@ Obrigado por sua confiança! 🙏`,
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
-      const venceHoje = pendentes.filter((c: any) => {
+      const venceHojeCobrancas = pendentes.filter((c: any) => {
         const dueDate = new Date(c.dueDate);
         dueDate.setHours(0, 0, 0, 0);
         return dueDate.getTime() === hoje.getTime();
-      }).length;
+      });
+      
+      const venceHoje = venceHojeCobrancas.length;
+      const venceHojeValue = venceHojeCobrancas.reduce((sum: number, c: any) => sum + parseFloat(c.value as any), 0);
 
       const totalPendente = pendentes.reduce((sum: number, c: any) => sum + parseFloat(c.value as any), 0);
 
       const allLogs = await db.query.executionLogs.findMany();
       const mensagensEnviadas = allLogs.filter((l: any) => l.status === 'success').length;
 
-      const recebidas = allCobrancas.filter((c: any) => c.status === 'RECEIVED' || c.status === 'CONFIRMED').length;
+      const recebidas = allCobrancas.filter((c: any) => c.status === 'RECEIVED' || c.status === 'CONFIRMED');
+      const recebidosValue = recebidas.reduce((sum: number, c: any) => sum + parseFloat(c.value as any), 0);
       const total = allCobrancas.length || 1;
-      const taxaConversao = (recebidas / total) * 100;
+      const taxaConversao = (recebidas.length / total) * 100;
+
+      const allExecutions = await db.query.executions.findMany();
+      const cobrancasProcessadas = allExecutions.reduce((sum: number, e: any) => sum + (e.cobrancasProcessadas || 0), 0);
+      const erros = allExecutions.reduce((sum: number, e: any) => sum + (e.erros || 0), 0);
 
       return {
         totalPendente,
         venceHoje,
+        venceHojeValue,
         mensagensEnviadas,
         taxaConversao,
+        totalRecebido: recebidosValue,
+        cobrancasProcessadas,
+        erros,
       };
     } catch (error) {
       console.error('[Storage] Error in getDashboardMetrics:', error);
