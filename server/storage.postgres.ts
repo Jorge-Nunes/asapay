@@ -1085,4 +1085,33 @@ Obrigado por sua confiança! 🙏`,
       throw error;
     }
   }
+
+  async updateSyncTimestamp(type: 'clients' | 'cobrancas'): Promise<void> {
+    try {
+      const db = getDb();
+      const config = await this.getConfig();
+      const timestamp = Date.now();
+      
+      if (type === 'clients') {
+        await db.update(schema.configurations)
+          .set({ lastClientSyncTime: timestamp })
+          .where(eq(schema.configurations.id, 'default'));
+      } else {
+        await db.update(schema.configurations)
+          .set({ lastCobrancasSyncTime: timestamp })
+          .where(eq(schema.configurations.id, 'default'));
+      }
+    } catch (error) {
+      console.error('[Storage] Error in updateSyncTimestamp:', error);
+      throw error;
+    }
+  }
+
+  getLastSyncTimestamp(type: 'clients' | 'cobrancas'): number {
+    // This is a synchronous method, but since we're using Postgres,
+    // we need to get it from the config which is already loaded
+    // For now, return 0 to indicate no sync has been done
+    // In production, this should be cached or refactored
+    return 0;
+  }
 }
