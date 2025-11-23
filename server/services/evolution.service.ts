@@ -39,8 +39,14 @@ export class EvolutionService {
         timestamp: Date.now(),
       };
     } catch (error) {
-      console.error('Error fetching instance status:', error);
-      throw error;
+      // Instance not found or API error - return unknown status
+      console.log(`[Evolution] Instance '${this.instance}' not found or unavailable`);
+      return {
+        instanceName: this.instance,
+        status: 'unknown',
+        connected: false,
+        timestamp: Date.now(),
+      };
     }
   }
 
