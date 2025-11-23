@@ -156,9 +156,46 @@ export default function Cobrancas() {
     },
   });
 
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/cobrancas/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao sincronizar cobranças');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cobrancas'] });
+      setPage(0);
+      toast({
+        title: "Sincronização Concluída",
+        description: data.message || `Cobranças sincronizadas com sucesso`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSendMessage = (cobranca: Cobranca) => {
     console.log('Enviando mensagem para:', cobranca.customerName);
     sendMessageMutation.mutate(cobranca.id);
+  };
+
+  const handleSyncCobrancas = () => {
+    toast({
+      title: "Sincronizando...",
+      description: "Buscando cobranças do Asaas e removendo deletadas...",
+    });
+    syncMutation.mutate();
   };
 
   const handleExportCSV = () => {
@@ -190,15 +227,27 @@ export default function Cobrancas() {
           <h1 className="text-3xl font-bold text-foreground">Cobranças</h1>
           <p className="text-muted-foreground text-sm">Gerencie todas as cobranças pendentes</p>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          data-testid="button-refresh-cobrancas"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSyncCobrancas}
+            disabled={syncMutation.isPending}
+            data-testid="button-sync-cobrancas"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+            {syncMutation.isPending ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            data-testid="button-refresh-cobrancas"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}

@@ -208,4 +208,32 @@ export class AsaasService {
 
     return payments;
   }
+
+  async getAllPaymentIds(): Promise<string[]> {
+    const paymentIds: string[] = [];
+    let offset = 0;
+    const limit = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const response = await this.client.get<AsaasListResponse<AsaasPayment>>('/payments', {
+          params: { limit, offset },
+        });
+
+        paymentIds.push(...response.data.data.map(p => p.id));
+        hasMore = response.data.hasMore;
+        offset += limit;
+
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error('Error fetching payment IDs from Asaas:', error);
+        throw error;
+      }
+    }
+
+    return paymentIds;
+  }
 }

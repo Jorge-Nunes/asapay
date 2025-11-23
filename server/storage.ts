@@ -18,6 +18,7 @@ export interface IStorage {
   saveCobrancas(cobrancas: Cobranca[]): Promise<void>;
   updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined>;
   createCobranca(cobranca: Omit<Cobranca, 'id'>): Promise<Cobranca>;
+  removeDeletedCobrancas(existingIds: string[]): Promise<number>;
 
   // Executions
   getExecutions(): Promise<Execution[]>;
@@ -273,6 +274,20 @@ Obrigado por sua confiança! 🙏`,
     };
     this.cobrancas.set(newCobranca.id, newCobranca);
     return newCobranca;
+  }
+
+  async removeDeletedCobrancas(existingIds: string[]): Promise<number> {
+    const existingIdSet = new Set(existingIds);
+    let removedCount = 0;
+
+    for (const [id] of this.cobrancas) {
+      if (!existingIdSet.has(id)) {
+        this.cobrancas.delete(id);
+        removedCount++;
+      }
+    }
+
+    return removedCount;
   }
 
   async getExecutions(): Promise<Execution[]> {

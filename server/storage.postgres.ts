@@ -465,6 +465,34 @@ Obrigado por sua confiança! 🙏`,
     }
   }
 
+  async removeDeletedCobrancas(existingIds: string[]): Promise<number> {
+    try {
+      const db = getDb();
+      const existingIdSet = new Set(existingIds);
+
+      // Get all cobrancas
+      const allCobrancas = await db.query.cobrancas.findMany();
+      
+      // Find IDs to delete
+      const idsToDelete = allCobrancas
+        .map(c => c.id)
+        .filter(id => !existingIdSet.has(id));
+
+      if (idsToDelete.length === 0) {
+        return 0;
+      }
+
+      // Delete cobrancas that no longer exist in Asaas
+      await db.delete(cobrancas)
+        .where((t: any) => sql`${t.id} = ANY(${sql.literal(idsToDelete)})`);
+
+      return idsToDelete.length;
+    } catch (error) {
+      console.error('[Storage] Error in removeDeletedCobrancas:', error);
+      throw error;
+    }
+  }
+
   async getExecutions(): Promise<Execution[]> {
     try {
       const db = getDb();

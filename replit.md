@@ -20,30 +20,33 @@ Key features include:
 - **Configurações**: Secure configuration management with secret masking and validation
 
 **Recent Changes (November 23, 2025)**:
+✅ **DELETION DETECTION AND SYNC** - Automatically removes deleted cobranças:
+  - New endpoint `POST /api/cobrancas/sync` for full synchronization with deletion detection
+  - Compares local cobranças with all IDs from Asaas
+  - Automatically removes cobranças that no longer exist in Asaas
+  - Syncs and updates remaining cobranças from Asaas
+  - UI button in Cobranças page: "Sincronizar" with loading state
+  - Toast notifications with sync results (count of removed/synced cobranças)
+  - Implemented in both MemStorage (test) and PostgresStorage (production)
+  - Query parameters: `getAllPaymentIds()` fetches all payment IDs regardless of status
+
 ✅ **AUTOMATED WHATSAPP INSTANCE MANAGEMENT** - Complete lifecycle automation:
   - User changes instance name in Configurações → System creates in Evolution API automatically
   - Automatic QR code extraction from Evolution 1.8.6 API (field: `base64`)
-  - Retry logic for QR code polling (3 attempts with 1-2 second delays)
-  - Modal display of QR code for instant scanning (data URL format)
+  - Modal display of QR code for instant scanning
   - Status tracking: 'qr' (waiting), 'open' (connected), 'unknown' (error)
-  - Endpoints: 
-    - `POST /api/evolution/instance/create-and-connect` - Auto-create and get QR
-    - `GET /api/evolution/instance/status` - Real-time status with QR
-    - `GET /api/evolution/instance/qrcode` - QR code extraction
-  - No manual Evolution panel interaction needed for QR codes
-  - Evolution API 1.8.6 compatibility verified (POST `/instance/create`, GET `/instance/connect/{name}`)
 
 **Technical Details**:
-  - Evolution response parsing: Extracts QR from `response.data.base64` (data:image/png;base64,...)
-  - Instance status detection: Checks for `base64` field presence
-  - Automatic retry with exponential backoff for QR code availability
-  - Handles both new instance creation and existing instance QR fetching
+  - AsaasService.getAllPaymentIds(): Fetches all payment IDs with pagination
+  - Storage.removeDeletedCobrancas(existingIds): Deletes local cobranças not in Asaas
+  - Sync process: get all IDs → detect deletions → remove locally → sync remaining
+  - UI provides real-time feedback with loading spinner and toast notifications
 
 **Previous Changes (November 22, 2025)**:
 ✅ **WEBHOOK DO ASAAS** - Receives real-time payment notifications
 ✅ **INCREMENTAL SYNC** - Optimized client synchronization
 
-**Impact**: Complete WhatsApp automation eliminates manual setup steps. Users can create and connect instances in seconds without panel interaction.
+**Impact**: When users delete cobranças in Asaas, the system automatically detects and removes them locally on next sync. No stale data remains in the system.
 
 ## User Preferences
 

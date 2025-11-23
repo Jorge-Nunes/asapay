@@ -257,6 +257,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync cobranças with deletion detection
+  app.post("/api/cobrancas/sync", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      if (!config.asaasToken) {
+        return res.status(400).json({ error: "Token do Asaas não configurado" });
+      }
+
+      const asaasService = new AsaasService(config.asaasUrl, config.asaasToken);
+
+      // Step 1: Get all payment IDs from Asaas
+      console.log('[Sync Cobrancas] Obtendo todos os IDs de cobranças do Asaas...');
+      const existingPaymentIds = await asaasService.getAllPaymentIds();
+      console.log(`[Sync Cobrancas] Encontradas ${existingPaymentIds.length} cobranças no Asaas`);
+
+      // Step 2: Remove cobranças deletadas localmente
+      console.log('[Sync Cobrancas] Removendo cobranças deletadas...');
+      const removedCount = await storage.removeDeletedCobrancas(existingPaymentIds);
+      if (removedCount > 0) {
+        console.log(`[Sync Cobrancas] ${removedCount} cobranças removidas do sistema local`);
+      }
+
+      // Step 3: Fetch and sync existing payments
+      console.log('[Sync Cobrancas] Buscando cobranças atualizadas...');
+      const payments = await asaasService.getPendingPayments();
+      const customers = await asaasService.getAllCustomers();
+      const cobrancas = await asaasService.enrichPaymentsWithCustomers(payments, customers);
+      
+      console.log(`[Sync Cobrancas] Sincronizando ${cobrancas.length} cobranças...`);
+      await storage.saveCobrancas(cobrancas);
+      await storage.updateSyncTimestamp('cobrancas');
+
+      res.json({
+        success: true,
+        message: `Sincronização concluída: ${cobrancas.length} cobranças sincronizadas${removedCount > 0 ? `, ${removedCount} removidas` : ''}`,
+        totalCobrancas: cobrancas.length,
+        removedCobrancas: removedCount,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('[Routes] Error in cobrancas sync:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Erro na sincronização de cobranças" });
+    }
+  });
+
   // Send message for specific cobrança
   app.post("/api/cobrancas/:id/send-message", async (req, res) => {
     try {
