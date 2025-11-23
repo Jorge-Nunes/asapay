@@ -12,7 +12,7 @@ export class TraccarService {
     this.baseUrl = config.traccarUrl || '';
     this.apiKey = config.traccarApiKey || '';
     this.email = 'aetracker'; // Default Traccar user
-    this.password = this.apiKey; // API key is used as password
+    this.password = config.traccarPassword || this.apiKey; // Use password if provided, otherwise API key
     this.version = config.traccarVersion || 'latest';
   }
 

@@ -78,6 +78,7 @@ export default function Configuracoes() {
     evolutionApiKey: '',
     traccarUrl: '',
     traccarApiKey: '',
+    traccarPassword: '',
     traccarVersion: 'latest',
     traccarLimiteCobrancasVencidas: 3,
     webhookUrl: '',
@@ -809,6 +810,21 @@ export default function Configuracoes() {
                 </p>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="traccar-password">Senha do Traccar (para v4.15)</Label>
+                <Input
+                  id="traccar-password"
+                  type="password"
+                  value={formData.traccarPassword || ''}
+                  onChange={(e) => setFormData({ ...formData, traccarPassword: e.target.value })}
+                  placeholder="Senha do usuário aetracker"
+                  className="border-2"
+                  data-testid="input-traccar-password"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Obrigatório apenas para Traccar 4.15. Deixe em branco para versões mais novas.
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="traccar-version">Versão do Traccar</Label>
                 <Select
                   value={formData.traccarVersion || 'latest'}
@@ -818,12 +834,12 @@ export default function Configuracoes() {
                     <SelectValue placeholder="Selecione a versão" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="latest">Latest (Versões mais recentes)</SelectItem>
-                    <SelectItem value="4.15">4.15 (Session Based)</SelectItem>
+                    <SelectItem value="latest">Latest (Versões mais recentes) - Usa Bearer Token</SelectItem>
+                    <SelectItem value="4.15">4.15 (Session Based) - Usa Email + Senha</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecione a versão do seu Traccar. Use "Latest" para versões modernas com Bearer Token, ou "4.15" para versões antigas com autenticação baseada em sessão.
+                  Selecione a versão do seu Traccar para aplicar a autenticação correta.
                 </p>
               </div>
               <div className="space-y-2">
