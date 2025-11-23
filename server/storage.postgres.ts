@@ -32,36 +32,74 @@ export class PostgresStorage implements IStorage {
   async hasCobrancaMessageBeenSentToday(cobrancaId: string): Promise<boolean> {
     try {
       const db = getDb();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       
-      const sent = await db.query.cobrancaMessagesSent.findFirst({
-        where: and(
-          eq(schema.cobrancaMessagesSent.cobrancaId, cobrancaId)
-        )
-      });
-
-      if (!sent) return false;
+      // Check if message was sent today using SQL date comparison
+      // This is more reliable than JavaScript date handling
+      const result = await db.execute(sql`
+        SELECT COUNT(*) as count FROM cobranca_messages_sent
+        WHERE cobranca_id = ${cobrancaId}
+        AND DATE(sent_date) = CURRENT_DATE
+        LIMIT 1
+      `);
       
-      const sentDate = new Date(sent.sentDate);
-      sentDate.setHours(0, 0, 0, 0);
+      const count = result[0]?.count || 0;
+      const hasSent = count > 0;
       
-      return sentDate.getTime() === today.getTime();
+      if (hasSent) {
+        console.log(`[Storage] Message already sent today for cobrança ${cobrancaId}`);
+      }
+      
+      return hasSent;
     } catch (error) {
       console.error('[Storage] Error in hasCobrancaMessageBeenSentToday:', error);
-      return false;
+      // On error, try fallback method to avoid allowing duplicates
+      try {
+        const db = getDb();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const sent = await db.query.cobrancaMessagesSent.findFirst({
+          where: and(
+            eq(schema.cobrancaMessagesSent.cobrancaId, cobrancaId)
+          )
+        });
+
+        if (!sent) return false;
+        
+        const sentDate = new Date(sent.sentDate);
+        sentDate.setHours(0, 0, 0, 0);
+        
+        return sentDate.getTime() === today.getTime();
+      } catch (fallbackError) {
+        console.error('[Storage] Fallback error in hasCobrancaMessageBeenSentToday:', fallbackError);
+        // Fail-safe: return true to prevent message sending if we can't verify
+        return true;
+      }
     }
   }
 
   async recordCobrancaMessageSent(cobrancaId: string): Promise<void> {
     try {
       const db = getDb();
+      
+      // Use UPSERT to prevent duplicate entries for the same cobrança on the same day
+      // First delete any existing record for today (clean up any duplicates)
+      await db.execute(sql`
+        DELETE FROM cobranca_messages_sent
+        WHERE cobranca_id = ${cobrancaId}
+        AND DATE(sent_date) = CURRENT_DATE
+      `);
+      
+      // Then insert new record
       await db.insert(schema.cobrancaMessagesSent).values({
         cobrancaId,
         sentDate: new Date(),
       });
+      
+      console.log(`[Storage] Recorded message sent for cobrança ${cobrancaId}`);
     } catch (error) {
       console.error('[Storage] Error in recordCobrancaMessageSent:', error);
+      throw error; // Re-throw to allow caller to handle the error
     }
   }
 
