@@ -93,20 +93,30 @@ export class EvolutionService {
 
   async createInstance(instanceName: string): Promise<EvolutionInstance> {
     try {
+      console.log('[Evolution] Creating instance with POST /instance/create:', instanceName);
       const response = await this.client.post(`/instance/create`, {
         instanceName,
-        token: this.client.defaults.headers.apikey,
+      });
+      
+      console.log('[Evolution] Create response:', {
+        status: response.status,
+        hasQR: !!response.data?.qrcode?.qr,
+        instanceName: response.data?.instance?.instanceName,
       });
       
       return {
         instanceName,
-        status: 'qr',
+        status: response.data?.instance?.state || 'qr',
         qrCode: response.data?.qrcode?.qr,
         connected: false,
         timestamp: Date.now(),
       };
-    } catch (error) {
-      console.error('Error creating instance:', error);
+    } catch (error: any) {
+      console.error('[Evolution] Error creating instance:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
       throw error;
     }
   }
