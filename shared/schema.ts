@@ -33,7 +33,7 @@ export const configurations = pgTable("configurations", {
   evolutionApiKey: text("evolution_api_key").notNull(),
   traccarUrl: text("traccar_url"),
   traccarApiKey: text("traccar_api_key"),
-  traccarUsername: text("traccar_username").default("aetracker"), // Username for Traccar (especially for v4.15)
+  traccarUsername: text("traccar_username").default("admin"), // Username for Traccar (especially for v4.15)
   traccarPassword: text("traccar_password"), // Password for Traccar (especially for v4.15)
   traccarVersion: text("traccar_version").default("latest"), // latest (newer versions) or 4.15
   traccarLimiteCobrancasVencidas: integer("traccar_limite_cobrancas_vencidas").default(3),

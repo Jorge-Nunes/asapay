@@ -78,7 +78,7 @@ export default function Configuracoes() {
     evolutionApiKey: '',
     traccarUrl: '',
     traccarApiKey: '',
-    traccarUsername: 'aetracker',
+    traccarUsername: 'admin',
     traccarPassword: '',
     traccarVersion: 'latest',
     traccarLimiteCobrancasVencidas: 3,
@@ -97,9 +97,27 @@ export default function Configuracoes() {
   useEffect(() => {
     if (config) {
       setFormData({
-        ...config,
         asaasToken: config.asaasToken || '',
+        asaasUrl: config.asaasUrl || 'https://api.asaas.com/v3',
+        evolutionUrl: config.evolutionUrl || '',
+        evolutionInstance: config.evolutionInstance || '',
         evolutionApiKey: config.evolutionApiKey || '',
+        traccarUrl: config.traccarUrl || '',
+        traccarApiKey: config.traccarApiKey || '',
+        traccarUsername: config.traccarUsername || 'admin',
+        traccarPassword: config.traccarPassword || '',
+        traccarVersion: config.traccarVersion || 'latest',
+        traccarLimiteCobrancasVencidas: config.traccarLimiteCobrancasVencidas || 3,
+        webhookUrl: config.webhookUrl || '',
+        diasAviso: config.diasAviso || 10,
+        messageTemplates: config.messageTemplates || {
+          venceHoje: '',
+          aviso: '',
+          atraso: '',
+          bloqueio: '',
+          desbloqueio: '',
+          pagamentoConfirmado: '',
+        },
       });
     }
   }, [config]);
@@ -337,6 +355,7 @@ export default function Configuracoes() {
       asaasToken: formData.asaasToken === '••••••••' ? undefined : formData.asaasToken,
       evolutionApiKey: formData.evolutionApiKey === '••••••••' ? undefined : formData.evolutionApiKey,
       traccarApiKey: formData.traccarApiKey === '••••••••' ? undefined : formData.traccarApiKey,
+      traccarPassword: formData.traccarPassword === '••••••••' ? undefined : formData.traccarPassword,
     };
     
     // Check if instance name changed
@@ -815,14 +834,14 @@ export default function Configuracoes() {
                 <Input
                   id="traccar-username"
                   type="text"
-                  value={formData.traccarUsername || 'aetracker'}
+                  value={formData.traccarUsername || 'admin'}
                   onChange={(e) => setFormData({ ...formData, traccarUsername: e.target.value })}
-                  placeholder="aetracker"
+                  placeholder="admin"
                   className="border-2"
                   data-testid="input-traccar-username"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Nome de usuário do Traccar. Padrão: aetracker
+                  Nome de usuário do Traccar. Padrão: admin
                 </p>
               </div>
               <div className="space-y-2">

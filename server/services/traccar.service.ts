@@ -11,7 +11,7 @@ export class TraccarService {
   constructor(config: Config) {
     this.baseUrl = config.traccarUrl || '';
     this.apiKey = config.traccarApiKey || '';
-    this.username = config.traccarUsername || 'aetracker'; // Default Traccar user
+    this.username = config.traccarUsername || 'admin'; // Default Traccar user
     this.password = config.traccarPassword || this.apiKey; // Use password if provided, otherwise API key
     this.version = config.traccarVersion || 'latest';
   }
