@@ -81,6 +81,14 @@ export default function Configuracoes() {
     }
   }, [config]);
 
+  // Auto-show QR code when device needs connection
+  useEffect(() => {
+    if (instanceStatus?.status === 'qr' || instanceStatus?.status === 'connecting') {
+      qrMutation.mutate();
+      setShowQrModal(true);
+    }
+  }, [instanceStatus?.status]);
+
   const saveMutation = useMutation({
     mutationFn: async (data: Partial<Config>) => {
       return apiRequest('PUT', '/api/config', data);
@@ -224,28 +232,49 @@ export default function Configuracoes() {
       />
       
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg sm:rounded-lg">
           <DialogHeader>
-            <DialogTitle>QR Code WhatsApp</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">Conectar WhatsApp</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-8">
+          
+          <div className="space-y-6 py-4">
             {qrCode ? (
-              <div className="bg-white p-4 rounded-lg border-2 border-border">
-                <img
-                  src={qrCode}
-                  alt="QR Code WhatsApp"
-                  className="w-64 h-64"
-                  data-testid="img-qrcode"
-                />
-              </div>
+              <>
+                <div className="flex justify-center">
+                  <div className="bg-white p-6 rounded-lg shadow-lg border border-border">
+                    <img
+                      src={qrCode}
+                      alt="QR Code WhatsApp"
+                      className="w-72 h-72"
+                      data-testid="img-qrcode"
+                    />
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 dark:bg-blue-950 border-l-4 border-blue-500 p-4 rounded">
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    Como conectar o dispositivo:
+                  </p>
+                  <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-4 list-decimal">
+                    <li>Abra WhatsApp no seu telefone</li>
+                    <li>Vá para Configurações &gt; Dispositivos conectados &gt; Conectar um dispositivo</li>
+                    <li>Aponte a câmera do telefone para o QR code acima</li>
+                    <li>Aguarde a conexão (pode levar alguns segundos)</li>
+                  </ol>
+                </div>
+              </>
             ) : (
-              <div className="text-center text-muted-foreground">
-                Carregando QR code...
+              <div className="flex items-center justify-center h-80">
+                <div className="text-center space-y-4">
+                  <div className="animate-spin inline-block">
+                    <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+                  </div>
+                  <p className="text-muted-foreground font-medium">
+                    Gerando QR code...
+                  </p>
+                </div>
               </div>
             )}
-            <p className="text-sm text-muted-foreground text-center">
-              Abra WhatsApp no seu telefone e escaneie este código para conectar
-            </p>
           </div>
         </DialogContent>
       </Dialog>
