@@ -764,7 +764,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Usuário já existe" });
       }
 
-      const user = await storage.createUser({ username, password, fullName, phone, address });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await storage.createUser({ username, password: hashedPassword, fullName, phone, address });
       res.status(201).json(user);
     } catch (error) {
       console.error('[Routes] Error in createUser:', error);
@@ -777,7 +778,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { username, password, fullName, phone, address } = req.body;
 
-      const updated = await storage.updateUser(id, { username, password, fullName, phone, address });
+      let updateData: any = { username, fullName, phone, address };
+      if (password) {
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+
+      const updated = await storage.updateUser(id, updateData);
       res.json(updated);
     } catch (error) {
       console.error('[Routes] Error in updateUser:', error);
