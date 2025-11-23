@@ -2,8 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExecutionChart } from "@/components/ExecutionChart";
 import { StatusChart } from "@/components/StatusChart";
-import { Button } from "@/components/ui/button";
-import { Download, FileText, MessageSquare, PlayCircle, DollarSign, Clipboard } from "lucide-react";
+import { FileText, MessageSquare, PlayCircle, DollarSign, Clipboard } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Cobranca, Execution } from "@shared/schema";
 import { MessageTypeChart } from "@/components/MessageTypeChart";
@@ -30,10 +29,6 @@ export default function Relatorios() {
     queryKey: ['/api/executions'],
   });
 
-  const handleExport = () => {
-    console.log('Exportando relatório...');
-  };
-
   const cobrancas = cobrancasResponse.data || [];
   const totalCobrancas = cobrancas.length;
   const totalMensagens = executions.reduce((sum, exec) => sum + exec.mensagensEnviadas, 0);
@@ -51,15 +46,9 @@ export default function Relatorios() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Relatórios</h1>
-          <p className="text-muted-foreground mt-1">Análise detalhada das execuções e cobranças</p>
-        </div>
-        <Button onClick={handleExport} className="bg-primary hover:bg-primary/90" data-testid="button-export">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar PDF
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Relatórios</h1>
+        <p className="text-muted-foreground mt-1">Análise detalhada das execuções e cobranças</p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
