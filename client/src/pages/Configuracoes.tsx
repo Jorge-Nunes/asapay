@@ -601,184 +601,89 @@ export default function Configuracoes() {
           </Card>
 
           {formData.evolutionUrl && formData.evolutionApiKey && formData.evolutionInstance && (
-            <Card className="border-2 hover-elevate transition-all">
+            <Card className="border-2">
               <CardHeader>
-                <CardTitle>Controles da Instância</CardTitle>
+                <CardTitle>Instância WhatsApp</CardTitle>
+                <CardDescription>Gerencia a instância do Evolution conectada</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 {statusLoading ? (
                   <div className="flex items-center justify-center h-20 text-muted-foreground">
                     Carregando status...
                   </div>
                 ) : instanceStatus ? (
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Nome</p>
-                      <p className="text-lg font-bold text-foreground">{instanceStatus.instanceName}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
-                      <Badge className={`text-sm font-semibold border ${getStatusColor(instanceStatus.status)}`}>
-                        {getStatusLabel(instanceStatus.status)}
-                      </Badge>
-                    </div>
-                    {instanceStatus.phone && (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Telefone</p>
-                        <p className="text-lg font-bold text-foreground">{instanceStatus.phone}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Nome</p>
+                        <p className="text-lg font-bold text-foreground">{instanceStatus.instanceName}</p>
                       </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Conexão</p>
-                      <Badge variant={instanceStatus.connected ? 'default' : 'secondary'}>
-                        {instanceStatus.connected ? '✓ Online' : '✕ Offline'}
-                      </Badge>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
+                        <Badge className={`text-sm font-semibold border ${getStatusColor(instanceStatus.status)}`}>
+                          {getStatusLabel(instanceStatus.status)}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Conexão</p>
+                        <Badge variant={instanceStatus.connected ? 'default' : 'secondary'}>
+                          {instanceStatus.connected ? '✓ Online' : '✕ Offline'}
+                        </Badge>
+                      </div>
+                      {instanceStatus.phone && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Telefone</p>
+                          <p className="text-lg font-bold text-foreground">{instanceStatus.phone}</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
+
+                    <div className="flex gap-3 flex-wrap pt-2 border-t">
+                      <Button
+                        onClick={() => {
+                          setConnectingInstanceName(config?.evolutionInstance || null);
+                          qrMutation.mutate();
+                        }}
+                        disabled={qrMutation.isPending}
+                        variant="default"
+                        data-testid="button-connect-evolution"
+                        className="gap-2"
+                      >
+                        <QrCode className="h-4 w-4" />
+                        {qrMutation.isPending ? 'Carregando...' : 'Conectar'}
+                      </Button>
+
+                      <Button
+                        onClick={() => restartMutation.mutate()}
+                        disabled={restartMutation.isPending}
+                        variant="outline"
+                        data-testid="button-restart-evolution"
+                        className="gap-2"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        {restartMutation.isPending ? 'Reiniciando...' : 'Reiniciar'}
+                      </Button>
+
+                      <Button
+                        onClick={() => stopMutation.mutate()}
+                        disabled={stopMutation.isPending}
+                        variant="destructive"
+                        data-testid="button-disconnect-evolution"
+                        className="gap-2"
+                      >
+                        <Power className="h-4 w-4" />
+                        {stopMutation.isPending ? 'Desconectando...' : 'Desconectar'}
+                      </Button>
+                    </div>
+                  </>
                 ) : (
-                  <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted rounded">
-                    Clique em "Atualizar" para carregar o status da instância
+                  <div className="text-sm text-muted-foreground p-3 bg-muted rounded">
+                    Carregando informações da instância...
                   </div>
                 )}
-
-                <div className="flex gap-3 flex-wrap pt-2 border-t">
-                  <Button
-                    onClick={() => {
-                      setConnectingInstanceName(config?.evolutionInstance || null);
-                      qrMutation.mutate();
-                    }}
-                    disabled={qrMutation.isPending}
-                    variant="default"
-                    data-testid="button-connect-evolution"
-                    className="gap-2"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    {qrMutation.isPending ? 'Carregando...' : 'Conectar'}
-                  </Button>
-
-                  <Button
-                    onClick={() => restartMutation.mutate()}
-                    disabled={restartMutation.isPending}
-                    variant="outline"
-                    data-testid="button-restart-evolution"
-                    className="gap-2"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    {restartMutation.isPending ? 'Reiniciando...' : 'Reiniciar'}
-                  </Button>
-
-                  <Button
-                    onClick={() => stopMutation.mutate()}
-                    disabled={stopMutation.isPending}
-                    variant="destructive"
-                    data-testid="button-disconnect-evolution"
-                    className="gap-2"
-                  >
-                    <Power className="h-4 w-4" />
-                    {stopMutation.isPending ? 'Desconectando...' : 'Desconectar'}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
-
-          <Card className="border-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Instâncias Criadas</CardTitle>
-                <CardDescription>Gerencia as instâncias WhatsApp criadas</CardDescription>
-              </div>
-              <Button
-                onClick={() => setShowCreateInstanceModal(true)}
-                size="sm"
-                className="gap-2"
-                data-testid="button-new-instance"
-              >
-                <Plus className="h-4 w-4" />
-                Nova Instância
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {evolutionInstances.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Nenhuma instância criada ainda</p>
-                  <p className="text-sm mt-1">Clique em "Nova Instância" para começar</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {evolutionInstances.map((inst) => (
-                    <div
-                      key={inst.name}
-                      className="p-4 border border-border rounded-lg hover-elevate transition-all flex items-center justify-between"
-                      data-testid={`card-instance-${inst.name}`}
-                    >
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground">{inst.name}</p>
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <Badge className={`text-xs ${getStatusColor(inst.status)}`}>
-                            {getStatusLabel(inst.status)}
-                          </Badge>
-                          <Badge variant={inst.connected ? 'default' : 'secondary'} className="text-xs">
-                            {inst.connected ? '✓ Online' : '✕ Offline'}
-                          </Badge>
-                          {inst.phone && (
-                            <span className="text-xs text-muted-foreground">{inst.phone}</span>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(inst.createdAt).toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          onClick={() => {
-                            setConnectingInstanceName(inst.name);
-                            connectInstanceMutation.mutate(inst.name);
-                          }}
-                          disabled={connectInstanceMutation.isPending || connectingInstanceName === inst.name}
-                          variant="default"
-                          size="sm"
-                          className="gap-2"
-                          data-testid={`button-connect-${inst.name}`}
-                        >
-                          <QrCode className="h-4 w-4" />
-                          {connectInstanceMutation.isPending && connectingInstanceName === inst.name ? 'Carregando...' : 'Conectar'}
-                        </Button>
-                        
-                        <Button
-                          onClick={() => {
-                            // TODO: Add restart endpoint for specific instance
-                            toast({ title: 'Não implementado', description: 'Reiniciar instância específica', variant: 'destructive' });
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          data-testid={`button-restart-${inst.name}`}
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                          Reiniciar
-                        </Button>
-                        
-                        <Button
-                          onClick={() => {
-                            // TODO: Add disconnect endpoint for specific instance
-                            toast({ title: 'Não implementado', description: 'Desconectar instância específica', variant: 'destructive' });
-                          }}
-                          variant="destructive"
-                          size="sm"
-                          className="gap-2"
-                          data-testid={`button-disconnect-${inst.name}`}
-                        >
-                          <Power className="h-4 w-4" />
-                          Desconectar
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="traccar" className="space-y-6">
