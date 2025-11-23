@@ -19,26 +19,31 @@ Key features include:
 - **Execuções**: Full execution history with expandable logs for each run
 - **Configurações**: Secure configuration management with secret masking and validation
 
-**Recent Changes (November 22, 2025)**:
-✅ **WEBHOOK DO ASAAS** - Receives real-time payment notifications:
-  - Signature validation (HMAC-SHA256) for security
-  - Auto-syncs new payments to system database
-  - Real-time status updates: PAYMENT_RECEIVED → RECEIVED, PAYMENT_OVERDUE → OVERDUE
-  - Automatic Traccar blocking/unblocking on payment status changes
-  - Endpoints: `/api/webhooks/asaas`, `/api/webhook/register`, `/api/webhook/list`
+**Recent Changes (November 23, 2025)**:
+✅ **AUTOMATED WHATSAPP INSTANCE MANAGEMENT** - Complete lifecycle automation:
+  - User changes instance name in Configurações → System creates in Evolution API automatically
+  - Automatic QR code extraction from Evolution 1.8.6 API (field: `base64`)
+  - Retry logic for QR code polling (3 attempts with 1-2 second delays)
+  - Modal display of QR code for instant scanning (data URL format)
+  - Status tracking: 'qr' (waiting), 'open' (connected), 'unknown' (error)
+  - Endpoints: 
+    - `POST /api/evolution/instance/create-and-connect` - Auto-create and get QR
+    - `GET /api/evolution/instance/status` - Real-time status with QR
+    - `GET /api/evolution/instance/qrcode` - QR code extraction
+  - No manual Evolution panel interaction needed for QR codes
+  - Evolution API 1.8.6 compatibility verified (POST `/instance/create`, GET `/instance/connect/{name}`)
 
-✅ **INCREMENTAL SYNC** - Optimized client synchronization:
-  - Tracks `lastClientSyncTime` and `lastCobrancasSyncTime`
-  - `/api/sync/incremental` endpoint for efficient updates
-  - UI buttons "Sync Incremental" and "Sincronizar Tudo" with timestamp display
-  - Batch processing for performance (10 clients at a time)
+**Technical Details**:
+  - Evolution response parsing: Extracts QR from `response.data.base64` (data:image/png;base64,...)
+  - Instance status detection: Checks for `base64` field presence
+  - Automatic retry with exponential backoff for QR code availability
+  - Handles both new instance creation and existing instance QR fetching
 
-✅ **Database Schema Updated**:
-  - Added `webhookUrl`, `lastClientSyncTime`, `lastCobrancasSyncTime` to configurations
-  - Used `bigint` for timestamps to handle millisecond precision
-  - Migrated successfully with zero data loss
+**Previous Changes (November 22, 2025)**:
+✅ **WEBHOOK DO ASAAS** - Receives real-time payment notifications
+✅ **INCREMENTAL SYNC** - Optimized client synchronization
 
-**Impact**: Eliminates up to 24h delay in payment status updates. System now processes payments in real-time via webhooks.
+**Impact**: Complete WhatsApp automation eliminates manual setup steps. Users can create and connect instances in seconds without panel interaction.
 
 ## User Preferences
 

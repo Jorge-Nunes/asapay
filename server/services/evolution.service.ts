@@ -28,17 +28,61 @@ export class EvolutionService {
   async getInstanceStatus(): Promise<EvolutionInstance> {
     try {
       console.log(`[Evolution] Fetching instance status for: ${this.instance}`);
-      const response = await this.client.get(`/instance/connect/${this.instance}`);
-      const data = response.data;
+      // Try new Evolution 1.8.6 endpoint first
+      let response;
+      try {
+        response = await this.client.get(`/instances/${this.instance}`);
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          // Fall back to old endpoint
+          console.log('[Evolution] Trying fallback endpoint /instance/connect');
+          response = await this.client.get(`/instance/connect/${this.instance}`);
+        } else {
+          throw error;
+        }
+      }
       
-      console.log(`[Evolution] Instance '${this.instance}' status received:`, data.instance?.state);
+      const data = response.data;
+      console.log(`[Evolution] Full response structure:`, {
+        status: response.status,
+        dataType: typeof data,
+        dataKeys: Object.keys(data || {}),
+        dataString: JSON.stringify(data).substring(0, 500),
+      });
+      
+      // Evolution 1.8.6 returns QR in base64 field when waiting for pairing
+      // Structure: { pairingCode, code, base64, count }
+      let qrCode: string | undefined = undefined;
+      let status: 'open' | 'closed' | 'connecting' | 'qr' | 'unknown' = 'unknown';
+      
+      if (data.base64) {
+        // Has QR code, waiting for connection
+        qrCode = data.base64;
+        status = 'qr';
+      } else if (data.instance?.state === 'open') {
+        // Instance is connected
+        status = 'open';
+      } else if (data.instance?.state) {
+        // Instance has a state
+        status = data.instance.state;
+      } else if (data.code && !data.base64) {
+        // Has code but no base64 = might be connected
+        status = 'open';
+      }
+      
+      console.log(`[Evolution] Parsed instance status:`, {
+        hasBase64QR: !!data.base64,
+        hasCode: !!data.code,
+        status: status,
+        qrCodeLength: qrCode?.length || 0,
+      });
       
       return {
-        instanceName: data.instance?.instanceName || this.instance,
-        status: data.instance?.state || 'unknown',
-        qrCode: data.qrcode?.qr,
-        connected: data.instance?.state === 'open',
-        phone: data.instance?.wid,
+        instanceName: data.instanceName || this.instance,
+        status: status,
+        qrCode: qrCode,
+        connected: status === 'open',
+        phone: data.wid,
         timestamp: Date.now(),
       };
     } catch (error: any) {
@@ -47,7 +91,7 @@ export class EvolutionService {
         message: error.message,
         status: error.response?.status,
         statusText: error.response?.statusText,
-        data: error.response?.data,
+        endpoint: error.config?.url,
       });
       
       // Return unknown status instead of throwing
@@ -62,11 +106,28 @@ export class EvolutionService {
 
   async getQrCode(): Promise<string | null> {
     try {
-      const response = await this.client.get(`/instance/connect/${this.instance}`);
-      const qr = response.data?.qrcode?.qr;
+      // Try new Evolution 1.8.6 endpoint first
+      let response;
+      try {
+        response = await this.client.get(`/instances/${this.instance}`);
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          // Fall back to old endpoint
+          response = await this.client.get(`/instance/connect/${this.instance}`);
+        } else {
+          throw error;
+        }
+      }
+      
+      // Evolution 1.8.6 returns base64 encoded QR code
+      const qr = response.data?.base64 || response.data?.qrcode?.qr;
+      console.log(`[Evolution] QR code for ${this.instance}:`, qr ? 'found' : 'not found');
       return qr || null;
-    } catch (error) {
-      console.error('[Evolution] Error fetching QR code:', error);
+    } catch (error: any) {
+      console.error('[Evolution] Error fetching QR code:', {
+        message: error.message,
+        endpoint: error.config?.url,
+      });
       return null;
     }
   }
