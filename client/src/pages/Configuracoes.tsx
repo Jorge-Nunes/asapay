@@ -264,7 +264,7 @@ export default function Configuracoes() {
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Falha ao criar instância');
+        throw new Error(error.message || error.error || 'Falha ao conectar instância');
       }
       return response.json();
     },
@@ -278,31 +278,51 @@ export default function Configuracoes() {
         setQrCodeError(null);
         setShowQrModal(true);
         toast({
-          title: 'Instância criada!',
-          description: 'Escaneie o QR code com o WhatsApp para conectar.',
+          title: 'Pronto para conectar!',
+          description: 'Escaneie o QR code com o WhatsApp.',
         });
-      } else {
-        // QR code not available - show message
+      } else if (data.instance?.status === 'open') {
+        // Already connected
         setQrCode(null);
-        setQrMessage(data.message || 'Instância criada localmente. Vá ao painel do Evolution para obter o QR code.');
+        setQrMessage('✓ WhatsApp já está conectado!');
         setQrCodeError(null);
         setShowQrModal(true);
         toast({
-          title: 'Instância criada',
-          description: data.message || 'Complete a conexão no painel do Evolution.',
+          title: 'Conectado',
+          description: 'Sua instância está pronta para enviar mensagens.',
         });
+      } else {
+        // Status unknown or not connected
+        setQrCode(null);
+        setQrMessage(data.message || 'Instância sincronizada. Aguarde o status atualizar.');
+        setQrCodeError(null);
+        setShowQrModal(true);
       }
     },
     onError: (error: Error) => {
       console.error('[CreateAndConnect] Error:', error);
-      toast({
-        title: 'Erro ao criar instância',
-        description: error.message,
-        variant: 'destructive',
-      });
-      setQrCode(null);
-      setQrMessage(null);
-      setQrCodeError(error.message);
+      
+      // Check if it's the "instance not found" error
+      const errorMsg = error.message;
+      if (errorMsg.includes('não encontrada') || errorMsg.includes('Evolution API')) {
+        setQrCode(null);
+        setQrMessage(null);
+        setQrCodeError(errorMsg + '\n\nAcesse o painel do Evolution API e crie a instância ANTES de voltar aqui.');
+        toast({
+          title: 'Instância não encontrada',
+          description: 'Crie no painel do Evolution primeiro',
+          variant: 'destructive',
+        });
+      } else {
+        setQrCode(null);
+        setQrMessage(null);
+        setQrCodeError(errorMsg);
+        toast({
+          title: 'Erro ao conectar',
+          description: errorMsg,
+          variant: 'destructive',
+        });
+      }
       setShowQrModal(true);
     },
   });

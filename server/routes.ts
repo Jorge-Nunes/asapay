@@ -1653,7 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New endpoint: Create instance in Evolution and get QR code
+  // New endpoint: Connect to instance (assumes it already exists in Evolution)
   app.post("/api/evolution/instance/create-and-connect", async (req, res) => {
     try {
       const { instanceName } = req.body;
@@ -1666,7 +1666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Evolution não configurada" });
       }
 
-      // Create instance locally first
+      // Create instance locally
       await storage.createEvolutionInstance(
         instanceName,
         'qr',
@@ -1674,61 +1674,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         undefined
       );
 
-      // Try to create and get QR code from Evolution
-      try {
-        const evolutionService = new EvolutionService(
-          config.evolutionUrl,
-          config.evolutionApiKey,
-          instanceName
-        );
+      // Try to get QR code from Evolution (instance must already exist there)
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        instanceName
+      );
 
-        // Create instance in Evolution
-        console.log('[Evolution] Creating instance in Evolution:', instanceName);
-        await evolutionService.createInstance(instanceName);
+      console.log('[Evolution] Connecting to instance:', instanceName);
+      
+      // Fetch status and QR code
+      const status = await evolutionService.getInstanceStatus();
+      const qrCode = await evolutionService.getQrCode();
 
-        // Wait a moment for the instance to be ready
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('[Evolution] Connected to instance:', {
+        name: instanceName,
+        status: status.status,
+        hasQR: !!qrCode,
+      });
 
-        // Now fetch the QR code (separate request)
-        console.log('[Evolution] Fetching QR code after creation:', instanceName);
-        const qrCode = await evolutionService.getQrCode();
-        
-        // Fetch full status
-        const status = await evolutionService.getInstanceStatus();
-
-        console.log('[Evolution] Instance created successfully:', {
-          name: instanceName,
-          status: status.status,
-          hasQR: !!qrCode,
-        });
-
-        res.json({
-          success: true,
-          instance: status,
-          message: 'Instância criada na Evolution. Escaneie o QR code.',
-          qrCode: qrCode,
-        });
-      } catch (evolutionError: any) {
-        console.log('[Evolution] Could not create in Evolution:', {
-          status: evolutionError.response?.status,
-          error: evolutionError.message,
-        });
-
-        // Still return success - instance created locally
-        // User may have already created it in Evolution panel
-        const instances = await storage.listEvolutionInstances();
-        const createdInstance = instances.find((i: any) => i.name === instanceName);
-
-        res.json({
-          success: true,
-          instance: createdInstance || { name: instanceName, status: 'qr', connected: false },
-          message: 'Instância criada localmente. Vá ao painel do Evolution para conectar ou complete a conexão aqui.',
-          qrCode: null,
+      // If instance not found on Evolution
+      if (status.status === 'unknown') {
+        return res.status(400).json({
+          error: 'Instância não encontrada na Evolution API.',
+          message: 'Crie a instância PRIMEIRO no painel do Evolution API com o nome "' + instanceName + '", depois volte aqui e clique Conectar.',
         });
       }
+
+      res.json({
+        success: true,
+        instance: status,
+        message: status.status === 'open' 
+          ? 'WhatsApp já está conectado!' 
+          : 'Escaneie o QR code para conectar.',
+        qrCode: qrCode || null,
+      });
     } catch (error) {
-      console.error('[Evolution] Error creating instance:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao criar instância" });
+      console.error('[Evolution] Error connecting instance:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Erro ao conectar instância",
+        message: 'Verifique se a instância foi criada no painel do Evolution.'
+      });
     }
   });
 
