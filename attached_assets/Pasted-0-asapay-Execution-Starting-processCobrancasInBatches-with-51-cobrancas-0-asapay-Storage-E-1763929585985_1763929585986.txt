@@ -1,0 +1,27 @@
+0|asapay  | [Execution] Starting processCobrancasInBatches with 51 cobrancas
+0|asapay  | [Storage] Error in getClientLastMessageAtraso: ReferenceError: desc is not defined
+0|asapay  |     at Object.orderBy (file:///home/asapay/AsaPay/dist/index.js:3959:29)
+0|asapay  |     at PgDialect.buildRelationalQueryWithoutPK (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/dialect.js:989:71)
+0|asapay  |     at QueryPromise._getQuery (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:84:25)
+0|asapay  |     at QueryPromise._toSQL (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:99:24)
+0|asapay  |     at file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:62:42
+0|asapay  |     at Object.startActiveSpan (file:///home/asapay/AsaPay/node_modules/drizzle-orm/tracing.js:8:14)
+0|asapay  |     at QueryPromise._prepare (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:61:19)
+0|asapay  |     at file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:114:19
+0|asapay  |     at Object.startActiveSpan (file:///home/asapay/AsaPay/node_modules/drizzle-orm/tracing.js:8:14)
+0|asapay  |     at QueryPromise.execute (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:113:19)
+0|asapay  | [Storage] Error in getClientLastMessageAtraso: ReferenceError: desc is not defined
+0|asapay  |     at Object.orderBy (file:///home/asapay/AsaPay/dist/index.js:3959:29)
+0|asapay  |     at PgDialect.buildRelationalQueryWithoutPK (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/dialect.js:989:71)
+0|asapay  |     at QueryPromise._getQuery (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:84:25)
+0|asapay  |     at QueryPromise._toSQL (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:99:24)
+0|asapay  |     at file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:62:42
+0|asapay  |     at Object.startActiveSpan (file:///home/asapay/AsaPay/node_modules/drizzle-orm/tracing.js:8:14)
+0|asapay  |     at QueryPromise._prepare (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:61:19)
+0|asapay  |     at file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:114:19
+0|asapay  |     at Object.startActiveSpan (file:///home/asapay/AsaPay/node_modules/drizzle-orm/tracing.js:8:14)
+0|asapay  |     at QueryPromise.execute (file:///home/asapay/AsaPay/node_modules/drizzle-orm/pg-core/query-builders/query.js:113:19)
+0|asapay  | [Storage] Recorded message sent for cobrança pay_tk7jsa25svh081rd
+0|asapay  | [Storage] Recorded message sent for cobrança pay_68wbhhkqimr9serf
+0|asapay  | [Storage] Recorded message sent for cobrança pay_m2o8y54uw3tj4fw2
+0|asapay 
