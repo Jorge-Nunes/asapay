@@ -255,6 +255,58 @@ export default function Configuracoes() {
     },
   });
 
+  const createAndConnectInstance = useMutation({
+    mutationFn: async (instanceName: string) => {
+      const response = await fetch('/api/evolution/instance/create-and-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instanceName }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Falha ao criar instância');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('[CreateAndConnect] Response:', data);
+      
+      // Show QR code if available
+      if (data.qrCode) {
+        setQrCode(data.qrCode);
+        setQrMessage(null);
+        setQrCodeError(null);
+        setShowQrModal(true);
+        toast({
+          title: 'Instância criada!',
+          description: 'Escaneie o QR code com o WhatsApp para conectar.',
+        });
+      } else {
+        // QR code not available - show message
+        setQrCode(null);
+        setQrMessage(data.message || 'Instância criada localmente. Vá ao painel do Evolution para obter o QR code.');
+        setQrCodeError(null);
+        setShowQrModal(true);
+        toast({
+          title: 'Instância criada',
+          description: data.message || 'Complete a conexão no painel do Evolution.',
+        });
+      }
+    },
+    onError: (error: Error) => {
+      console.error('[CreateAndConnect] Error:', error);
+      toast({
+        title: 'Erro ao criar instância',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setQrCode(null);
+      setQrMessage(null);
+      setQrCodeError(error.message);
+      setShowQrModal(true);
+    },
+  });
+
   const handleSave = () => {
     const dataToSend = {
       ...formData,
@@ -263,7 +315,20 @@ export default function Configuracoes() {
       traccarApiKey: formData.traccarApiKey === '••••••••' ? undefined : formData.traccarApiKey,
     };
     
-    saveMutation.mutate(dataToSend);
+    // Check if instance name changed
+    const instanceNameChanged = config && config.evolutionInstance !== formData.evolutionInstance;
+    
+    // If instance name changed, create in Evolution and show QR code
+    if (instanceNameChanged && formData.evolutionInstance) {
+      saveMutation.mutate(dataToSend, {
+        onSuccess: () => {
+          // After saving config, create instance in Evolution
+          createAndConnectInstance.mutate(formData.evolutionInstance);
+        },
+      });
+    } else {
+      saveMutation.mutate(dataToSend);
+    }
   };
 
   const openPreview = (name: string, content: string) => {
