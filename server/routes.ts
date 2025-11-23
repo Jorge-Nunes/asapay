@@ -1683,22 +1683,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         // Create instance in Evolution
-        const instanceData = await evolutionService.createInstance(instanceName);
+        console.log('[Evolution] Creating instance in Evolution:', instanceName);
+        await evolutionService.createInstance(instanceName);
 
-        console.log('[Evolution] Instance created:', {
+        // Wait a moment for the instance to be ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Now fetch the QR code (separate request)
+        console.log('[Evolution] Fetching QR code after creation:', instanceName);
+        const qrCode = await evolutionService.getQrCode();
+        
+        // Fetch full status
+        const status = await evolutionService.getInstanceStatus();
+
+        console.log('[Evolution] Instance created successfully:', {
           name: instanceName,
-          status: instanceData.status,
-          hasQR: !!instanceData.qrCode,
+          status: status.status,
+          hasQR: !!qrCode,
         });
 
         res.json({
           success: true,
-          instance: instanceData,
+          instance: status,
           message: 'Instância criada na Evolution. Escaneie o QR code.',
-          qrCode: instanceData.qrCode || null,
+          qrCode: qrCode,
         });
       } catch (evolutionError: any) {
-        console.log('[Evolution] Could not create in Evolution (might already exist):', {
+        console.log('[Evolution] Could not create in Evolution:', {
           status: evolutionError.response?.status,
           error: evolutionError.message,
         });
