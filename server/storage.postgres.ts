@@ -120,16 +120,16 @@ export class PostgresStorage implements IStorage {
         webhookUrl: config?.webhookUrl || '',
         diasAviso: config?.diasAviso || 10,
         messageTemplates: (config?.messageTemplates as any) || {
-          venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
+          venceHoje: `💳 Olá, aqui é da *AsaPay Cobranças*!
 Notamos que sua fatura vence *hoje* 📅.
-Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
+Para evitar juros e manter seu serviço ativo, faça o pagamento o quanto antes.
 
 🔗 Link da fatura: {{link_fatura}}
 💰 Valor: {{valor}}
 📆 Vencimento: {{vencimento}}
 
 Qualquer dúvida, nossa equipe está à disposição! 🤝`,
-          aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
+          aviso: `🔔 Olá, tudo bem? Somos da *AsaPay Cobranças*.
 Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
 Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 
@@ -140,35 +140,35 @@ Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 Estamos aqui para ajudar no que precisar! 📞`,
           atraso: `⚠️ *URGENTE* - Olá {{cliente_nome}}!
 Detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
-Sua localização será bloqueada em breve no rastreador!
+Seu acesso será bloqueado em breve!
 
 Regularize sua situação agora:
 🔗 {{link_fatura}}
 💰 Valor total pendente: {{valor_total}}
 
-Ligue agora: (11) 3XXX-XXXX
-Visite: www.teksat.com.br
+Suporte: asapay@contato.com
+WhatsApp: (11) 9XXXX-XXXX
 
-Evite a perda de rastreamento! ⏰`,
+Evite a perda do serviço! ⏰`,
           bloqueio: `🔒 *BLOQUEIO ATIVADO*
-Olá {{nome}}, seu rastreamento foi bloqueado em {{data}} como medida de segurança.
+Olá {{nome}}, seu acesso foi bloqueado em {{data}} como medida de segurança.
 
-⚠️ *SEU RASTREAMENTO FOI BLOQUEADO* por falta de pagamento.
+⚠️ *ACESSO BLOQUEADO* por falta de pagamento.
 
 Para reativar:
 ✅ Regularize o pagamento das cobranças pendentes
-📞 Suporte: (11) 3XXX-XXXX
+📞 Suporte: asapay@contato.com
 
 Após a confirmação do pagamento, o bloqueio será removido automaticamente.`,
           desbloqueio: `✅ *BLOQUEIO REMOVIDO!*
 Olá {{nome}}, recebemos seu pagamento em {{data}}! 🎉
 
-🔓 Seu rastreamento foi *reativado* com sucesso!
+🔓 Seu acesso foi *reativado* com sucesso!
 
-Agora você pode continuar rastreando seus veículos normalmente.
+Agora você pode continuar usando nossos serviços normalmente.
 Obrigado por regularizar sua conta!
 
-Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
+Qualquer dúvida, estamos aqui: asapay@contato.com 📞`,
           pagamentoConfirmado: `✅ *PAGAMENTO CONFIRMADO!*
 Olá {{cliente_nome}}, agradecemos o seu pagamento de R$ {{valor}}!
 
@@ -178,7 +178,7 @@ Recebemos com sucesso sua contribuição e confirmamos o recebimento. 🎉
 💰 Valor: R$ {{valor}}
 📅 Data de Recebimento: {{data}}
 
-Seu rastreamento continua ativo e protegido!
+Seus serviços continuam ativos e protegidos!
 Obrigado por sua confiança! 🙏`,
         },
       };
@@ -234,16 +234,16 @@ Obrigado por sua confiança! 🙏`,
           webhookUrl: config.webhookUrl || '',
           diasAviso: config.diasAviso || 10,
           messageTemplates: config.messageTemplates || {
-            venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
+            venceHoje: `💳 Olá, aqui é da *AsaPay Cobranças*!
 Notamos que sua fatura vence *hoje* 📅.
-Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
+Para evitar juros e manter seu serviço ativo, faça o pagamento o quanto antes.
 
 🔗 Link da fatura: {{link_fatura}}
 💰 Valor: {{valor}}
 📆 Vencimento: {{vencimento}}
 
 Qualquer dúvida, nossa equipe está à disposição! 🤝`,
-            aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
+            aviso: `🔔 Olá, tudo bem? Somos da *AsaPay Cobranças*.
 Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
 Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 
@@ -254,35 +254,35 @@ Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 Estamos aqui para ajudar no que precisar! 📞`,
             atraso: `⚠️ *URGENTE* - Olá {{cliente_nome}}!
 Detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
-Sua localização será bloqueada em breve no rastreador!
+Seu acesso será bloqueado em breve!
 
 Regularize sua situação agora:
 🔗 {{link_fatura}}
 💰 Valor total pendente: {{valor_total}}
 
-Ligue agora: (11) 3XXX-XXXX
-Visite: www.teksat.com.br
+Suporte: asapay@contato.com
+WhatsApp: (11) 9XXXX-XXXX
 
-Evite a perda de rastreamento! ⏰`,
+Evite a perda do serviço! ⏰`,
             bloqueio: `🔒 *BLOQUEIO ATIVADO*
-Olá {{nome}}, seu rastreamento foi bloqueado em {{data}} como medida de segurança.
+Olá {{nome}}, seu acesso foi bloqueado em {{data}} como medida de segurança.
 
-⚠️ *SEU RASTREAMENTO FOI BLOQUEADO* por falta de pagamento.
+⚠️ *ACESSO BLOQUEADO* por falta de pagamento.
 
 Para reativar:
 ✅ Regularize o pagamento das cobranças pendentes
-📞 Suporte: (11) 3XXX-XXXX
+📞 Suporte: asapay@contato.com
 
 Após a confirmação do pagamento, o bloqueio será removido automaticamente.`,
             desbloqueio: `✅ *BLOQUEIO REMOVIDO!*
 Olá {{nome}}, recebemos seu pagamento em {{data}}! 🎉
 
-🔓 Seu rastreamento foi *reativado* com sucesso!
+🔓 Seu acesso foi *reativado* com sucesso!
 
-Agora você pode continuar rastreando seus veículos normalmente.
+Agora você pode continuar usando nossos serviços normalmente.
 Obrigado por regularizar sua conta!
 
-Qualquer dúvida, estamos aqui: (11) 3XXX-XXXX 📞`,
+Qualquer dúvida, estamos aqui: asapay@contato.com 📞`,
             pagamentoConfirmado: `✅ *PAGAMENTO CONFIRMADO!*
 Olá {{cliente_nome}}, agradecemos o seu pagamento de R$ {{valor}}!
 
@@ -292,7 +292,7 @@ Recebemos com sucesso sua contribuição e confirmamos o recebimento. 🎉
 💰 Valor: R$ {{valor}}
 📅 Data de Recebimento: {{data}}
 
-Seu rastreamento continua ativo e protegido!
+Seus serviços continuam ativos e protegidos!
 Obrigado por sua confiança! 🙏`,
           },
         });

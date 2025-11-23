@@ -59,7 +59,7 @@ export function TemplatePreview({ isOpen, onClose, templateName, templateContent
           <div className="flex-1 bg-gray-200 dark:bg-gray-800 rounded-2xl p-3 flex flex-col">
             {/* Phone header */}
             <div className="bg-green-600 text-white px-4 py-3 rounded-t-xl text-sm">
-              <div className="font-semibold">TEKSAT Rastreamento</div>
+              <div className="font-semibold">AsaPay Cobranças</div>
               <div className="text-xs opacity-75">online</div>
             </div>
 

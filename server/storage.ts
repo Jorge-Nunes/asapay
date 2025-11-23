@@ -84,16 +84,16 @@ export class MemStorage implements IStorage {
       webhookUrl: process.env.WEBHOOK_URL || '',
       diasAviso: 10,
       messageTemplates: {
-        venceHoje: `🚗💨 Olá, aqui é da *TEKSAT Rastreamento Veicular*!
+        venceHoje: `💳 Olá, aqui é da *AsaPay Cobranças*!
 Notamos que sua fatura vence *hoje* 📅.
-Para evitar juros e manter seu rastreamento ativo, faça o pagamento o quanto antes.
+Para evitar juros e manter seu serviço ativo, faça o pagamento o quanto antes.
 
 🔗 Link da fatura: {{link_fatura}}
 💰 Valor: {{valor}}
 📆 Vencimento: {{vencimento}}
 
 Qualquer dúvida, nossa equipe está à disposição! 🤝`,
-        aviso: `🔔 Olá, tudo bem? Somos da *TEKSAT Rastreamento Veicular*.
+        aviso: `🔔 Olá, tudo bem? Somos da *AsaPay Cobranças*.
 Faltam apenas {{dias_aviso}} dia(s) para o vencimento da sua fatura 🗓️.
 Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 
@@ -104,16 +104,16 @@ Evite a suspensão do serviço e mantenha sua proteção ativa! 🛡️
 Estamos aqui para ajudar no que precisar! 📞`,
         atraso: `⚠️ *URGENTE* - Olá {{cliente_nome}}!
 Detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
-Sua localização será bloqueada em breve no rastreador!
+Seu acesso será bloqueado em breve!
 
 Regularize sua situação agora:
 🔗 {{link_fatura}}
 💰 Valor total pendente: {{valor_total}}
 
-Ligue agora: (11) 3XXX-XXXX
-Visite: www.teksat.com.br
+Suporte: asapay@contato.com
+WhatsApp: (11) 9XXXX-XXXX
 
-Evite a perda de rastreamento! ⏰`,
+Evite a perda do serviço! ⏰`,
         bloqueio: `🔒 *BLOQUEIO ATIVADO*
 Olá {{cliente_nome}}, detectamos {{quantidade_cobrancas}} cobrança(s) vencida(s) em sua conta.
 
