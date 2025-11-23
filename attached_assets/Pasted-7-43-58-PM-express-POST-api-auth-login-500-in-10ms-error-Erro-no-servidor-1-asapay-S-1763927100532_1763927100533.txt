@@ -1,0 +1,24 @@
+7:43:58 PM [express] POST /api/auth/login 500 in 10ms :: {"error":"Erro no servidor"}
+1|asapay  | [Storage] Error in getUserByUsername: Error: DATABASE_URL not configured
+1|asapay  |     at getDb (file:///home/asapay/AsaPay/dist/index.js:3047:13)
+1|asapay  |     at PostgresStorage.getUserByUsername (file:///home/asapay/AsaPay/dist/index.js:3743:19)
+1|asapay  |     at file:///home/asapay/AsaPay/dist/index.js:1350:34
+1|asapay  |     at Layer.handle [as handle_request] (/home/asapay/AsaPay/node_modules/express/lib/router/layer.js:95:5)
+1|asapay  |     at next (/home/asapay/AsaPay/node_modules/express/lib/router/route.js:149:13)
+1|asapay  |     at Route.dispatch (/home/asapay/AsaPay/node_modules/express/lib/router/route.js:119:3)
+1|asapay  |     at Layer.handle [as handle_request] (/home/asapay/AsaPay/node_modules/express/lib/router/layer.js:95:5)
+1|asapay  |     at /home/asapay/AsaPay/node_modules/express/lib/router/index.js:284:15
+1|asapay  |     at Function.process_params (/home/asapay/AsaPay/node_modules/express/lib/router/index.js:346:12)
+1|asapay  |     at next (/home/asapay/AsaPay/node_modules/express/lib/router/index.js:280:10)
+1|asapay  | [Auth] Login error: Error: DATABASE_URL not configured
+1|asapay  |     at getDb (file:///home/asapay/AsaPay/dist/index.js:3047:13)
+1|asapay  |     at PostgresStorage.getUserByUsername (file:///home/asapay/AsaPay/dist/index.js:3743:19)
+1|asapay  |     at file:///home/asapay/AsaPay/dist/index.js:1350:34
+1|asapay  |     at Layer.handle [as handle_request] (/home/asapay/AsaPay/node_modules/express/lib/router/layer.js:95:5)
+1|asapay  |     at next (/home/asapay/AsaPay/node_modules/express/lib/router/route.js:149:13)
+1|asapay  |     at Route.dispatch (/home/asapay/AsaPay/node_modules/express/lib/router/route.js:119:3)
+1|asapay  |     at Layer.handle [as handle_request] (/home/asapay/AsaPay/node_modules/express/lib/router/layer.js:95:5)
+1|asapay  |     at /home/asapay/AsaPay/node_modules/express/lib/router/index.js:284:15
+1|asapay  |     at Function.process_params (/home/asapay/AsaPay/node_modules/express/lib/router/index.js:346:12)
+1|asapay  |     at next (/home/asapay/AsaPay/node_modules/express/lib/router/index.js:280:10)
+1|asapay  | 7:44:02 PM [express] POST /api/auth/login 500 in 5ms :: {"error":"Erro no servidor"}
