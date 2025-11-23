@@ -60,13 +60,13 @@ export default function Configuracoes() {
 
   const { data: instanceStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery<EvolutionInstance>({
     queryKey: ['/api/evolution/instance/status'],
-    refetchInterval: 5000,
+    refetchInterval: 60000,
     enabled: !!config?.evolutionUrl && !!config?.evolutionApiKey && !!config?.evolutionInstance,
   });
 
   const { data: evolutionInstances = [] } = useQuery<EvolutionInstanceData[]>({
     queryKey: ['/api/evolution/instances'],
-    refetchInterval: 5000,
+    refetchInterval: 60000,
   });
 
   const [formData, setFormData] = useState<Config>({
