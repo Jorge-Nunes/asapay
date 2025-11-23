@@ -48,6 +48,7 @@ export default function Configuracoes() {
   });
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [qrCodeError, setQrCodeError] = useState<string | null>(null);
   const [showCreateInstanceModal, setShowCreateInstanceModal] = useState(false);
   const [newInstanceName, setNewInstanceName] = useState('');
   const [connectingInstanceName, setConnectingInstanceName] = useState<string | null>(null);
@@ -215,15 +216,21 @@ export default function Configuracoes() {
   const connectInstanceMutation = useMutation({
     mutationFn: async (instanceName: string) => {
       const response = await fetch(`/api/evolution/instance/qrcode?instance=${instanceName}`);
-      if (!response.ok) throw new Error('Falha ao obter QR code');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Falha ao obter QR code');
+      }
       return response.json();
     },
     onSuccess: (data) => {
       setQrCode(data.qrCode);
+      setQrCodeError(null);
       setShowQrModal(true);
     },
-    onError: () => {
-      toast({ title: 'Erro', description: 'Falha ao obter QR code', variant: 'destructive' });
+    onError: (error: Error) => {
+      setQrCode(null);
+      setQrCodeError(error.message);
+      setShowQrModal(true);
     },
   });
 
@@ -307,7 +314,30 @@ export default function Configuracoes() {
           </DialogHeader>
           
           <div className="space-y-6 py-4">
-            {qrCode ? (
+            {qrCodeError ? (
+              <div className="flex items-center justify-center h-80">
+                <div className="text-center space-y-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-950 rounded-full">
+                    <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <p className="font-semibold text-foreground">Não foi possível gerar o QR code</p>
+                  <p className="text-sm text-muted-foreground">{qrCodeError}</p>
+                  <div className="bg-amber-50 dark:bg-amber-950 border-l-4 border-amber-500 p-4 rounded mt-4 text-left">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                      Verifique:
+                    </p>
+                    <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1 ml-4 list-disc">
+                      <li>A URL da Evolution API está correta</li>
+                      <li>O token de acesso é válido</li>
+                      <li>O servidor Evolution está respondendo</li>
+                      <li>Tente novamente em alguns segundos</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : qrCode ? (
               <>
                 <div className="flex justify-center">
                   <div className="bg-white p-6 rounded-lg shadow-lg border border-border">
