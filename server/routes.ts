@@ -1533,31 +1533,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         instanceName
       );
 
-      // First, try to create the instance on Evolution API
-      // This will return the real QR code if successful
+      // First, check current instance status
+      const status = await evolutionService.getInstanceStatus();
+      
+      // If already connected, return success status instead of QR code
+      if (status.status === 'open') {
+        return res.json({ 
+          status: 'open',
+          message: "WhatsApp já está conectado e funcionando",
+          connected: true
+        });
+      }
+
+      // If in QR state, try to get the QR code
+      if (status.status === 'qr' && status.qrCode) {
+        return res.json({ 
+          qrCode: status.qrCode, 
+          message: "QR code gerado. Escaneie para conectar." 
+        });
+      }
+
+      // If not in QR state, try to create/restart the instance to generate QR
       try {
-        console.log('[Evolution] Attempting to create instance on Evolution API:', instanceName);
+        console.log('[Evolution] Instance status:', status.status, '- Creating new instance for QR');
         const instanceData = await evolutionService.createInstance(instanceName);
-        const qrCode = instanceData.qrCode;
         
-        if (qrCode) {
-          console.log('[Evolution] Got QR code from Evolution API');
-          return res.json({ qrCode, message: "QR code gerado. Escaneie para conectar." });
+        if (instanceData.qrCode) {
+          console.log('[Evolution] Got QR code from creation');
+          return res.json({ 
+            qrCode: instanceData.qrCode, 
+            message: "QR code gerado. Escaneie para conectar." 
+          });
         }
       } catch (createError) {
-        console.log('[Evolution] Failed to create instance, trying to fetch existing:', createError instanceof Error ? createError.message : '');
+        console.log('[Evolution] Could not create instance:', createError instanceof Error ? createError.message : '');
       }
 
-      // If creation failed, try to get QR from existing instance
-      const qrCode = await evolutionService.getQrCode();
-      if (qrCode && !qrCode.includes('data:image/png')) {
-        // Real QR code from API
-        return res.json({ qrCode, message: "QR code gerado. Escaneie para conectar." });
-      }
-
-      // If no real QR code available, send error message
+      // If no QR code available, return helpful message
       res.status(400).json({ 
-        error: "QR code não disponível. Tente novamente em alguns segundos." 
+        error: "QR code não disponível. A instância pode estar em processo de conexão. Tente novamente em alguns segundos.",
+        currentStatus: status.status
       });
     } catch (error) {
       console.error('[Evolution] Error getting QR code:', error);

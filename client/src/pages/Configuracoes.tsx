@@ -49,6 +49,7 @@ export default function Configuracoes() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [qrCodeError, setQrCodeError] = useState<string | null>(null);
+  const [qrMessage, setQrMessage] = useState<string | null>(null);
   const [showCreateInstanceModal, setShowCreateInstanceModal] = useState(false);
   const [newInstanceName, setNewInstanceName] = useState('');
   const [connectingInstanceName, setConnectingInstanceName] = useState<string | null>(null);
@@ -223,12 +224,27 @@ export default function Configuracoes() {
       return response.json();
     },
     onSuccess: (data) => {
-      setQrCode(data.qrCode);
-      setQrCodeError(null);
+      // If already connected, show success message
+      if (data.status === 'open' || data.connected) {
+        setQrCode(null);
+        setQrMessage(data.message || 'WhatsApp já está conectado e funcionando!');
+        setQrCodeError(null);
+      } else if (data.qrCode) {
+        // Show QR code if available
+        setQrCode(data.qrCode);
+        setQrCodeError(null);
+        setQrMessage(null);
+      } else {
+        // No QR code and not connected - show error
+        setQrCode(null);
+        setQrCodeError('QR code não disponível no momento.');
+        setQrMessage(null);
+      }
       setShowQrModal(true);
     },
     onError: (error: Error) => {
       setQrCode(null);
+      setQrMessage(null);
       setQrCodeError(error.message);
       setShowQrModal(true);
     },
@@ -314,7 +330,19 @@ export default function Configuracoes() {
           </DialogHeader>
           
           <div className="space-y-6 py-4">
-            {qrCodeError ? (
+            {qrMessage ? (
+              <div className="flex items-center justify-center h-80">
+                <div className="text-center space-y-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-950 rounded-full">
+                    <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="font-semibold text-foreground text-lg">{qrMessage}</p>
+                  <p className="text-sm text-muted-foreground">Você pode fechar esta janela</p>
+                </div>
+              </div>
+            ) : qrCodeError ? (
               <div className="flex items-center justify-center h-80">
                 <div className="text-center space-y-4">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-950 rounded-full">

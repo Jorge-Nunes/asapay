@@ -27,8 +27,8 @@ export class EvolutionService {
 
   async getInstanceStatus(): Promise<EvolutionInstance> {
     try {
-      console.log(`[Evolution] Fetching instance status for: ${this.instance} from ${this.apiUrl}/instance/fetch/${this.instance}`);
-      const response = await this.client.get(`/instance/fetch/${this.instance}`);
+      console.log(`[Evolution] Fetching instance status for: ${this.instance}`);
+      const response = await this.client.get(`/instance/connect/${this.instance}`);
       const data = response.data;
       
       console.log(`[Evolution] Instance '${this.instance}' status received:`, data.instance?.state);
@@ -62,7 +62,7 @@ export class EvolutionService {
 
   async getQrCode(): Promise<string | null> {
     try {
-      const response = await this.client.get(`/instance/fetch/${this.instance}`);
+      const response = await this.client.get(`/instance/connect/${this.instance}`);
       const qr = response.data?.qrcode?.qr;
       return qr || null;
     } catch (error) {
