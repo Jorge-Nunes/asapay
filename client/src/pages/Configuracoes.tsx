@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Save, Eye, Power, RotateCcw, RefreshCw, QrCode } from "lucide-react";
+import { Save, Eye, Power, RotateCcw, RefreshCw, QrCode, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -30,6 +30,15 @@ interface EvolutionInstance {
   timestamp?: number;
 }
 
+interface EvolutionInstanceData {
+  name: string;
+  status: 'open' | 'closed' | 'connecting' | 'qr' | 'unknown';
+  connected: boolean;
+  phone?: string;
+  createdAt: number;
+  lastStatusUpdate?: number;
+}
+
 export default function Configuracoes() {
   const { toast } = useToast();
   const [previewState, setPreviewState] = useState<PreviewState>({
@@ -39,6 +48,8 @@ export default function Configuracoes() {
   });
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [showCreateInstanceModal, setShowCreateInstanceModal] = useState(false);
+  const [newInstanceName, setNewInstanceName] = useState('');
 
   const { data: config, isLoading } = useQuery<Config>({
     queryKey: ['/api/config'],
@@ -48,6 +59,11 @@ export default function Configuracoes() {
     queryKey: ['/api/evolution/instance/status'],
     refetchInterval: 5000,
     enabled: !!config?.evolutionUrl && !!config?.evolutionApiKey && !!config?.evolutionInstance,
+  });
+
+  const { data: evolutionInstances = [] } = useQuery<EvolutionInstanceData[]>({
+    queryKey: ['/api/evolution/instances'],
+    refetchInterval: 5000,
   });
 
   const [formData, setFormData] = useState<Config>({
@@ -155,6 +171,43 @@ export default function Configuracoes() {
     },
     onError: () => {
       toast({ title: 'Erro', description: 'Falha ao obter QR code', variant: 'destructive' });
+    },
+  });
+
+  const createInstanceMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await fetch('/api/evolution/instance/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instanceName: name }),
+      });
+      if (!response.ok) throw new Error('Falha ao criar instância');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Sucesso', description: 'Instância criada com sucesso!' });
+      setNewInstanceName('');
+      setShowCreateInstanceModal(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/evolution/instances'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const selectInstanceMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await fetch(`/api/evolution/instances/${name}/select`, { method: 'PUT' });
+      if (!response.ok) throw new Error('Falha ao selecionar instância');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/evolution/instances'] });
+      toast({ title: 'Sucesso', description: 'Instância selecionada!' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -278,6 +331,39 @@ export default function Configuracoes() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showCreateInstanceModal} onOpenChange={setShowCreateInstanceModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Criar Nova Instância WhatsApp</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="instance-name">Nome da Instância</Label>
+              <Input
+                id="instance-name"
+                placeholder="Ex: asaflow, backupwhatsapp"
+                value={newInstanceName}
+                onChange={(e) => setNewInstanceName(e.target.value)}
+                className="border-2"
+                data-testid="input-new-instance-name"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use um nome único para identificar esta instância
+              </p>
+            </div>
+            <Button
+              onClick={() => createInstanceMutation.mutate(newInstanceName)}
+              disabled={!newInstanceName || createInstanceMutation.isPending}
+              className="w-full"
+              data-testid="button-create-instance"
+            >
+              {createInstanceMutation.isPending ? 'Criando...' : 'Criar Instância'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -524,6 +610,70 @@ export default function Configuracoes() {
               </CardContent>
             </Card>
           )}
+
+          <Card className="border-2">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Instâncias Criadas</CardTitle>
+                <CardDescription>Gerencia as instâncias WhatsApp criadas</CardDescription>
+              </div>
+              <Button
+                onClick={() => setShowCreateInstanceModal(true)}
+                size="sm"
+                className="gap-2"
+                data-testid="button-new-instance"
+              >
+                <Plus className="h-4 w-4" />
+                Nova Instância
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {evolutionInstances.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Nenhuma instância criada ainda</p>
+                  <p className="text-sm mt-1">Clique em "Nova Instância" para começar</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {evolutionInstances.map((inst) => (
+                    <div
+                      key={inst.name}
+                      className="p-4 border border-border rounded-lg hover-elevate transition-all flex items-center justify-between"
+                      data-testid={`card-instance-${inst.name}`}
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">{inst.name}</p>
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
+                          <Badge className={`text-xs ${getStatusColor(inst.status)}`}>
+                            {getStatusLabel(inst.status)}
+                          </Badge>
+                          <Badge variant={inst.connected ? 'default' : 'secondary'} className="text-xs">
+                            {inst.connected ? '✓ Online' : '✕ Offline'}
+                          </Badge>
+                          {inst.phone && (
+                            <span className="text-xs text-muted-foreground">{inst.phone}</span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(inst.createdAt).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => selectInstanceMutation.mutate(inst.name)}
+                        disabled={selectInstanceMutation.isPending || config?.activeEvolutionInstance === inst.name}
+                        variant={config?.activeEvolutionInstance === inst.name ? 'default' : 'outline'}
+                        size="sm"
+                        className="gap-2"
+                        data-testid={`button-select-${inst.name}`}
+                      >
+                        {config?.activeEvolutionInstance === inst.name ? '✓ Ativa' : 'Selecionar'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="traccar" className="space-y-6">

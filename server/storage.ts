@@ -7,6 +7,9 @@ export interface IStorage {
   // Config
   getConfig(): Promise<Config>;
   updateConfig(config: Partial<Config>): Promise<Config>;
+  createEvolutionInstance(name: string, status: string, connected: boolean, phone?: string): Promise<Config>;
+  listEvolutionInstances(): Promise<any[]>;
+  setActiveEvolutionInstance(name: string): Promise<Config>;
 
   // Cobranças
   getCobrancas(limit?: number, offset?: number): Promise<Cobranca[]>;
@@ -156,6 +159,47 @@ Obrigado por sua confiança! 🙏`,
 
   async updateConfig(config: Partial<Config>): Promise<Config> {
     this.config = { ...this.config, ...config };
+    return this.config;
+  }
+
+  async createEvolutionInstance(name: string, status: string, connected: boolean, phone?: string): Promise<Config> {
+    if (!this.config.evolutionInstances) {
+      this.config.evolutionInstances = [];
+    }
+    
+    const instance = {
+      name,
+      status: status as 'open' | 'closed' | 'connecting' | 'qr' | 'unknown',
+      connected,
+      phone,
+      createdAt: Date.now(),
+      lastStatusUpdate: Date.now(),
+    };
+    
+    const existing = this.config.evolutionInstances.findIndex(i => i.name === name);
+    if (existing >= 0) {
+      this.config.evolutionInstances[existing] = instance;
+    } else {
+      this.config.evolutionInstances.push(instance);
+    }
+    
+    if (!this.config.activeEvolutionInstance) {
+      this.config.activeEvolutionInstance = name;
+    }
+    
+    return this.config;
+  }
+
+  async listEvolutionInstances(): Promise<any[]> {
+    return this.config.evolutionInstances || [];
+  }
+
+  async setActiveEvolutionInstance(name: string): Promise<Config> {
+    this.config.activeEvolutionInstance = name;
+    const active = this.config.evolutionInstances?.find(i => i.name === name);
+    if (active) {
+      this.config.evolutionInstance = name;
+    }
     return this.config;
   }
 

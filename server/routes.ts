@@ -1604,10 +1604,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const instance = await evolutionService.createInstance(instanceName);
+      
+      // Save instance to storage
+      await storage.createEvolutionInstance(
+        instanceName,
+        instance.status,
+        instance.connected,
+        instance.phone
+      );
+      
       res.json(instance);
     } catch (error) {
       console.error('[Evolution] Error creating instance:', error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao criar instância" });
+    }
+  });
+
+  app.get("/api/evolution/instances", async (req, res) => {
+    try {
+      const instances = await storage.listEvolutionInstances();
+      res.json(instances);
+    } catch (error) {
+      console.error('[Evolution] Error listing instances:', error);
+      res.status(500).json({ error: "Erro ao listar instâncias" });
+    }
+  });
+
+  app.put("/api/evolution/instances/:name/select", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const config = await storage.setActiveEvolutionInstance(name);
+      res.json(config);
+    } catch (error) {
+      console.error('[Evolution] Error selecting instance:', error);
+      res.status(500).json({ error: "Erro ao selecionar instância" });
     }
   });
 

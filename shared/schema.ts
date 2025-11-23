@@ -94,12 +94,23 @@ export const executionLogs = pgTable("execution_logs", {
   statusIdx: index("idx_execution_logs_status").on(table.status),
 }));
 
+export type EvolutionInstanceData = {
+  name: string;
+  status: 'open' | 'closed' | 'connecting' | 'qr' | 'unknown';
+  connected: boolean;
+  phone?: string;
+  createdAt: number;
+  lastStatusUpdate?: number;
+};
+
 export type Config = {
   asaasToken: string;
   asaasUrl: string;
   evolutionUrl: string;
   evolutionInstance: string;
   evolutionApiKey: string;
+  evolutionInstances?: EvolutionInstanceData[];
+  activeEvolutionInstance?: string;
   traccarUrl?: string;
   traccarApiKey?: string;
   traccarLimiteCobrancasVencidas?: number;
