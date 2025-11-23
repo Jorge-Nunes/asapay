@@ -638,25 +638,17 @@ export default function Configuracoes() {
 
                 <div className="flex gap-3 flex-wrap pt-2 border-t">
                   <Button
-                    onClick={() => refetchStatus()}
-                    disabled={statusLoading}
-                    variant="outline"
-                    data-testid="button-refresh-evolution"
-                    className="gap-2"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${statusLoading ? 'animate-spin' : ''}`} />
-                    {statusLoading ? 'Atualizando...' : 'Atualizar'}
-                  </Button>
-
-                  <Button
-                    onClick={() => qrMutation.mutate()}
+                    onClick={() => {
+                      setConnectingInstanceName(config?.evolutionInstance || null);
+                      qrMutation.mutate();
+                    }}
                     disabled={qrMutation.isPending}
-                    variant="outline"
-                    data-testid="button-qrcode"
+                    variant="default"
+                    data-testid="button-connect-evolution"
                     className="gap-2"
                   >
                     <QrCode className="h-4 w-4" />
-                    {qrMutation.isPending ? 'Obtendo...' : 'Ver QR Code'}
+                    {qrMutation.isPending ? 'Carregando...' : 'Conectar'}
                   </Button>
 
                   <Button
@@ -674,11 +666,11 @@ export default function Configuracoes() {
                     onClick={() => stopMutation.mutate()}
                     disabled={stopMutation.isPending}
                     variant="destructive"
-                    data-testid="button-stop-evolution"
+                    data-testid="button-disconnect-evolution"
                     className="gap-2"
                   >
                     <Power className="h-4 w-4" />
-                    {stopMutation.isPending ? 'Parando...' : 'Parar'}
+                    {stopMutation.isPending ? 'Desconectando...' : 'Desconectar'}
                   </Button>
                 </div>
               </CardContent>
@@ -732,32 +724,48 @@ export default function Configuracoes() {
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {!inst.connected && (
-                          <Button
-                            onClick={() => {
-                              setConnectingInstanceName(inst.name);
-                              connectInstanceMutation.mutate(inst.name);
-                            }}
-                            disabled={connectInstanceMutation.isPending || connectingInstanceName === inst.name}
-                            variant="default"
-                            size="sm"
-                            className="gap-2"
-                            data-testid={`button-connect-${inst.name}`}
-                          >
-                            <QrCode className="h-4 w-4" />
-                            {connectInstanceMutation.isPending && connectingInstanceName === inst.name ? 'Carregando...' : 'Conectar'}
-                          </Button>
-                        )}
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Button
-                          onClick={() => selectInstanceMutation.mutate(inst.name)}
-                          disabled={selectInstanceMutation.isPending || config?.activeEvolutionInstance === inst.name}
-                          variant={config?.activeEvolutionInstance === inst.name ? 'default' : 'outline'}
+                          onClick={() => {
+                            setConnectingInstanceName(inst.name);
+                            connectInstanceMutation.mutate(inst.name);
+                          }}
+                          disabled={connectInstanceMutation.isPending || connectingInstanceName === inst.name}
+                          variant="default"
                           size="sm"
                           className="gap-2"
-                          data-testid={`button-select-${inst.name}`}
+                          data-testid={`button-connect-${inst.name}`}
                         >
-                          {config?.activeEvolutionInstance === inst.name ? '✓ Ativa' : 'Selecionar'}
+                          <QrCode className="h-4 w-4" />
+                          {connectInstanceMutation.isPending && connectingInstanceName === inst.name ? 'Carregando...' : 'Conectar'}
+                        </Button>
+                        
+                        <Button
+                          onClick={() => {
+                            // TODO: Add restart endpoint for specific instance
+                            toast({ title: 'Não implementado', description: 'Reiniciar instância específica', variant: 'destructive' });
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          data-testid={`button-restart-${inst.name}`}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Reiniciar
+                        </Button>
+                        
+                        <Button
+                          onClick={() => {
+                            // TODO: Add disconnect endpoint for specific instance
+                            toast({ title: 'Não implementado', description: 'Desconectar instância específica', variant: 'destructive' });
+                          }}
+                          variant="destructive"
+                          size="sm"
+                          className="gap-2"
+                          data-testid={`button-disconnect-${inst.name}`}
+                        >
+                          <Power className="h-4 w-4" />
+                          Desconectar
                         </Button>
                       </div>
                     </div>
