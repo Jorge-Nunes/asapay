@@ -245,7 +245,12 @@ export default function Configuracoes() {
     onError: (error: Error) => {
       setQrCode(null);
       setQrMessage(null);
-      setQrCodeError(error.message);
+      // Check if it's the "not connected to Evolution" error
+      if (error.message.includes('Evolution API') || error.message.includes('painel do Evolution')) {
+        setQrCodeError('Esta instância precisa ser criada primeiro no painel do Evolution API. Vá ao painel, crie a instância com o mesmo nome e escaneie o QR code. Depois volte aqui.');
+      } else {
+        setQrCodeError(error.message);
+      }
       setShowQrModal(true);
     },
   });
