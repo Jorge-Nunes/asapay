@@ -1534,7 +1534,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // First, check current instance status
-      const status = await evolutionService.getInstanceStatus();
+      let status = await evolutionService.getInstanceStatus();
+      
+      console.log('[Evolution] QR Code request for:', instanceName, '- Current status:', status.status);
       
       // If already connected, return success status instead of QR code
       if (status.status === 'open') {
@@ -1547,29 +1549,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If in QR state, try to get the QR code
       if (status.status === 'qr' && status.qrCode) {
+        console.log('[Evolution] Got QR code from existing instance');
         return res.json({ 
           qrCode: status.qrCode, 
           message: "QR code gerado. Escaneie para conectar." 
         });
       }
 
-      // If not in QR state, try to create/restart the instance to generate QR
-      try {
-        console.log('[Evolution] Instance status:', status.status, '- Creating new instance for QR');
-        const instanceData = await evolutionService.createInstance(instanceName);
-        
-        if (instanceData.qrCode) {
-          console.log('[Evolution] Got QR code from creation');
-          return res.json({ 
-            qrCode: instanceData.qrCode, 
-            message: "QR code gerado. Escaneie para conectar." 
-          });
+      // If instance doesn't exist or is in wrong state, try to create it first
+      // Try up to 2 times with a small delay between attempts
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          console.log(`[Evolution] Attempt ${attempt}: Creating instance for QR`);
+          const instanceData = await evolutionService.createInstance(instanceName);
+          
+          if (instanceData.qrCode) {
+            console.log('[Evolution] Got QR code from creation');
+            return res.json({ 
+              qrCode: instanceData.qrCode, 
+              message: "QR code gerado. Escaneie para conectar." 
+            });
+          }
+
+          // If creation succeeded but no QR code, try fetching status again
+          if (attempt === 1) {
+            console.log('[Evolution] Creation succeeded, fetching status again...');
+            status = await evolutionService.getInstanceStatus();
+            
+            if (status.qrCode) {
+              console.log('[Evolution] Got QR code after second status fetch');
+              return res.json({ 
+                qrCode: status.qrCode, 
+                message: "QR code gerado. Escaneie para conectar." 
+              });
+            }
+
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (createError: any) {
+          console.log(`[Evolution] Attempt ${attempt} failed:`, createError.response?.status, createError.response?.data?.error || createError.message);
+          
+          // If it's a 400 error, the instance probably already exists
+          if (createError.response?.status === 400) {
+            console.log('[Evolution] Instance already exists, fetching current status...');
+            status = await evolutionService.getInstanceStatus();
+            
+            if (status.qrCode) {
+              return res.json({ 
+                qrCode: status.qrCode, 
+                message: "QR code gerado. Escaneie para conectar." 
+              });
+            }
+          }
         }
-      } catch (createError) {
-        console.log('[Evolution] Could not create instance:', createError instanceof Error ? createError.message : '');
       }
 
-      // If no QR code available, return helpful message
+      // If no QR code available after all attempts, return helpful message
       res.status(400).json({ 
         error: "QR code não disponível. A instância pode estar em processo de conexão. Tente novamente em alguns segundos.",
         currentStatus: status.status
