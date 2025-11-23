@@ -16,6 +16,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { ClientData } from "@shared/schema";
 
 interface ClientWithPreferences extends ClientData {
@@ -42,6 +51,8 @@ export default function Clientes() {
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
   const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingBlockAction, setPendingBlockAction] = useState<{ clientId: string; action: 'block' | 'unblock'; clientName: string } | null>(null);
 
   const { data: paginatedResponse = { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false } }, isLoading, refetch } = useQuery<PaginatedResponse>({
     queryKey: ['/api/clients', currentPage],
@@ -224,6 +235,20 @@ export default function Clientes() {
     });
   };
 
+  const handleBlockTraccarClick = (clientId: string, action: 'block' | 'unblock', clientName: string) => {
+    setPendingBlockAction({ clientId, action, clientName });
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmBlock = () => {
+    if (pendingBlockAction) {
+      setBlockingClientId(`${pendingBlockAction.action}-${pendingBlockAction.clientId}`);
+      blockTraccarMutation.mutate(pendingBlockAction.clientId);
+      setConfirmDialogOpen(false);
+      setPendingBlockAction(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -319,10 +344,7 @@ export default function Clientes() {
                           size="icon"
                           variant="ghost"
                           className="h-5 w-5 mx-auto"
-                          onClick={() => {
-                            setBlockingClientId(`unblock-${client.id}`);
-                            blockTraccarMutation.mutate(client.id);
-                          }}
+                          onClick={() => handleBlockTraccarClick(client.id, 'unblock', client.name)}
                           disabled={blockTraccarMutation.isPending}
                           title="Desbloquear na Traccar"
                           data-testid={`button-unblock-traccar-${client.id}`}
@@ -335,10 +357,7 @@ export default function Clientes() {
                           size="icon"
                           variant="ghost"
                           className="h-5 w-5 mx-auto"
-                          onClick={() => {
-                            setBlockingClientId(`block-${client.id}`);
-                            blockTraccarMutation.mutate(client.id);
-                          }}
+                          onClick={() => handleBlockTraccarClick(client.id, 'block', client.name)}
                           disabled={blockTraccarMutation.isPending}
                           title="Bloquear na Traccar"
                           data-testid={`button-block-traccar-${client.id}`}
@@ -525,6 +544,33 @@ export default function Clientes() {
           </Card>
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingBlockAction?.action === 'block' ? 'Bloquear Cliente' : 'Desbloquear Cliente'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingBlockAction?.action === 'block' 
+                ? `Tem certeza que deseja BLOQUEAR o login de "${pendingBlockAction.clientName}" na Traccar? Ele não conseguirá acessar o sistema de rastreamento.`
+                : `Tem certeza que deseja DESBLOQUEAR o login de "${pendingBlockAction?.clientName}" na Traccar? Ele voltará a ter acesso ao sistema de rastreamento.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel data-testid="button-cancel-block">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmBlock}
+              className={pendingBlockAction?.action === 'block' ? 'bg-destructive hover:bg-destructive/90' : ''}
+              data-testid="button-confirm-block"
+            >
+              {pendingBlockAction?.action === 'block' ? 'Bloquear' : 'Desbloquear'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
