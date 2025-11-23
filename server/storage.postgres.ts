@@ -1132,4 +1132,84 @@ Obrigado por sua confiança! 🙏`,
     // In a real scenario with async, we'd use updateConfig instead
     return 0;
   }
+
+  async createEvolutionInstance(name: string, status: string, connected: boolean, phone?: string): Promise<any> {
+    try {
+      const db = getDb();
+      const config = await this.getConfig();
+      
+      if (!config.evolutionInstances) {
+        (config as any).evolutionInstances = [];
+      }
+      
+      const instance = {
+        name,
+        status: status as 'open' | 'closed' | 'connecting' | 'qr' | 'unknown',
+        connected,
+        phone,
+        createdAt: Date.now(),
+        lastStatusUpdate: Date.now(),
+      };
+      
+      const existing = (config.evolutionInstances as any[]).findIndex(i => i.name === name);
+      if (existing >= 0) {
+        (config.evolutionInstances as any[])[existing] = instance;
+      } else {
+        (config.evolutionInstances as any[]).push(instance);
+      }
+      
+      if (!config.activeEvolutionInstance) {
+        (config as any).activeEvolutionInstance = name;
+      }
+      
+      // Update in database
+      await db.update(schema.configurations)
+        .set({ 
+          evolutionInstances: JSON.stringify(config.evolutionInstances),
+          activeEvolutionInstance: config.activeEvolutionInstance
+        })
+        .where(eq(schema.configurations.id, config.id || 'default'));
+      
+      return config;
+    } catch (error) {
+      console.error('[Storage] Error in createEvolutionInstance:', error);
+      throw error;
+    }
+  }
+
+  async listEvolutionInstances(): Promise<any[]> {
+    try {
+      const config = await this.getConfig();
+      return (config.evolutionInstances as any[]) || [];
+    } catch (error) {
+      console.error('[Storage] Error in listEvolutionInstances:', error);
+      return [];
+    }
+  }
+
+  async setActiveEvolutionInstance(name: string): Promise<any> {
+    try {
+      const db = getDb();
+      const config = await this.getConfig();
+      
+      (config as any).activeEvolutionInstance = name;
+      const active = (config.evolutionInstances as any[])?.find(i => i.name === name);
+      if (active) {
+        (config as any).evolutionInstance = name;
+      }
+      
+      // Update in database
+      await db.update(schema.configurations)
+        .set({ 
+          activeEvolutionInstance: name,
+          evolutionInstance: name
+        })
+        .where(eq(schema.configurations.id, config.id || 'default'));
+      
+      return config;
+    } catch (error) {
+      console.error('[Storage] Error in setActiveEvolutionInstance:', error);
+      throw error;
+    }
+  }
 }
