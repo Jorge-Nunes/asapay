@@ -50,6 +50,7 @@ export default function Configuracoes() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [showCreateInstanceModal, setShowCreateInstanceModal] = useState(false);
   const [newInstanceName, setNewInstanceName] = useState('');
+  const [connectingInstanceName, setConnectingInstanceName] = useState<string | null>(null);
 
   const { data: config, isLoading } = useQuery<Config>({
     queryKey: ['/api/config'],
@@ -208,6 +209,21 @@ export default function Configuracoes() {
     },
     onError: (error: Error) => {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const connectInstanceMutation = useMutation({
+    mutationFn: async (instanceName: string) => {
+      const response = await fetch(`/api/evolution/instance/qrcode?instance=${instanceName}`);
+      if (!response.ok) throw new Error('Falha ao obter QR code');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setQrCode(data.qrCode);
+      setShowQrModal(true);
+    },
+    onError: () => {
+      toast({ title: 'Erro', description: 'Falha ao obter QR code', variant: 'destructive' });
     },
   });
 
@@ -658,16 +674,34 @@ export default function Configuracoes() {
                           </span>
                         </div>
                       </div>
-                      <Button
-                        onClick={() => selectInstanceMutation.mutate(inst.name)}
-                        disabled={selectInstanceMutation.isPending || config?.activeEvolutionInstance === inst.name}
-                        variant={config?.activeEvolutionInstance === inst.name ? 'default' : 'outline'}
-                        size="sm"
-                        className="gap-2"
-                        data-testid={`button-select-${inst.name}`}
-                      >
-                        {config?.activeEvolutionInstance === inst.name ? '✓ Ativa' : 'Selecionar'}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {!inst.connected && (
+                          <Button
+                            onClick={() => {
+                              setConnectingInstanceName(inst.name);
+                              connectInstanceMutation.mutate(inst.name);
+                            }}
+                            disabled={connectInstanceMutation.isPending || connectingInstanceName === inst.name}
+                            variant="default"
+                            size="sm"
+                            className="gap-2"
+                            data-testid={`button-connect-${inst.name}`}
+                          >
+                            <QrCode className="h-4 w-4" />
+                            {connectInstanceMutation.isPending && connectingInstanceName === inst.name ? 'Carregando...' : 'Conectar'}
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() => selectInstanceMutation.mutate(inst.name)}
+                          disabled={selectInstanceMutation.isPending || config?.activeEvolutionInstance === inst.name}
+                          variant={config?.activeEvolutionInstance === inst.name ? 'default' : 'outline'}
+                          size="sm"
+                          className="gap-2"
+                          data-testid={`button-select-${inst.name}`}
+                        >
+                          {config?.activeEvolutionInstance === inst.name ? '✓ Ativa' : 'Selecionar'}
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

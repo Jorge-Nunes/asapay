@@ -1517,14 +1517,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/evolution/instance/qrcode", async (req, res) => {
     try {
       const config = await storage.getConfig();
-      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+      if (!config.evolutionUrl || !config.evolutionApiKey) {
         return res.status(400).json({ error: "Evolution não configurada" });
+      }
+
+      // Use instance from query param or fall back to config default
+      const instanceName = (req.query.instance as string) || config.evolutionInstance;
+      if (!instanceName) {
+        return res.status(400).json({ error: "Nenhuma instância especificada" });
       }
 
       const evolutionService = new EvolutionService(
         config.evolutionUrl,
         config.evolutionApiKey,
-        config.evolutionInstance
+        instanceName
       );
 
       const qrCode = await evolutionService.getQrCode();
