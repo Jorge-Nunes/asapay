@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, Eye, Power, RotateCcw, RefreshCw, QrCode, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -77,6 +78,7 @@ export default function Configuracoes() {
     evolutionApiKey: '',
     traccarUrl: '',
     traccarApiKey: '',
+    traccarVersion: 'latest',
     traccarLimiteCobrancasVencidas: 3,
     webhookUrl: '',
     diasAviso: 10,
@@ -804,6 +806,24 @@ export default function Configuracoes() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Token de API do Traccar para autenticação
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="traccar-version">Versão do Traccar</Label>
+                <Select
+                  value={formData.traccarVersion || 'latest'}
+                  onValueChange={(value) => setFormData({ ...formData, traccarVersion: value })}
+                >
+                  <SelectTrigger id="traccar-version" className="border-2" data-testid="select-traccar-version">
+                    <SelectValue placeholder="Selecione a versão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="latest">Latest (Versões mais recentes)</SelectItem>
+                    <SelectItem value="4.15">4.15 (Session Based)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Selecione a versão do seu Traccar. Use "Latest" para versões modernas com Bearer Token, ou "4.15" para versões antigas com autenticação baseada em sessão.
                 </p>
               </div>
               <div className="space-y-2">

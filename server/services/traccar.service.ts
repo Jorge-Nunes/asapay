@@ -3,17 +3,21 @@ import type { Config } from "@shared/schema";
 export class TraccarService {
   private baseUrl: string;
   private apiKey: string;
+  private email: string;
+  private password: string;
+  private version: string;
+  private sessionCookie: string | null = null;
 
   constructor(config: Config) {
     this.baseUrl = config.traccarUrl || '';
     this.apiKey = config.traccarApiKey || '';
+    this.email = 'aetracker'; // Default Traccar user
+    this.password = this.apiKey; // API key is used as password
+    this.version = config.traccarVersion || 'latest';
   }
 
-  async getUsers() {
-    if (!this.baseUrl || !this.apiKey) {
-      throw new Error('Traccar não configurado');
-    }
-
+  // Method for latest Traccar versions (uses Bearer token)
+  private async getUsersLatest() {
     const response = await fetch(`${this.baseUrl}/api/users`, {
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -26,6 +30,73 @@ export class TraccarService {
     }
 
     return response.json();
+  }
+
+  // Method for Traccar 4.15 (uses session cookies)
+  private async getUsersV415() {
+    // Try to get session cookie if not already cached
+    if (!this.sessionCookie) {
+      await this.authenticateV415();
+    }
+
+    const response = await fetch(`${this.baseUrl}/api/users`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': this.sessionCookie || '',
+      },
+    });
+
+    if (!response.ok) {
+      // If session expired, try to re-authenticate
+      if (response.status === 401) {
+        this.sessionCookie = null;
+        await this.authenticateV415();
+        return this.getUsersV415();
+      }
+      throw new Error(`Erro ao buscar usuários Traccar: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  private async authenticateV415() {
+    const response = await fetch(`${this.baseUrl}/api/session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `email=${encodeURIComponent(this.email)}&password=${encodeURIComponent(this.password)}`,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Falha na autenticação Traccar 4.15: ${response.statusText}`);
+    }
+
+    // Extract JSESSIONID from Set-Cookie header
+    const setCookie = response.headers.get('set-cookie');
+    if (setCookie) {
+      const match = setCookie.match(/JSESSIONID=([^;]+)/);
+      if (match) {
+        this.sessionCookie = `JSESSIONID=${match[1]}`;
+      }
+    }
+  }
+
+  async getUsers() {
+    if (!this.baseUrl || !this.apiKey) {
+      throw new Error('Traccar não configurado');
+    }
+
+    try {
+      if (this.version === '4.15') {
+        return await this.getUsersV415();
+      } else {
+        return await this.getUsersLatest();
+      }
+    } catch (error) {
+      console.error(`[TraccarService] Error getting users (v${this.version}):`, error);
+      throw error;
+    }
   }
 
   async getUserByEmail(email: string) {
@@ -47,12 +118,11 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
-    const response = await fetch(`${this.baseUrl}/api/users/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const headers = this.version === '4.15'
+      ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
+      : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
+
+    const response = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers });
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -69,13 +139,12 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
+    const authHeaders = this.version === '4.15'
+      ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
+      : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
+
     // First, get the current user data
-    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
 
     if (!getResponse.ok) {
       throw new Error(`Erro ao buscar dados do usuário: ${getResponse.statusText}`);
@@ -86,10 +155,7 @@ export class TraccarService {
     // Update with disabled: true
     const response = await fetch(`${this.baseUrl}/api/users/${userId}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders,
       body: JSON.stringify({ ...user, disabled: true }),
     });
 
@@ -105,13 +171,12 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
+    const authHeaders = this.version === '4.15'
+      ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
+      : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
+
     // First, get the current user data
-    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
 
     if (!getResponse.ok) {
       throw new Error(`Erro ao buscar dados do usuário: ${getResponse.statusText}`);
@@ -122,10 +187,7 @@ export class TraccarService {
     // Update with disabled: false
     const response = await fetch(`${this.baseUrl}/api/users/${userId}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders,
       body: JSON.stringify({ ...user, disabled: false }),
     });
 
