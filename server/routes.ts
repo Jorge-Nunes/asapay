@@ -1597,23 +1597,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Evolution não configurada" });
       }
 
-      const evolutionService = new EvolutionService(
-        config.evolutionUrl,
-        config.evolutionApiKey,
-        instanceName
-      );
-
-      const instance = await evolutionService.createInstance(instanceName);
-      
-      // Save instance to storage
+      // Create instance locally with status 'qr' (awaiting connection)
+      // User will scan QR code to connect the instance
       await storage.createEvolutionInstance(
         instanceName,
-        instance.status,
-        instance.connected,
-        instance.phone
+        'qr',
+        false,
+        undefined
       );
       
-      res.json(instance);
+      const instances = await storage.listEvolutionInstances();
+      const createdInstance = instances.find((i: any) => i.name === instanceName);
+      
+      res.json(createdInstance || { name: instanceName, status: 'qr', connected: false });
     } catch (error) {
       console.error('[Evolution] Error creating instance:', error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao criar instância" });
