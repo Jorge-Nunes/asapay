@@ -27,8 +27,11 @@ export class EvolutionService {
 
   async getInstanceStatus(): Promise<EvolutionInstance> {
     try {
+      console.log(`[Evolution] Fetching instance status for: ${this.instance} from ${this.apiUrl}/instance/fetch/${this.instance}`);
       const response = await this.client.get(`/instance/fetch/${this.instance}`);
       const data = response.data;
+      
+      console.log(`[Evolution] Instance '${this.instance}' status received:`, data.instance?.state);
       
       return {
         instanceName: data.instance?.instanceName || this.instance,
@@ -38,9 +41,16 @@ export class EvolutionService {
         phone: data.instance?.wid,
         timestamp: Date.now(),
       };
-    } catch (error) {
-      // Instance not found or API error - return unknown status
-      console.log(`[Evolution] Instance '${this.instance}' not found or unavailable`);
+    } catch (error: any) {
+      // Log the actual error
+      console.error(`[Evolution] Error fetching status for '${this.instance}':`, {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+      
+      // Return unknown status instead of throwing
       return {
         instanceName: this.instance,
         status: 'unknown',
