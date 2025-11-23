@@ -33,7 +33,8 @@ export const configurations = pgTable("configurations", {
   evolutionApiKey: text("evolution_api_key").notNull(),
   traccarUrl: text("traccar_url"),
   traccarApiKey: text("traccar_api_key"),
-  traccarPassword: text("traccar_password"), // For v4.15 authentication
+  traccarUsername: text("traccar_username").default("aetracker"), // Username for Traccar (especially for v4.15)
+  traccarPassword: text("traccar_password"), // Password for Traccar (especially for v4.15)
   traccarVersion: text("traccar_version").default("latest"), // latest (newer versions) or 4.15
   traccarLimiteCobrancasVencidas: integer("traccar_limite_cobrancas_vencidas").default(3),
   diasAviso: integer("dias_aviso").notNull().default(10),
@@ -115,7 +116,8 @@ export type Config = {
   activeEvolutionInstance?: string;
   traccarUrl?: string;
   traccarApiKey?: string;
-  traccarPassword?: string; // For v4.15 authentication
+  traccarUsername?: string; // Username for Traccar (especially for v4.15)
+  traccarPassword?: string; // Password for Traccar (especially for v4.15)
   traccarVersion?: string; // latest or 4.15
   traccarLimiteCobrancasVencidas?: number;
   webhookUrl?: string;

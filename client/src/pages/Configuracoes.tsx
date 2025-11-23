@@ -78,6 +78,7 @@ export default function Configuracoes() {
     evolutionApiKey: '',
     traccarUrl: '',
     traccarApiKey: '',
+    traccarUsername: 'aetracker',
     traccarPassword: '',
     traccarVersion: 'latest',
     traccarLimiteCobrancasVencidas: 3,
@@ -810,13 +811,28 @@ export default function Configuracoes() {
                 </p>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="traccar-username">Usuário do Traccar (para v4.15)</Label>
+                <Input
+                  id="traccar-username"
+                  type="text"
+                  value={formData.traccarUsername || 'aetracker'}
+                  onChange={(e) => setFormData({ ...formData, traccarUsername: e.target.value })}
+                  placeholder="aetracker"
+                  className="border-2"
+                  data-testid="input-traccar-username"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nome de usuário do Traccar. Padrão: aetracker
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="traccar-password">Senha do Traccar (para v4.15)</Label>
                 <Input
                   id="traccar-password"
                   type="password"
                   value={formData.traccarPassword || ''}
                   onChange={(e) => setFormData({ ...formData, traccarPassword: e.target.value })}
-                  placeholder="Senha do usuário aetracker"
+                  placeholder="Senha do usuário"
                   className="border-2"
                   data-testid="input-traccar-password"
                 />
