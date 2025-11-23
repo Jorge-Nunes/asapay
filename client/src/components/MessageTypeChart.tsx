@@ -26,8 +26,9 @@ export function MessageTypeChart({ venceHoje, aviso }: MessageTypeChartProps) {
   return (
     <div className="space-y-4 flex flex-col h-full">
       <div className="flex justify-center flex-1" style={{ minHeight: '250px' }}>
-        <ResponsiveContainer width="100%" height="100%" maxWidth={400}>
-          <PieChart>
+        <div style={{ width: '100%', height: '100%', maxWidth: '400px', margin: '0 auto' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
             <Pie
               data={data}
               cx="50%"
@@ -51,7 +52,8 @@ export function MessageTypeChart({ venceHoje, aviso }: MessageTypeChartProps) {
               formatter={(value: number) => [value, 'Mensagens']}
             />
           </PieChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
