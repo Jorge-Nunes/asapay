@@ -1200,6 +1200,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test all message templates with fictional data
+  app.post("/api/test/template-test", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      const phone = "11999623179"; // Fixed number for testing
+      
+      if (!config.evolutionUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+        return res.status(400).json({ error: "Credenciais Evolution não configuradas" });
+      }
+
+      const evolutionService = new EvolutionService(
+        config.evolutionUrl,
+        config.evolutionApiKey,
+        config.evolutionInstance
+      );
+
+      // Create fictional data
+      const fictitiousData = {
+        customerName: "João Silva",
+        customerPhone: phone,
+        value: 1500.00,
+        totalValue: 4500.00,
+        overdueCount: 3,
+        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        invoiceUrl: "https://www.asaas.com/i/m2o8y54uw3tj4fw2",
+      };
+
+      // Format values
+      const valorFormatado = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(fictitiousData.value);
+
+      const totalFormatado = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(fictitiousData.totalValue);
+
+      const vencimentoFormatado = fictitiousData.dueDate.toLocaleDateString('pt-BR');
+      const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+      // Test all templates
+      const templates = [
+        {
+          name: '1️⃣ VENCE HOJE',
+          key: 'venceHoje',
+          template: config.messageTemplates?.venceHoje || '',
+          replacements: {
+            '{{link_fatura}}': fictitiousData.invoiceUrl,
+            '{{valor}}': valorFormatado,
+            '{{vencimento}}': vencimentoFormatado,
+            '{{cliente_nome}}': fictitiousData.customerName,
+            '{{dias_aviso}}': String(config.diasAviso || 10),
+          }
+        },
+        {
+          name: '2️⃣ AVISO ANTECIPADO',
+          key: 'aviso',
+          template: config.messageTemplates?.aviso || '',
+          replacements: {
+            '{{link_fatura}}': fictitiousData.invoiceUrl,
+            '{{valor}}': valorFormatado,
+            '{{vencimento}}': vencimentoFormatado,
+            '{{cliente_nome}}': fictitiousData.customerName,
+            '{{dias_aviso}}': String(config.diasAviso || 10),
+          }
+        },
+        {
+          name: '3️⃣ COBRANÇA COM ATRASO',
+          key: 'atraso',
+          template: config.messageTemplates?.atraso || '',
+          replacements: {
+            '{{link_fatura}}': fictitiousData.invoiceUrl,
+            '{{valor}}': valorFormatado,
+            '{{valor_total}}': totalFormatado,
+            '{{quantidade_cobrancas}}': String(fictitiousData.overdueCount),
+            '{{cliente_nome}}': fictitiousData.customerName,
+          }
+        },
+        {
+          name: '4️⃣ BLOQUEIO ATIVADO',
+          key: 'bloqueio',
+          template: config.messageTemplates?.bloqueio || '',
+          replacements: {
+            '{{nome}}': fictitiousData.customerName,
+            '{{cliente_nome}}': fictitiousData.customerName,
+            '{{data}}': dataAtual,
+            '{{quantidade_cobrancas}}': String(fictitiousData.overdueCount),
+          }
+        },
+        {
+          name: '5️⃣ BLOQUEIO REMOVIDO',
+          key: 'desbloqueio',
+          template: config.messageTemplates?.desbloqueio || '',
+          replacements: {
+            '{{nome}}': fictitiousData.customerName,
+            '{{cliente_nome}}': fictitiousData.customerName,
+            '{{data}}': dataAtual,
+          }
+        },
+        {
+          name: '6️⃣ PAGAMENTO CONFIRMADO',
+          key: 'pagamentoConfirmado',
+          template: config.messageTemplates?.pagamentoConfirmado || '',
+          replacements: {
+            '{{cliente_nome}}': fictitiousData.customerName,
+            '{{valor}}': valorFormatado,
+            '{{data}}': dataAtual,
+          }
+        },
+      ];
+
+      const results = [];
+
+      // Send each template as a test message
+      for (const tmpl of templates) {
+        if (!tmpl.template || tmpl.template.trim() === '') {
+          results.push({
+            name: tmpl.name,
+            status: 'skipped',
+            error: 'Template vazio',
+          });
+          continue;
+        }
+
+        let message = tmpl.template;
+        // Replace all variables
+        for (const [key, value] of Object.entries(tmpl.replacements)) {
+          message = message.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+        }
+
+        try {
+          await evolutionService.sendTextMessage(phone, message);
+          
+          // Add header to message for better display
+          const headerMessage = `\n\n*TESTE: ${tmpl.name}*`;
+          
+          results.push({
+            name: tmpl.name,
+            status: 'sent',
+            preview: message.substring(0, 100) + '...',
+            fullMessage: message,
+          });
+          
+          console.log(`[Test] Template ${tmpl.key} enviado para ${phone}`);
+          
+          // Small delay between messages
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          results.push({
+            name: tmpl.name,
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Erro desconhecido',
+          });
+          console.error(`[Test] Erro ao enviar template ${tmpl.key}:`, error);
+        }
+      }
+
+      res.json({
+        success: true,
+        phone,
+        message: `✅ Teste de templates concluído! ${results.filter(r => r.status === 'sent').length} mensagens enviadas para ${phone}`,
+        results,
+        fictitousData,
+      });
+    } catch (error) {
+      console.error('[Routes] Error in template test:', error);
+      res.status(500).json({ 
+        success: false,
+        error: error instanceof Error ? error.message : "Erro ao testar templates" 
+      });
+    }
+  });
+
   // Analyze Traccar mapping status
   app.get("/api/traccar/mapping-status", async (req, res) => {
     try {
