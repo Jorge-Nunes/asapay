@@ -151,6 +151,8 @@ export class ExecutionService {
                   try {
                     if (config.messageTemplates?.bloqueio) {
                       const blockingMessage = config.messageTemplates.bloqueio
+                        .replace(/\{\{nome\}\}/g, traccarUser.name || customerPhone)
+                        .replace(/\{\{data\}\}/g, new Date().toLocaleDateString('pt-BR'))
                         .replace(/\{\{cliente_nome\}\}/g, traccarUser.name || customerPhone)
                         .replace(/\{\{quantidade_cobrancas\}\}/g, String(overdueCount))
                         .replace(/\{\{link_fatura\}\}/g, 'Acesse sua conta no Asaas')
@@ -191,6 +193,8 @@ export class ExecutionService {
                   try {
                     if (config.messageTemplates?.desbloqueio) {
                       const unlockingMessage = config.messageTemplates.desbloqueio
+                        .replace(/\{\{nome\}\}/g, traccarUser.name || customerPhone)
+                        .replace(/\{\{data\}\}/g, new Date().toLocaleDateString('pt-BR'))
                         .replace(/\{\{cliente_nome\}\}/g, traccarUser.name || customerPhone);
                       
                       await evolutionService.sendTextMessage(customerPhone, unlockingMessage);

@@ -257,10 +257,17 @@ export class WebhookService {
             );
 
             const phone = cobranca.customerPhone?.replace(/\D/g, "") || "";
+            
+            // Format value as currency
+            const valorFormatado = new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            }).format(cobranca.value);
+            
             const confirmationMessage = config.messageTemplates.pagamentoConfirmado
-              .replace('{{cliente_nome}}', cobranca.customerName)
-              .replace('{{valor}}', cobranca.value.toString())
-              .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
+              .replace(/\{\{cliente_nome\}\}/g, cobranca.customerName)
+              .replace(/\{\{valor\}\}/g, valorFormatado)
+              .replace(/\{\{data\}\}/g, new Date().toLocaleDateString('pt-BR'));
 
             await evolutionService.sendTextMessage(phone, confirmationMessage);
             console.log(`[Webhook] Mensagem de confirmação enviada para ${phone}`);
