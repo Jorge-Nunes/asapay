@@ -6,6 +6,10 @@ import {
   cobrancas, 
   executions, 
   executionLogs,
+  users,
+  clients,
+  clientLastMessageAtraso,
+  cobrancaMessagesSent,
   type Cobranca,
   type Execution,
   type ExecutionLog,
@@ -1242,17 +1246,24 @@ Obrigado por sua confiança! 🙏`,
       // Delete all data from tables (keeping configurations)
       console.log('[Storage] Starting database clear...');
       
-      // Delete execution logs first (foreign key constraint)
+      // Delete in order respecting foreign key constraints
       await db.delete(executionLogs);
       console.log('[Storage] Execution logs deleted');
       
-      // Delete executions
       await db.delete(executions);
       console.log('[Storage] Executions deleted');
       
-      // Delete cobranças
+      await db.delete(cobrancaMessagesSent);
+      console.log('[Storage] Cobrança messages sent deleted');
+      
       await db.delete(cobrancas);
       console.log('[Storage] Cobranças deleted');
+      
+      await db.delete(clientLastMessageAtraso);
+      console.log('[Storage] Client last message atraso deleted');
+      
+      await db.delete(clients);
+      console.log('[Storage] Clients deleted');
       
       console.log('[Storage] All data cleared. Configurations preserved.');
     } catch (error) {
