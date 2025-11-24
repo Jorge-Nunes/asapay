@@ -119,7 +119,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Resumo Executivo */}
+      {/* KPI Cards - Situação das Cobranças (Estilo Asaas) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {metricsLoading ? (
           <>
@@ -131,32 +131,32 @@ export default function Dashboard() {
         ) : (
           <>
             <MetricCard
-              title="Total Pendente"
-              value={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.pending} cobranças`}
-              icon={DollarSign}
-              variant="pending"
-            />
-            <MetricCard
-              title="Vence Hoje"
-              value={metrics?.venceHoje || 0}
-              subtitle={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              icon={AlertCircle}
-              variant="overdue"
-            />
-            <MetricCard
-              title="Recebido"
+              title="Recebidas"
               value={`R$ ${(metrics?.totalRecebido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.received} cobranças`}
+              subtitle={`${statusCounts.received} clientes • ${statusCounts.received} cobranças`}
               icon={CheckCircle}
               variant="received"
             />
             <MetricCard
-              title="Taxa Conversão"
-              value={`${metrics?.taxaConversao?.toFixed(1) || '0'}%`}
-              subtitle="Recebido vs Pendente"
-              icon={TrendingUp}
+              title="Confirmadas"
+              value={`R$ ${(metrics?.confirmadas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              subtitle={`${statusCounts.confirmed} clientes • ${statusCounts.confirmed} cobranças`}
+              icon={CheckCircle}
               variant="confirmed"
+            />
+            <MetricCard
+              title="Aguardando pagamento"
+              value={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              subtitle={`${statusCounts.pending} clientes • ${statusCounts.pending} cobranças`}
+              icon={AlertCircle}
+              variant="pending"
+            />
+            <MetricCard
+              title="Vencidas"
+              value={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              subtitle={`${statusCounts.overdue} clientes • ${statusCounts.overdue} cobranças`}
+              icon={AlertCircle}
+              variant="overdue"
             />
           </>
         )}
