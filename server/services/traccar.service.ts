@@ -122,13 +122,23 @@ export class TraccarService {
       ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
       : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
 
-    const response = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers });
+    let response = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers });
 
     if (!response.ok) {
-      if (response.status === 404) {
-        return undefined;
+      // For 4.15, if we get 401, try to re-authenticate
+      if (response.status === 401 && this.version === '4.15') {
+        this.sessionCookie = null;
+        await this.authenticateV415();
+        const newHeaders = { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' };
+        response = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: newHeaders });
       }
-      throw new Error(`Erro ao buscar usuário Traccar: ${response.statusText}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return undefined;
+        }
+        throw new Error(`Erro ao buscar usuário Traccar: ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -139,12 +149,25 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
+    // For 4.15, ensure we have a valid session
+    if (this.version === '4.15' && !this.sessionCookie) {
+      await this.authenticateV415();
+    }
+
     const authHeaders = this.version === '4.15'
       ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
       : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
 
     // First, get the current user data
-    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
+    let getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
+
+    // If 401 on 4.15, re-authenticate and retry
+    if (!getResponse.ok && getResponse.status === 401 && this.version === '4.15') {
+      this.sessionCookie = null;
+      await this.authenticateV415();
+      const newHeaders = { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' };
+      getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: newHeaders });
+    }
 
     if (!getResponse.ok) {
       throw new Error(`Erro ao buscar dados do usuário: ${getResponse.statusText}`);
@@ -171,12 +194,25 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
+    // For 4.15, ensure we have a valid session
+    if (this.version === '4.15' && !this.sessionCookie) {
+      await this.authenticateV415();
+    }
+
     const authHeaders = this.version === '4.15'
       ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
       : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
 
     // First, get the current user data
-    const getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
+    let getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
+
+    // If 401 on 4.15, re-authenticate and retry
+    if (!getResponse.ok && getResponse.status === 401 && this.version === '4.15') {
+      this.sessionCookie = null;
+      await this.authenticateV415();
+      const newHeaders = { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' };
+      getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: newHeaders });
+    }
 
     if (!getResponse.ok) {
       throw new Error(`Erro ao buscar dados do usuário: ${getResponse.statusText}`);
