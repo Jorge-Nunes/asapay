@@ -264,10 +264,18 @@ export class WebhookService {
               currency: 'BRL',
             }).format(cobranca.value);
             
-            const confirmationMessage = config.messageTemplates.pagamentoConfirmado
+            let confirmationMessage = config.messageTemplates.pagamentoConfirmado;
+            // Replace all template variables with proper regex
+            confirmationMessage = confirmationMessage
               .replace(/\{\{cliente_nome\}\}/g, cobranca.customerName)
               .replace(/\{\{valor\}\}/g, valorFormatado)
               .replace(/\{\{data\}\}/g, new Date().toLocaleDateString('pt-BR'));
+            
+            // Fallback: also handle variations with spaces (in case they're in the template)
+            confirmationMessage = confirmationMessage
+              .replace(/\{\{\s*cliente_nome\s*\}\}/g, cobranca.customerName)
+              .replace(/\{\{\s*valor\s*\}\}/g, valorFormatado)
+              .replace(/\{\{\s*data\s*\}\}/g, new Date().toLocaleDateString('pt-BR'));
 
             await evolutionService.sendTextMessage(phone, confirmationMessage);
             console.log(`[Webhook] Mensagem de confirmação enviada para ${phone}`);
