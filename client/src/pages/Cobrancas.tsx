@@ -75,6 +75,17 @@ export default function Cobrancas() {
     if (page > 0) setPage(page - 1);
   };
 
+  const handlePageClick = (pageNum: number) => {
+    setPage(pageNum);
+  };
+
+  const SortIconAdapter = ({ field }: { field: SortFieldCobranca }) => (
+    <SortIcon 
+      isActive={sortField === field} 
+      isAscending={sortOrder === 'asc'}
+    />
+  );
+
   const filteredCobrancas = cobrancas.filter((cobranca) => {
     const matchesSearch = cobranca.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (cobranca.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
@@ -283,9 +294,9 @@ export default function Cobrancas() {
               cobrancas={sortedCobrancas} 
               onSendMessage={handleSendMessage}
               sortField={sortField}
-              sortOrder={sortOrder}
+              sortDirection={sortOrder}
               onSort={handleSort}
-              SortIcon={SortIcon}
+              SortIcon={SortIconAdapter}
             />
             
             {/* Paginação */}
