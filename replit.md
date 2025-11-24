@@ -20,6 +20,16 @@ Key features include:
 - **Configurações**: Secure configuration management with secret masking and validation
 
 **Recent Changes (November 24, 2025)**:
+✅ **FIXED FALSE OVERDUE MESSAGES BUG** - Resolved critical categorization bug:
+  - **Problem**: Clientes sem pendências recebiam mensagens dizendo que tinham múltiplas cobranças em atraso
+  - **Root Cause**: Categorização marcava cobranças RECEIVED/CONFIRMED como 'atraso' se dueDate < hoje
+  - **Solution**: Verificar status PRIMEIRO - cobranças pagas NUNCA são 'atraso'
+  - **Implementation**: 
+    - RECEIVED/CONFIRMED → sempre 'processada'
+    - OVERDUE com diffDays < 0 → 'atraso'
+    - Ordem correta previne false positives
+  - **Result**: Apenas cobranças genuinamente pendentes recebem mensagens de atraso
+
 ✅ **FIXED EXECUTION HANGING ISSUE** - Resolved critical performance bug:
   - **Problem**: Execuções ficavam presas em status "running" indefinidamente durante a fase de "Salvando cobranças"
   - **Root Cause**: `saveCobrancas()` estava fazendo ~968 queries sequenciais (484 cobranças × 2 queries: 1 SELECT + 1 INSERT/UPDATE)

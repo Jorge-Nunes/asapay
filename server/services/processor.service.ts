@@ -24,7 +24,10 @@ export class ProcessorService {
 
       let tipo: 'vence_hoje' | 'aviso' | 'atraso' | 'processada';
 
-      if (cobranca.status === 'OVERDUE' || diffDays < 0) {
+      // Cobranças pagas/confirmadas nunca devem ser marcadas como atraso
+      if (cobranca.status === 'RECEIVED' || cobranca.status === 'CONFIRMED') {
+        tipo = 'processada';
+      } else if (cobranca.status === 'OVERDUE' || diffDays < 0) {
         tipo = 'atraso';
       } else if (diffDays === 0) {
         tipo = 'vence_hoje';
