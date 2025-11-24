@@ -418,43 +418,40 @@ Obrigado por sua confiança! 🙏`,
 
   async saveCobrancas(newCobrancas: Cobranca[]): Promise<void> {
     try {
+      if (newCobrancas.length === 0) return;
+      
       const db = getDb();
       
-      for (const cobranca of newCobrancas) {
-        const existing = await db.query.cobrancas.findFirst({
-          where: eq(cobrancas.id, cobranca.id),
+      // Use UPSERT (INSERT ... ON CONFLICT) for batch efficiency
+      // This does 484 operations in 1 query instead of 484 * 2 = 968 queries
+      await db.insert(cobrancas)
+        .values(newCobrancas.map(c => ({
+          id: c.id,
+          customer: c.customer,
+          customerName: c.customerName,
+          customerPhone: c.customerPhone,
+          value: c.value.toString(),
+          dueDate: c.dueDate,
+          status: c.status,
+          invoiceUrl: c.invoiceUrl,
+          description: c.description,
+          tipo: c.tipo,
+        })))
+        .onConflictDoUpdate({
+          target: cobrancas.id,
+          set: {
+            customer: sql`excluded.customer`,
+            customerName: sql`excluded.customer_name`,
+            customerPhone: sql`excluded.customer_phone`,
+            value: sql`excluded.value`,
+            dueDate: sql`excluded.due_date`,
+            status: sql`excluded.status`,
+            invoiceUrl: sql`excluded.invoice_url`,
+            description: sql`excluded.description`,
+            tipo: sql`excluded.tipo`,
+            updatedAt: new Date(),
+          },
         });
-
-        if (existing) {
-          await db.update(cobrancas)
-            .set({
-              customer: cobranca.customer,
-              customerName: cobranca.customerName,
-              customerPhone: cobranca.customerPhone,
-              value: cobranca.value.toString(),
-              dueDate: cobranca.dueDate,
-              status: cobranca.status,
-              invoiceUrl: cobranca.invoiceUrl,
-              description: cobranca.description,
-              tipo: cobranca.tipo,
-              updatedAt: new Date(),
-            })
-            .where(eq(cobrancas.id, cobranca.id));
-        } else {
-          await db.insert(cobrancas).values({
-            id: cobranca.id,
-            customer: cobranca.customer,
-            customerName: cobranca.customerName,
-            customerPhone: cobranca.customerPhone,
-            value: cobranca.value.toString(),
-            dueDate: cobranca.dueDate,
-            status: cobranca.status,
-            invoiceUrl: cobranca.invoiceUrl,
-            description: cobranca.description,
-            tipo: cobranca.tipo,
-          });
-        }
-      }
     } catch (error) {
       console.error('[Storage] Error in saveCobrancas:', error);
       throw error;

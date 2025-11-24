@@ -19,7 +19,19 @@ Key features include:
 - **Execuções**: Full execution history with expandable logs for each run
 - **Configurações**: Secure configuration management with secret masking and validation
 
-**Recent Changes (November 23, 2025)**:
+**Recent Changes (November 24, 2025)**:
+✅ **FIXED EXECUTION HANGING ISSUE** - Resolved critical performance bug:
+  - **Problem**: Execuções ficavam presas em status "running" indefinidamente durante a fase de "Salvando cobranças"
+  - **Root Cause**: `saveCobrancas()` estava fazendo ~968 queries sequenciais (484 cobranças × 2 queries: 1 SELECT + 1 INSERT/UPDATE)
+  - **Solution**: Implementado UPSERT batch (INSERT ... ON CONFLICT ... UPDATE) - reduz 968 queries para 1 única query
+  - **Performance**: Sincronização de 484 cobranças agora leva < 1s em vez de travamento indefinido
+  - **Implementation**: 
+    - Drizzle ORM `onConflictDoUpdate()` com `sql` helper para referências corretas aos aliases do PostgreSQL
+    - Correção de column names (camelCase JavaScript → snake_case PostgreSQL em excluded references)
+    - Validação de empty arrays para evitar erro de constraint violation
+  - **Result**: Execuções agora completam corretamente sem travamentos
+
+**Previous Changes (November 23, 2025)**:
 ✅ **DELETION DETECTION AND SYNC** - Automatically removes deleted cobranças:
   - New endpoint `POST /api/cobrancas/sync` for full synchronization with deletion detection
   - Compares local cobranças with all IDs from Asaas

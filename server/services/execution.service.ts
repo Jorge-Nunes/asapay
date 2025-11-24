@@ -64,7 +64,14 @@ export class ExecutionService {
 
       // Sync clientes with Traccar mapping
       console.log('[Execution] 👥 Sincronizando clientes do Asaas...');
-      const asaasCustomers = await asaasService.getAllCustomers();
+      let asaasCustomers: any[] = [];
+      try {
+        asaasCustomers = await asaasService.getAllCustomers();
+        console.log(`[Execution] ✓ Clientes recuperados: ${asaasCustomers.length}`);
+      } catch (error) {
+        console.error('[Execution] ❌ Erro ao buscar clientes:', error);
+        throw new Error(`Falha ao sincronizar clientes: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+      }
       
       // Get Traccar users for auto-mapping if configured
       let traccarUsers: any[] = [];
@@ -127,12 +134,27 @@ export class ExecutionService {
 
       // Sync cobranças com TODOS os status (PENDING, RECEIVED, CONFIRMED, OVERDUE)
       console.log('[Execution] 📋 Sincronizando cobranças de todos os status...');
-      const allPayments = await asaasService.getAllPayments();
-      const customers = asaasCustomers;
-      const cobrancasFromSync = await asaasService.enrichPaymentsWithCustomers(allPayments, customers);
-      await storage.saveCobrancas(cobrancasFromSync);
-      await storage.updateSyncTimestamp('cobrancas');
-      console.log(`[Execution] ✓ ${cobrancasFromSync.length} cobranças sincronizadas`);
+      let cobrancasFromSync: any[] = [];
+      try {
+        console.log('[Execution] → Buscando pagamentos de todos os status (PENDING, RECEIVED, CONFIRMED, OVERDUE)...');
+        const allPayments = await asaasService.getAllPayments();
+        console.log(`[Execution] ✓ Pagamentos recuperados: ${allPayments.length}`);
+        
+        console.log('[Execution] → Enriquecendo pagamentos com dados de clientes...');
+        const customers = asaasCustomers;
+        cobrancasFromSync = await asaasService.enrichPaymentsWithCustomers(allPayments, customers);
+        console.log(`[Execution] ✓ Cobranças enriquecidas: ${cobrancasFromSync.length}`);
+        
+        console.log('[Execution] → Salvando cobranças no banco de dados...');
+        await storage.saveCobrancas(cobrancasFromSync);
+        console.log(`[Execution] ✓ Cobranças salvas`);
+        
+        await storage.updateSyncTimestamp('cobrancas');
+        console.log(`[Execution] ✓ ${cobrancasFromSync.length} cobranças sincronizadas`);
+      } catch (error) {
+        console.error('[Execution] ❌ Erro ao sincronizar cobranças:', error);
+        throw new Error(`Falha ao sincronizar cobranças: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+      }
 
       // ========== PROCESSING PHASE: Now process the synchronized data ==========
       console.log('[Execution] 📤 Iniciando processamento de mensagens...');
