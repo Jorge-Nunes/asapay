@@ -44,7 +44,7 @@ interface PaginatedResponse {
   };
 }
 
-type SortField = 'name' | 'email' | 'mobilePhone' | 'diasAtrasoNotificacao';
+type SortField = 'name' | 'email' | 'mobilePhone' | 'diasAtrasoNotificacao' | 'traccarUserId' | 'isTraccarBlocked';
 type SortOrder = 'asc' | 'desc';
 
 export default function Clientes() {
@@ -366,10 +366,30 @@ export default function Clientes() {
                       )}
                     </div>
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-mapeado">
-                    Mapeado
+                  <th 
+                    className="px-2 py-2 text-left text-xs font-semibold cursor-pointer hover:bg-muted/70 transition-colors" 
+                    data-testid="header-mapeado"
+                    onClick={() => handleSort('traccarUserId')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Mapeado
+                      {sortBy === 'traccarUserId' && (
+                        sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      )}
+                    </div>
                   </th>
-                  <th className="px-2 py-2 text-center text-xs font-semibold">Bloqueado</th>
+                  <th 
+                    className="px-2 py-2 text-center text-xs font-semibold cursor-pointer hover:bg-muted/70 transition-colors" 
+                    data-testid="header-bloqueado"
+                    onClick={() => handleSort('isTraccarBlocked')}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      Bloqueado
+                      {sortBy === 'isTraccarBlocked' && (
+                        sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      )}
+                    </div>
+                  </th>
                   <th className="px-2 py-2 text-center text-xs font-semibold">Ações</th>
                 </tr>
               </thead>
