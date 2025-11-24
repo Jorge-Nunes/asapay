@@ -181,6 +181,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateData.evolutionUrl = req.body.evolutionUrl || currentConfig.evolutionUrl;
       updateData.evolutionInstance = req.body.evolutionInstance || currentConfig.evolutionInstance;
       updateData.traccarUrl = req.body.traccarUrl || currentConfig.traccarUrl;
+      updateData.traccarUsername = req.body.traccarUsername || currentConfig.traccarUsername;
+      updateData.traccarPassword = (req.body.traccarPassword && req.body.traccarPassword !== '••••••••') 
+        ? req.body.traccarPassword 
+        : currentConfig.traccarPassword;
+      updateData.traccarVersion = req.body.traccarVersion || currentConfig.traccarVersion;
       updateData.traccarLimiteCobrancasVencidas = req.body.traccarLimiteCobrancasVencidas || currentConfig.traccarLimiteCobrancasVencidas;
       updateData.webhookUrl = req.body.webhookUrl || currentConfig.webhookUrl;
       updateData.diasAviso = req.body.diasAviso || currentConfig.diasAviso;
@@ -207,6 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         asaasToken: updated.asaasToken ? '••••••••' : '',
         evolutionApiKey: updated.evolutionApiKey ? '••••••••' : '',
         traccarApiKey: updated.traccarApiKey ? '••••••••' : '',
+        traccarPassword: updated.traccarPassword ? '••••••••' : '',
         _hasAsaasToken: !!updated.asaasToken,
         _hasEvolutionApiKey: !!updated.evolutionApiKey,
         _hasTraccarApiKey: !!updated.traccarApiKey,
@@ -214,6 +220,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[Routes] Error in updateConfig:', error);
       res.status(500).json({ error: "Failed to update config" });
+    }
+  });
+
+  // Test Traccar connection
+  app.post("/api/traccar/test-connection", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      
+      if (!config.traccarUrl) {
+        return res.status(400).json({ 
+          success: false,
+          error: "URL do Traccar não configurada" 
+        });
+      }
+
+      const traccarService = new TraccarService(config);
+      
+      try {
+        // Try to get users to validate connection
+        const users = await traccarService.getUsers();
+        
+        res.json({
+          success: true,
+          message: "Conexão com Traccar estabelecida com sucesso!",
+          usersCount: users?.length || 0,
+          version: config.traccarVersion,
+          server: config.traccarUrl,
+          username: config.traccarUsername,
+        });
+      } catch (traccarError: any) {
+        console.error('[TraccarTest] Error connecting to Traccar:', traccarError);
+        res.status(400).json({
+          success: false,
+          error: traccarError.message || "Falha ao conectar com Traccar",
+          details: {
+            version: config.traccarVersion,
+            server: config.traccarUrl,
+            username: config.traccarUsername,
+          },
+          hint: config.traccarVersion === '4.15' 
+            ? "Verifique se o usuário e senha estão corretos para Traccar 4.15"
+            : "Verifique se o Token de Acesso está correto"
+        });
+      }
+    } catch (error) {
+      console.error('[Routes] Error in test Traccar connection:', error);
+      res.status(500).json({ 
+        success: false,
+        error: "Erro ao testar conexão" 
+      });
     }
   });
 

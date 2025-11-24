@@ -277,6 +277,32 @@ export default function Configuracoes() {
     },
   });
 
+  const testTraccarConnection = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/traccar/test-connection', {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || error.message || 'Falha ao testar conexão');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "✓ Conexão Bem-sucedida!",
+        description: `${data.usersCount} usuários encontrados no Traccar ${data.version}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "✗ Falha na Conexão",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const createAndConnectInstance = useMutation({
     mutationFn: async (instanceName: string) => {
       const response = await fetch('/api/evolution/instance/create-and-connect', {
@@ -892,6 +918,18 @@ export default function Configuracoes() {
                   Quantas cobranças vencidas são necessárias para bloquear um usuário no Traccar
                 </p>
               </div>
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={() => testTraccarConnection.mutate()}
+                  disabled={testTraccarConnection.isPending || !formData.traccarUrl}
+                  variant="outline"
+                  className="gap-2"
+                  data-testid="button-test-traccar"
+                >
+                  {testTraccarConnection.isPending ? 'Testando...' : 'Testar Conexão'}
+                </Button>
+              </div>
+
               <div className="pt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded border border-amber-200 dark:border-amber-800">
                 <p className="text-sm text-amber-800 dark:text-amber-200">
                   <strong>Como funciona:</strong> Quando um usuário no Asaas tiver mais cobranças vencidas que o limite configurado, ele será bloqueado automaticamente no Traccar. A correspondência é feita por telefone e email.
