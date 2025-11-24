@@ -120,10 +120,9 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards - Situação das Cobranças (Estilo Asaas) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {metricsLoading ? (
           <>
-            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
             <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
             <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
             <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
@@ -133,28 +132,21 @@ export default function Dashboard() {
             <MetricCard
               title="Recebidas"
               value={`R$ ${(metrics?.totalRecebido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`R$ ${(metrics?.totalRecebido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} líquido`}
+              subtitle={`${statusCounts.received + statusCounts.confirmed} cobranças recebidas`}
               icon={CheckCircle}
               variant="received"
             />
             <MetricCard
-              title="Confirmadas"
-              value="R$ 0,00"
-              subtitle="R$ 0,00 líquido"
-              icon={CheckCircle}
-              variant="confirmed"
-            />
-            <MetricCard
               title="Aguardando pagamento"
               value={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} a receber`}
+              subtitle={`${statusCounts.pending} cobranças pendentes`}
               icon={AlertCircle}
               variant="pending"
             />
             <MetricCard
               title="Vencidas"
               value={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em atraso`}
+              subtitle={`${statusCounts.overdue} cobranças em atraso`}
               icon={AlertCircle}
               variant="overdue"
             />
