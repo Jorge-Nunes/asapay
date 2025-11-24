@@ -2075,6 +2075,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all data (except config) for fresh sync
+  app.post("/api/clear-data", async (req, res) => {
+    try {
+      // Remove all cobranças by calling removeDeletedCobrancas with empty array
+      await storage.removeDeletedCobrancas([]);
+      console.log('[Routes] All data cleared successfully');
+      res.json({ 
+        success: true,
+        message: "Todos os dados foram limpos. Configurações preservadas." 
+      });
+    } catch (error) {
+      console.error('[Routes] Error clearing data:', error);
+      res.status(500).json({ error: "Erro ao limpar dados" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

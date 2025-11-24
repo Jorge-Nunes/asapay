@@ -62,6 +62,9 @@ export interface IStorage {
   // Sync tracking
   updateSyncTimestamp(type: 'clients' | 'cobrancas'): Promise<void>;
   getLastSyncTimestamp(type: 'clients' | 'cobrancas'): number;
+
+  // Clear data
+  clearAllData(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -554,6 +557,17 @@ Obrigado por sua confiança! 🙏`,
     });
 
     return result;
+  }
+
+  async clearAllData(): Promise<void> {
+    // Clear all data EXCEPT config
+    this.cobrancas.clear();
+    this.executions.clear();
+    this.executionLogs = [];
+    this.clients.clear();
+    this.clientLastMessageAtraso.clear();
+    this.cobrancaLastMessageSent.clear();
+    console.log('[Storage] All data cleared. Config preserved.');
   }
 }
 
