@@ -54,10 +54,10 @@ app.use((req, res, next) => {
 (async () => {
   // Initialize default admin user
   try {
-    const adminUser = await storage.getUserByUsername("admin");
+    const adminUser = await (storage as any).getUserByUsername?.("admin");
     if (!adminUser) {
       const hashedPassword = await bcrypt.hash("admin123", 10);
-      await storage.createUser({
+      await (storage as any).createUser?.({
         username: "admin",
         password: hashedPassword,
         fullName: "Administrator",

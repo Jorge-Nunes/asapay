@@ -119,10 +119,7 @@ export default function Dashboard() {
       </div>
 
       {/* Situação das Cobranças */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4 text-foreground">Situação das cobranças</h2>
-        <FinancialSummarySection />
-      </div>
+      <FinancialSummarySection />
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
