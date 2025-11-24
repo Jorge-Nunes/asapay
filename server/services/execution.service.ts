@@ -59,17 +59,40 @@ export class ExecutionService {
         config.evolutionInstance
       );
 
-      console.log('Fetching customers from Asaas...');
-      const customers = await asaasService.getAllCustomers();
+      // ========== SYNC PHASE: Ensure all data is up-to-date ==========
+      console.log('[Execution] 🔄 Iniciando sincronização completa de dados...');
 
-      console.log('Fetching pending payments from Asaas...');
-      const payments = await asaasService.getPendingPayments();
+      // Sync clientes
+      console.log('[Execution] 👥 Sincronizando clientes do Asaas...');
+      const asaasCustomers = await asaasService.getAllCustomers();
+      const clientsToSync = asaasCustomers.map(customer => ({
+        asaasCustomerId: customer.id,
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        mobilePhone: customer.mobilePhone || '',
+        address: customer.address || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        postalCode: customer.postalCode || '',
+        cpfCnpj: customer.cpfCnpj || '',
+      }));
+      await storage.syncClients(clientsToSync);
+      await storage.updateSyncTimestamp('clients');
+      console.log(`[Execution] ✓ ${clientsToSync.length} clientes sincronizados`);
 
-      console.log('Enriching payments with customer data...');
-      const cobrancas = await asaasService.enrichPaymentsWithCustomers(payments, customers);
+      // Sync cobranças com TODOS os status (PENDING, RECEIVED, CONFIRMED, OVERDUE)
+      console.log('[Execution] 📋 Sincronizando cobranças de todos os status...');
+      const allPayments = await asaasService.getAllPayments();
+      const customers = asaasCustomers;
+      const cobrancasFromSync = await asaasService.enrichPaymentsWithCustomers(allPayments, customers);
+      await storage.saveCobrancas(cobrancasFromSync);
+      await storage.updateSyncTimestamp('cobrancas');
+      console.log(`[Execution] ✓ ${cobrancasFromSync.length} cobranças sincronizadas`);
 
-      // Save cobrancas to storage
-      await storage.saveCobrancas(cobrancas);
+      // ========== PROCESSING PHASE: Now process the synchronized data ==========
+      console.log('[Execution] 📤 Iniciando processamento de mensagens...');
+      const cobrancas = cobrancasFromSync;
 
       console.log('Categorizing cobranças...');
       const categorized = ProcessorService.categorizeCobrancas(cobrancas, config.diasAviso);
