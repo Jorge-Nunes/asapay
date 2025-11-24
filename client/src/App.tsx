@@ -15,41 +15,11 @@ import Execucoes from "@/pages/Execucoes";
 import Configuracoes from "@/pages/Configuracoes";
 import { useEffect, useState } from "react";
 
-function Router() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    setIsAuthenticated(!!token);
-    setIsLoading(false);
-  }, []);
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
-  }
-
-  return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/cobrancas" component={Cobrancas} />
-      <Route path="/clientes" component={Clientes} />
-      <Route path="/relatorios" component={Relatorios} />
-      <Route path="/execucoes" component={Execucoes} />
-      <Route path="/configuracoes" component={Configuracoes} />
-    </Switch>
-  );
-}
-
-function App() {
+export default function App() {
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
-  };
+  } as React.CSSProperties;
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,7 +48,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SidebarProvider style={style as React.CSSProperties}>
+        <SidebarProvider style={style}>
           <div className="flex h-screen w-full">
             <AppSidebar onLogout={() => setIsAuthenticated(false)} />
             <div className="flex flex-col flex-1">
@@ -87,7 +57,14 @@ function App() {
                 <ThemeToggle />
               </header>
               <main className="flex-1 overflow-auto p-8">
-                <Router />
+                <Switch>
+                  <Route path="/" component={Dashboard} />
+                  <Route path="/cobrancas" component={Cobrancas} />
+                  <Route path="/clientes" component={Clientes} />
+                  <Route path="/relatorios" component={Relatorios} />
+                  <Route path="/execucoes" component={Execucoes} />
+                  <Route path="/configuracoes" component={Configuracoes} />
+                </Switch>
               </main>
             </div>
           </div>
@@ -97,5 +74,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;
