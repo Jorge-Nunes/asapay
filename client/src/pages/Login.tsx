@@ -44,7 +44,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
       <Card className="w-full max-w-md p-8 shadow-lg">
         <div className="text-center mb-8">
           <img 
-            src="/asapay-logo.png" 
+            src="/asapay-logo.png?v=1763982786" 
             alt="AsaPay Logo" 
             className="h-32 w-auto mx-auto mb-4 object-contain"
           />

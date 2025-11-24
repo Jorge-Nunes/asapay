@@ -60,7 +60,7 @@ export function AppSidebar({ onLogout }: { onLogout?: () => void }) {
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <img 
-            src="/asapay-logo.png" 
+            src="/asapay-logo.png?v=1763982786" 
             alt="AsaPay Logo" 
             className="h-10 w-auto object-contain"
           />

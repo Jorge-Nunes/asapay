@@ -87,7 +87,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <img 
-            src="/asapay-logo.png" 
+            src="/asapay-logo.png?v=1763982786" 
             alt="AsaPay Logo" 
             className="h-16 w-auto object-contain"
           />
