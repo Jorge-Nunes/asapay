@@ -62,24 +62,68 @@ export class ExecutionService {
       // ========== SYNC PHASE: Ensure all data is up-to-date ==========
       console.log('[Execution] 🔄 Iniciando sincronização completa de dados...');
 
-      // Sync clientes
+      // Sync clientes with Traccar mapping
       console.log('[Execution] 👥 Sincronizando clientes do Asaas...');
       const asaasCustomers = await asaasService.getAllCustomers();
-      const clientsToSync = asaasCustomers.map(customer => ({
-        asaasCustomerId: customer.id,
-        name: customer.name,
-        email: customer.email || '',
-        phone: customer.phone || '',
-        mobilePhone: customer.mobilePhone || '',
-        address: customer.address || '',
-        city: customer.city || '',
-        state: customer.state || '',
-        postalCode: customer.postalCode || '',
-        cpfCnpj: customer.cpfCnpj || '',
-      }));
+      
+      // Get Traccar users for auto-mapping if configured
+      let traccarUsers: any[] = [];
+      if (config.traccarUrl && config.traccarApiKey) {
+        try {
+          const traccarService = new TraccarService(config);
+          traccarUsers = await traccarService.getUsers();
+          console.log(`[Execution] ✓ Encontrados ${traccarUsers.length} usuários Traccar`);
+        } catch (error) {
+          console.error('[Execution] Erro ao buscar usuários Traccar:', error);
+        }
+      }
+
+      // Helper function for Traccar mapping
+      const findTraccarUser = (customer: any) => {
+        if (!traccarUsers.length) return { userId: null, method: null };
+        
+        if (customer.email) {
+          const userByEmail = traccarUsers.find(u => u.email === customer.email);
+          if (userByEmail) return { userId: userByEmail.id?.toString(), method: 'email' };
+        }
+
+        const customerPhone = (customer.mobilePhone || customer.phone || '').replace(/\D/g, '');
+        if (customerPhone) {
+          const userByPhone = traccarUsers.find(u => {
+            const userData = u.name || u.email || '';
+            return userData.replace(/\D/g, '').includes(customerPhone) || 
+                   customerPhone.includes(userData.replace(/\D/g, ''));
+          });
+          if (userByPhone) return { userId: userByPhone.id?.toString(), method: 'phone' };
+        }
+
+        return { userId: null, method: null };
+      };
+
+      // Map customers with Traccar users
+      const clientsToSync = asaasCustomers.map(customer => {
+        const mapped = findTraccarUser(customer);
+        return {
+          asaasCustomerId: customer.id,
+          name: customer.name,
+          email: customer.email || '',
+          phone: customer.phone || '',
+          mobilePhone: customer.mobilePhone || '',
+          address: customer.address || '',
+          city: customer.city || '',
+          state: customer.state || '',
+          postalCode: customer.postalCode || '',
+          cpfCnpj: customer.cpfCnpj || '',
+          traccarUserId: mapped.userId,
+          traccarMappingMethod: mapped.method,
+        };
+      });
+      
       await storage.syncClients(clientsToSync);
       await storage.updateSyncTimestamp('clients');
-      console.log(`[Execution] ✓ ${clientsToSync.length} clientes sincronizados`);
+      
+      const mappedCount = clientsToSync.filter(c => c.traccarUserId).length;
+      console.log(`[Execution] ✓ ${clientsToSync.length} clientes sincronizados (${mappedCount} mapeados com Traccar)`);
 
       // Sync cobranças com TODOS os status (PENDING, RECEIVED, CONFIRMED, OVERDUE)
       console.log('[Execution] 📋 Sincronizando cobranças de todos os status...');
