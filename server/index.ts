@@ -1,11 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { MemStorage } from "./storage";
+import { PostgresStorage } from "./storage.postgres";
 import bcrypt from "bcryptjs";
 
-// Initialize in-memory storage
-export const storage = new MemStorage();
+// Initialize PostgreSQL storage (persistent database)
+export const storage = new PostgresStorage();
 
 const app = express();
 

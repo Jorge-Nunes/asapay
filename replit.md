@@ -112,14 +112,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage Solutions
 
-**Current Implementation**: In-memory storage using Map and array structures for rapid prototyping and development.
+**Current Implementation**: ✅ PostgreSQL database with Drizzle ORM for persistent data storage.
+- Cobranças (billing data) persisted across restarts
+- Clients, executions, and logs stored in database
+- Configuration stored in environment variables
+- Database: Neon Serverless PostgreSQL (@neondatabase/serverless)
 
-**Planned Migration**: PostgreSQL database configured with Drizzle ORM (configuration present in `drizzle.config.ts`). The schema includes:
-- Users table (with authentication support)
-- Execution history and logs
-- Configuration persistence
+**Storage Class**: `PostgresStorage` (implements `IStorage` interface)
+- Handles all CRUD operations with Drizzle ORM
+- Automatic connection pooling
+- Data persists even after server restart
 
-**Session Management**: Connect-pg-simple for PostgreSQL session storage (when database is connected).
+**Session Management**: Connect-pg-simple for PostgreSQL session storage.
 
 **Environment Variables**: Configuration stored in environment variables:
 - `DATABASE_URL` - PostgreSQL connection string
