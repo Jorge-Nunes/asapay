@@ -80,6 +80,18 @@ export default function Clientes() {
   const clients = paginatedResponse.data || [];
   const pagination = paginatedResponse.pagination || { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false };
 
+  // Fetch stats for all clients (not just current page)
+  const { data: statsData = { total: pagination.total, mapped: 0, blocked: 0 } } = useQuery({
+    queryKey: ['/api/clients/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients/stats');
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      return response.json();
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
+
   const syncMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch('/api/clients/sync', {
@@ -594,15 +606,15 @@ export default function Clientes() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="p-4 border-2">
             <div className="text-sm text-muted-foreground">Total de Clientes</div>
-            <div className="text-2xl font-bold">{pagination.total}</div>
+            <div className="text-2xl font-bold">{statsData.total}</div>
           </Card>
           <Card className="p-4 border-2">
             <div className="text-sm text-muted-foreground">Mapeados</div>
-            <div className="text-2xl font-bold">{clients.filter(c => c.traccarUserId).length}</div>
+            <div className="text-2xl font-bold">{statsData.mapped}</div>
           </Card>
           <Card className="p-4 border-2">
             <div className="text-sm text-muted-foreground">Bloqueados na Traccar</div>
-            <div className="text-2xl font-bold">{clients.filter(c => c.isTraccarBlocked).length}</div>
+            <div className="text-2xl font-bold">{statsData.blocked}</div>
           </Card>
         </div>
       )}

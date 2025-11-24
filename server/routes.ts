@@ -829,6 +829,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clients Statistics - Get counts of all clients
+  app.get("/api/clients/stats", async (req, res) => {
+    try {
+      const allClients = await storage.getClients();
+      
+      res.json({
+        total: allClients.length,
+        mapped: allClients.filter(c => c.traccarUserId).length,
+        blocked: allClients.filter(c => c.isTraccarBlocked).length,
+      });
+    } catch (error) {
+      console.error('[Routes] Error in getClientsStats:', error);
+      res.status(500).json({ error: "Failed to fetch client stats" });
+    }
+  });
+
   // Clients Management Routes - With Pagination
   app.get("/api/clients", async (req, res) => {
     try {
