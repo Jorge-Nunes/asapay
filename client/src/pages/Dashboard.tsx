@@ -1,5 +1,4 @@
 import { ExecutionChart } from "@/components/ExecutionChart";
-import { StatusChart } from "@/components/StatusChart";
 import { FinancialSummarySection } from "@/components/FinancialSummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,10 +18,6 @@ export default function Dashboard() {
 
   const { data: chartData = [] } = useQuery<Array<{ date: string; mensagens: number; erros: number }>>({
     queryKey: ['/api/dashboard/chart-data'],
-  });
-
-  const { data: statusData = [] } = useQuery<Array<{ name: string; value: number }>>({
-    queryKey: ['/api/dashboard/status-data'],
   });
 
   const { data: executions = [] } = useQuery<Execution[]>({
@@ -72,14 +67,6 @@ export default function Dashboard() {
 
   const latestExecutions = executions.slice(0, 2);
 
-  const statusCounts = statusData.reduce((acc, item) => {
-    if (item.name === 'Recebido') acc.received = item.value;
-    if (item.name === 'Confirmado') acc.confirmed = item.value;
-    if (item.name === 'Pendente') acc.pending = item.value;
-    if (item.name === 'Vencido') acc.overdue = item.value;
-    return acc;
-  }, { received: 0, confirmed: 0, pending: 0, overdue: 0 });
-
   return (
     <div className="space-y-6">
       {/* Header com Status e Ações */}
@@ -122,43 +109,22 @@ export default function Dashboard() {
       <FinancialSummarySection />
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card className="hover-elevate transition-all h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle>Mensagens Enviadas (7 dias)</CardTitle>
-              <Badge variant="outline" className="text-xs">Últimas 7 dias</Badge>
-            </CardHeader>
-            <CardContent className="flex-1">
-              {chartData.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Sem dados disponível
-                </div>
-              ) : (
-                <ExecutionChart data={chartData} />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div>
-          <Card className="hover-elevate transition-all h-full flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-lg">Distribuição de Status</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex items-stretch">
-              {statusData.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Sem dados disponível
-                </div>
-              ) : (
-                <div className="w-full">
-                  <StatusChart data={statusData} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="hover-elevate transition-all h-full flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle>Mensagens Enviadas (7 dias)</CardTitle>
+            <Badge variant="outline" className="text-xs">Últimas 7 dias</Badge>
+          </CardHeader>
+          <CardContent className="flex-1">
+            {chartData.length === 0 ? (
+              <div className="h-64 flex items-center justify-center text-muted-foreground">
+                Sem dados disponível
+              </div>
+            ) : (
+              <ExecutionChart data={chartData} />
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Latest Executions - Aprimorado */}

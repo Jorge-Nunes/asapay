@@ -731,37 +731,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/dashboard/status-data", async (req, res) => {
-    try {
-      const cobrancas = await storage.getCobrancas();
-      
-      const statusCounts = {
-        PENDING: 0,
-        RECEIVED: 0,
-        CONFIRMED: 0,
-        OVERDUE: 0,
-      };
-
-      cobrancas.forEach(c => {
-        const status = c.status as keyof typeof statusCounts;
-        if (status in statusCounts) {
-          statusCounts[status]++;
-        }
-      });
-
-      const data = [
-        { name: 'Pendente', value: statusCounts.PENDING },
-        { name: 'Recebido', value: statusCounts.RECEIVED },
-        { name: 'Confirmado', value: statusCounts.CONFIRMED },
-        { name: 'Vencido', value: statusCounts.OVERDUE },
-      ];
-
-      res.json(data);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch status data" });
-    }
-  });
-
   app.get("/api/dashboard/financial-summary", async (req, res) => {
     try {
       const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };

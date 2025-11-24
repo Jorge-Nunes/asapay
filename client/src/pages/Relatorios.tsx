@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExecutionChart } from "@/components/ExecutionChart";
-import { StatusChart } from "@/components/StatusChart";
 import { FileText, MessageSquare, PlayCircle, DollarSign, Clipboard } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Cobranca, Execution } from "@shared/schema";
@@ -10,10 +9,6 @@ import { MessageTypeChart } from "@/components/MessageTypeChart";
 export default function Relatorios() {
   const { data: chartData = [] } = useQuery<Array<{ date: string; mensagens: number; erros: number }>>({
     queryKey: ['/api/dashboard/chart-data'],
-  });
-
-  const { data: statusData = [] } = useQuery<Array<{ name: string; value: number }>>({
-    queryKey: ['/api/dashboard/status-data'],
   });
 
   const { data: cobrancasResponse = { data: [], total: 0, limit: 50, offset: 0 } } = useQuery<{
@@ -93,24 +88,14 @@ export default function Relatorios() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-2 h-full">
-              <CardHeader>
-                <CardTitle>Execuções dos Últimos 7 Dias</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[400px]">
-                <ExecutionChart data={chartData} />
-              </CardContent>
-            </Card>
-            <Card className="border-2 h-full">
-              <CardHeader>
-                <CardTitle>Cobranças por Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <StatusChart data={statusData} />
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="border-2 h-full">
+            <CardHeader>
+              <CardTitle>Execuções dos Últimos 7 Dias</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[400px]">
+              <ExecutionChart data={chartData} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="messages" className="space-y-6">
@@ -172,33 +157,6 @@ export default function Relatorios() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-2">
-              <CardHeader>
-                <CardTitle className="text-lg">Status das Cobranças</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[450px]">
-                <StatusChart data={statusData} />
-              </CardContent>
-            </Card>
-            <div className="space-y-6">
-              <Card className="border-2 hover-elevate">
-                <CardHeader>
-                  <CardTitle className="text-lg">Resumo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {statusData.map((item) => (
-                      <div key={item.name} className="flex items-center justify-between">
-                        <span className="text-sm">{item.name}</span>
-                        <span className="text-sm font-semibold tabular-nums">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
         </TabsContent>
 
         <TabsContent value="executions" className="space-y-6">
