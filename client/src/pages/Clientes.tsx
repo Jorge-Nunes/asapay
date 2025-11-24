@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Download, Edit2, Lock, Unlock, RefreshCw, Clock } from "lucide-react";
+import { Search, Download, Edit2, Lock, Unlock, RefreshCw, Clock, ArrowUp, ArrowDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,9 +44,14 @@ interface PaginatedResponse {
   };
 }
 
+type SortField = 'name' | 'email' | 'mobilePhone' | 'diasAtrasoNotificacao';
+type SortOrder = 'asc' | 'desc';
+
 export default function Clientes() {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortField>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
   const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
@@ -54,14 +59,24 @@ export default function Clientes() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingBlockAction, setPendingBlockAction] = useState<{ clientId: string; action: 'block' | 'unblock'; clientName: string } | null>(null);
 
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
   const { data: paginatedResponse = { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false } }, isLoading, refetch } = useQuery<PaginatedResponse>({
-    queryKey: ['/api/clients', currentPage],
+    queryKey: ['/api/clients', currentPage, sortBy, sortOrder],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        sortBy: 'name',
-        sortOrder: 'asc',
+        sortBy,
+        sortOrder,
       });
       const response = await fetch(`/api/clients?${params}`);
       if (!response.ok) throw new Error('Failed to fetch clients');
@@ -303,17 +318,53 @@ export default function Clientes() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-nome">
-                    Nome
+                  <th 
+                    className="px-2 py-2 text-left text-xs font-semibold cursor-pointer hover:bg-muted/70 transition-colors" 
+                    data-testid="header-nome"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Nome
+                      {sortBy === 'name' && (
+                        sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      )}
+                    </div>
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-email">
-                    Email
+                  <th 
+                    className="px-2 py-2 text-left text-xs font-semibold cursor-pointer hover:bg-muted/70 transition-colors" 
+                    data-testid="header-email"
+                    onClick={() => handleSort('email')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Email
+                      {sortBy === 'email' && (
+                        sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      )}
+                    </div>
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-telefone">
-                    Telefone
+                  <th 
+                    className="px-2 py-2 text-left text-xs font-semibold cursor-pointer hover:bg-muted/70 transition-colors" 
+                    data-testid="header-telefone"
+                    onClick={() => handleSort('mobilePhone')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Telefone
+                      {sortBy === 'mobilePhone' && (
+                        sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      )}
+                    </div>
                   </th>
-                  <th className="px-2 py-2 text-center text-xs font-semibold" data-testid="header-dias-atraso">
-                    Atraso
+                  <th 
+                    className="px-2 py-2 text-center text-xs font-semibold cursor-pointer hover:bg-muted/70 transition-colors" 
+                    data-testid="header-dias-atraso"
+                    onClick={() => handleSort('diasAtrasoNotificacao')}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      Atraso
+                      {sortBy === 'diasAtrasoNotificacao' && (
+                        sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      )}
+                    </div>
                   </th>
                   <th className="px-2 py-2 text-left text-xs font-semibold" data-testid="header-mapeado">
                     Mapeado
