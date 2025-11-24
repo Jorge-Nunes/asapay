@@ -133,28 +133,28 @@ export default function Dashboard() {
             <MetricCard
               title="Recebidas"
               value={`R$ ${(metrics?.totalRecebido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.received} clientes • ${statusCounts.received} cobranças`}
+              subtitle={`R$ ${(metrics?.totalRecebido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} líquido`}
               icon={CheckCircle}
               variant="received"
             />
             <MetricCard
               title="Confirmadas"
-              value={`R$ ${(metrics?.confirmadas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.confirmed} clientes • ${statusCounts.confirmed} cobranças`}
+              value="R$ 0,00"
+              subtitle="R$ 0,00 líquido"
               icon={CheckCircle}
               variant="confirmed"
             />
             <MetricCard
               title="Aguardando pagamento"
               value={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.pending} clientes • ${statusCounts.pending} cobranças`}
+              subtitle={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} a receber`}
               icon={AlertCircle}
               variant="pending"
             />
             <MetricCard
               title="Vencidas"
               value={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.overdue} clientes • ${statusCounts.overdue} cobranças`}
+              subtitle={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em atraso`}
               icon={AlertCircle}
               variant="overdue"
             />
