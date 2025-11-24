@@ -16,7 +16,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSort } from "@/hooks/useSort";
-import { sortArray } from "@/utils/sorting";
 import type { Cobranca } from "@shared/schema";
 
 type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo' | 'description';
@@ -40,13 +39,15 @@ export default function Cobrancas() {
   const pageSize = 10;
 
   const { data: paginatedData = { data: [], total: 0, limit: pageSize, offset: 0 }, isLoading } = useQuery<PaginatedResponse>({
-    queryKey: ['/api/cobrancas', statusFilter, tipoFilter, page],
+    queryKey: ['/api/cobrancas', statusFilter, tipoFilter, page, sortField, sortOrder],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (tipoFilter !== 'all') params.append('tipo', tipoFilter);
       params.append('limit', pageSize.toString());
       params.append('offset', (page * pageSize).toString());
+      params.append('sortField', sortField);
+      params.append('sortOrder', sortOrder);
       
       const response = await fetch(`/api/cobrancas?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch cobranças');
@@ -86,6 +87,8 @@ export default function Cobrancas() {
     />
   );
 
+  // Note: Filtering and sorting now happens on the server side
+  // Local filtering for search and min/max value is still done on the current page results
   const filteredCobrancas = cobrancas.filter((cobranca) => {
     const matchesSearch = cobranca.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (cobranca.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
@@ -93,8 +96,6 @@ export default function Cobrancas() {
     const matchesMaxValue = maxValue ? cobranca.value <= parseFloat(maxValue) : true;
     return matchesSearch && matchesMinValue && matchesMaxValue;
   });
-
-  const sortedCobrancas = sortArray(filteredCobrancas, sortField, sortOrder as 'asc' | 'desc');
 
   const sendMessageMutation = useMutation({
     mutationFn: async (cobrancaId: string) => {
@@ -168,7 +169,7 @@ export default function Cobrancas() {
 
   const handleExportCSV = () => {
     const headers = ["Cliente", "Valor", "Descrição", "Tipo", "Status", "Vencimento"];
-    const rows = sortedCobrancas.map(c => [
+    const rows = filteredCobrancas.map(c => [
       c.customerName,
       `R$ ${c.value.toFixed(2)}`,
       c.description || '-',
@@ -185,7 +186,7 @@ export default function Cobrancas() {
     link.download = `cobrancas-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast({ title: "Exportado", description: `${sortedCobrancas.length} cobranças exportadas em CSV` });
+    toast({ title: "Exportado", description: `${filteredCobrancas.length} cobranças exportadas em CSV` });
   };
 
   return (
@@ -291,7 +292,7 @@ export default function Cobrancas() {
         ) : (
           <>
             <CobrancaTable 
-              cobrancas={sortedCobrancas} 
+              cobrancas={filteredCobrancas} 
               onSendMessage={handleSendMessage}
               sortField={sortField}
               sortDirection={sortOrder}

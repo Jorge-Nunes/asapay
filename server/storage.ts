@@ -13,7 +13,7 @@ export interface IStorage {
 
   // Cobranças
   getCobrancas(limit?: number, offset?: number): Promise<Cobranca[]>;
-  getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit?: number, offset?: number): Promise<{ data: Cobranca[]; total: number }>;
+  getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit?: number, offset?: number, sortField?: string, sortOrder?: 'asc' | 'desc'): Promise<{ data: Cobranca[]; total: number }>;
   getCobrancaById(id: string): Promise<Cobranca | undefined>;
   saveCobrancas(cobrancas: Cobranca[]): Promise<void>;
   updateCobranca(id: string, data: Partial<Cobranca>): Promise<Cobranca | undefined>;
@@ -234,7 +234,7 @@ Obrigado por sua confiança! 🙏`,
     return cobrancas;
   }
 
-  async getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit = 50, offset = 0): Promise<{ data: Cobranca[]; total: number }> {
+  async getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit = 50, offset = 0, sortField = 'dueDate', sortOrder: 'asc' | 'desc' = 'desc'): Promise<{ data: Cobranca[]; total: number }> {
     let cobrancas = Array.from(this.cobrancas.values());
     
     if (filters?.status && filters.status !== 'all') {
@@ -244,6 +244,30 @@ Obrigado por sua confiança! 🙏`,
     if (filters?.tipo && filters.tipo !== 'all') {
       cobrancas = cobrancas.filter(c => c.tipo === filters.tipo);
     }
+    
+    // Sort by specified field
+    cobrancas.sort((a, b) => {
+      let aVal: any = a[sortField as keyof Cobranca];
+      let bVal: any = b[sortField as keyof Cobranca];
+      
+      // Handle date comparisons
+      if (sortField === 'dueDate') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      }
+      
+      // Handle numeric comparisons
+      if (sortField === 'value') {
+        aVal = parseFloat(aVal);
+        bVal = parseFloat(bVal);
+      }
+      
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      } else {
+        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+      }
+    });
     
     const total = cobrancas.length;
     const data = cobrancas.slice(offset, offset + limit);

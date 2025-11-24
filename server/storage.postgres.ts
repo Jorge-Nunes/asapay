@@ -344,7 +344,7 @@ Obrigado por sua confiança! 🙏`,
     }
   }
 
-  async getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit = 50, offset = 0): Promise<{ data: Cobranca[]; total: number }> {
+  async getCobrancasPaginated(filters?: { status?: string; tipo?: string }, limit = 50, offset = 0, sortField = 'dueDate', sortOrder: 'asc' | 'desc' = 'desc'): Promise<{ data: Cobranca[]; total: number }> {
     try {
       const db = getDb();
       
@@ -361,14 +361,42 @@ Obrigado por sua confiança! 🙏`,
       // Build the where clause
       let whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
       
-      // Get all results with filters to count total
+      // Map sortField to database column
+      let orderByColumn: any = cobrancas.dueDate;
+      switch(sortField) {
+        case 'customerName':
+          orderByColumn = cobrancas.customerName;
+          break;
+        case 'value':
+          orderByColumn = cobrancas.value;
+          break;
+        case 'status':
+          orderByColumn = cobrancas.status;
+          break;
+        case 'tipo':
+          orderByColumn = cobrancas.tipo;
+          break;
+        case 'description':
+          orderByColumn = cobrancas.description;
+          break;
+        case 'dueDate':
+        default:
+          orderByColumn = cobrancas.dueDate;
+      }
+      
+      // Get all results with filters, sorting and pagination
       const allResults = whereClause 
-        ? await db.query.cobrancas.findMany({ where: whereClause })
-        : await db.query.cobrancas.findMany();
+        ? await db.query.cobrancas.findMany({ 
+            where: whereClause,
+            orderBy: sortOrder === 'asc' ? [orderByColumn] : [desc(orderByColumn)]
+          })
+        : await db.query.cobrancas.findMany({ 
+            orderBy: sortOrder === 'asc' ? [orderByColumn] : [desc(orderByColumn)]
+          });
       
       const total = allResults.length;
       
-      // Get paginated results
+      // Get paginated results (already sorted)
       const paginatedResults = allResults.slice(offset, offset + limit);
       
       const data = paginatedResults.map((r: any) => ({
