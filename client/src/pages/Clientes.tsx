@@ -7,7 +7,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSort } from "@/hooks/useSort";
-import { Search, Download, Edit2, Lock, Unlock, RefreshCw, Clock } from "lucide-react";
+import { Search, Download, Edit2, Lock, Unlock, RefreshCw, Clock, ArrowUp, ArrowDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
