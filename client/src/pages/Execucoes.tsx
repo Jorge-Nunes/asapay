@@ -3,8 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExecutionLogTable } from "@/components/ExecutionLogTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SortIcon } from "@/components/SortIcon";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Play, Clock, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight, Lock, ArrowUp, ArrowDown } from "lucide-react";
+import { Play, Clock, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { useSort } from "@/hooks/useSort";
+import { sortArray } from "@/utils/sorting";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -21,36 +24,13 @@ export default function Execucoes() {
   const { toast } = useToast();
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState<SortField>('timestamp');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const { sortField, sortOrder, handleSort } = useSort<SortField>('timestamp', 'desc');
 
   const { data: executions = [] } = useQuery<Execution[]>({
     queryKey: ['/api/executions'],
   });
 
-  // Sorting function
-  const sortedExecutions = [...executions].sort((a, b) => {
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
-
-    // Handle timestamp specially
-    if (sortField === 'timestamp') {
-      aValue = new Date(aValue).getTime();
-      bValue = new Date(bValue).getTime();
-    }
-
-    if (typeof aValue === 'string') {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-      return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    }
-
-    if (typeof aValue === 'number') {
-      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-    }
-
-    return 0;
-  });
+  const sortedExecutions = sortArray(executions, sortField, sortOrder as 'asc' | 'desc');
 
   // Pagination logic
   const totalPages = Math.ceil(sortedExecutions.length / ITEMS_PER_PAGE);
@@ -58,13 +38,8 @@ export default function Execucoes() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedExecutions = sortedExecutions.slice(startIndex, endIndex);
 
-  const handlePrevious = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1));
-  };
-
-  const handleNext = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages));
-  };
+  const handlePrevious = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+  const handleNext = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
 
   const runExecutionMutation = useMutation({
     mutationFn: async () => {
@@ -103,22 +78,6 @@ export default function Execucoes() {
 
   const selectedExecution = executions.find(e => e.id === selectedExecutionId) || executions[0];
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-    setCurrentPage(1); // Reset to first page when sorting changes
-  };
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="h-4 w-4 inline ml-1" />
-      : <ArrowDown className="h-4 w-4 inline ml-1" />;
-  };
 
   const getStatusIcon = (status: Execution['status']) => {
     switch (status) {

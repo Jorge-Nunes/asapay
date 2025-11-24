@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CobrancaTable } from "@/components/CobrancaTable";
+import { SortIcon } from "@/components/SortIcon";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,14 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, RefreshCw, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSort } from "@/hooks/useSort";
+import { sortArray } from "@/utils/sorting";
 import type { Cobranca } from "@shared/schema";
 
 type SortFieldCobranca = 'customerName' | 'value' | 'dueDate' | 'status' | 'tipo' | 'description';
-type SortDirection = 'asc' | 'desc';
 
 interface PaginatedResponse {
   data: Cobranca[];
@@ -33,8 +35,7 @@ export default function Cobrancas() {
   const [tipoFilter, setTipoFilter] = useState<string>("all");
   const [minValue, setMinValue] = useState<string>("");
   const [maxValue, setMaxValue] = useState<string>("");
-  const [sortField, setSortField] = useState<SortFieldCobranca>('dueDate');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const { sortField, sortOrder, handleSort } = useSort<SortFieldCobranca>('dueDate', 'desc');
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
@@ -67,19 +68,11 @@ export default function Cobrancas() {
   };
 
   const handleNextPage = () => {
-    if (page < totalPages - 1) {
-      setPage(page + 1);
-    }
+    if (page < totalPages - 1) setPage(page + 1);
   };
 
   const handlePreviousPage = () => {
-    if (page > 0) {
-      setPage(page - 1);
-    }
-  };
-
-  const handlePageClick = (pageNum: number) => {
-    setPage(pageNum);
+    if (page > 0) setPage(page - 1);
   };
 
   const filteredCobrancas = cobrancas.filter((cobranca) => {
@@ -90,43 +83,7 @@ export default function Cobrancas() {
     return matchesSearch && matchesMinValue && matchesMaxValue;
   });
 
-  const sortedCobrancas = [...filteredCobrancas].sort((a, b) => {
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
-
-    if (sortField === 'dueDate') {
-      aValue = new Date(aValue).getTime();
-      bValue = new Date(bValue).getTime();
-    }
-
-    if (typeof aValue === 'string') {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-      return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    }
-
-    if (typeof aValue === 'number') {
-      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-    }
-
-    return 0;
-  });
-
-  const handleSort = (field: SortFieldCobranca) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const SortIcon = ({ field }: { field: SortFieldCobranca }) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="h-4 w-4 inline ml-1" />
-      : <ArrowDown className="h-4 w-4 inline ml-1" />;
-  };
+  const sortedCobrancas = sortArray(filteredCobrancas, sortField, sortOrder as 'asc' | 'desc');
 
   const sendMessageMutation = useMutation({
     mutationFn: async (cobrancaId: string) => {
@@ -326,7 +283,7 @@ export default function Cobrancas() {
               cobrancas={sortedCobrancas} 
               onSendMessage={handleSendMessage}
               sortField={sortField}
-              sortDirection={sortDirection}
+              sortOrder={sortOrder}
               onSort={handleSort}
               SortIcon={SortIcon}
             />

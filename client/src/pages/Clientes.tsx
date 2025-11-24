@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SortIcon } from "@/components/SortIcon";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Download, Edit2, Lock, Unlock, RefreshCw, Clock, ArrowUp, ArrowDown } from "lucide-react";
+import { useSort } from "@/hooks/useSort";
+import { Search, Download, Edit2, Lock, Unlock, RefreshCw, Clock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -50,24 +52,13 @@ type SortOrder = 'asc' | 'desc';
 export default function Clientes() {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<SortField>('name');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const { sortField: sortBy, sortOrder, handleSort } = useSort<SortField>('name', 'asc');
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({ blockDailyMessages: false, diasAtrasoNotificacao: 3, traccarUserId: '' });
   const [blockingClientId, setBlockingClientId] = useState<string | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingBlockAction, setPendingBlockAction] = useState<{ clientId: string; action: 'block' | 'unblock'; clientName: string } | null>(null);
-
-  const handleSort = (field: SortField) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-    setCurrentPage(1);
-  };
 
   const { data: paginatedResponse = { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0, hasNextPage: false, hasPreviousPage: false } }, isLoading, refetch } = useQuery<PaginatedResponse>({
     queryKey: ['/api/clients', currentPage, sortBy, sortOrder],
