@@ -1249,10 +1249,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           template: config.messageTemplates?.venceHoje || '',
           replacements: {
             '{{link_fatura}}': fictitiousData.invoiceUrl,
+            '{{ link_fatura }}': fictitiousData.invoiceUrl,
             '{{valor}}': valorFormatado,
+            '{{ valor }}': valorFormatado,
             '{{vencimento}}': vencimentoFormatado,
+            '{{ vencimento }}': vencimentoFormatado,
             '{{cliente_nome}}': fictitiousData.customerName,
+            '{{ cliente_nome }}': fictitiousData.customerName,
             '{{dias_aviso}}': String(config.diasAviso || 10),
+            '{{ dias_aviso }}': String(config.diasAviso || 10),
           }
         },
         {
@@ -1261,10 +1266,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           template: config.messageTemplates?.aviso || '',
           replacements: {
             '{{link_fatura}}': fictitiousData.invoiceUrl,
+            '{{ link_fatura }}': fictitiousData.invoiceUrl,
             '{{valor}}': valorFormatado,
+            '{{ valor }}': valorFormatado,
             '{{vencimento}}': vencimentoFormatado,
+            '{{ vencimento }}': vencimentoFormatado,
             '{{cliente_nome}}': fictitiousData.customerName,
+            '{{ cliente_nome }}': fictitiousData.customerName,
             '{{dias_aviso}}': String(config.diasAviso || 10),
+            '{{ dias_aviso }}': String(config.diasAviso || 10),
           }
         },
         {
@@ -1273,10 +1283,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           template: config.messageTemplates?.atraso || '',
           replacements: {
             '{{link_fatura}}': fictitiousData.invoiceUrl,
+            '{{ link_fatura }}': fictitiousData.invoiceUrl,
             '{{valor}}': valorFormatado,
+            '{{ valor }}': valorFormatado,
             '{{valor_total}}': totalFormatado,
+            '{{ valor_total }}': totalFormatado,
             '{{quantidade_cobrancas}}': String(fictitiousData.overdueCount),
+            '{{ quantidade_cobrancas }}': String(fictitiousData.overdueCount),
             '{{cliente_nome}}': fictitiousData.customerName,
+            '{{ cliente_nome }}': fictitiousData.customerName,
           }
         },
         {
@@ -1305,8 +1320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           template: config.messageTemplates?.pagamentoConfirmado || '',
           replacements: {
             '{{cliente_nome}}': fictitiousData.customerName,
+            '{{ cliente_nome }}': fictitiousData.customerName,
             '{{valor}}': valorFormatado,
+            '{{ valor }}': valorFormatado,
             '{{data}}': dataAtual,
+            '{{ data }}': dataAtual,
           }
         },
       ];
