@@ -2078,18 +2078,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clear all data (except config) for fresh sync
   app.post("/api/clear-data", async (req, res) => {
     try {
-      // Directly clear all Maps in storage - completely wipe everything
-      const memStorage = storage as any;
-      
-      // Clear all data structures
-      memStorage.cobrancas?.clear?.();
-      memStorage.executions?.clear?.();
-      memStorage.executionLogs = [];
-      memStorage.clients?.clear?.();
-      memStorage.clientLastMessageAtraso?.clear?.();
-      memStorage.cobrancaLastMessageSent?.clear?.();
-      
-      console.log('[Routes] All data cleared successfully - maps wiped');
+      await storage.clearAllData();
+      console.log('[Routes] All data cleared successfully');
       res.json({ 
         success: true,
         message: "Todos os dados foram limpos. Configurações preservadas." 

@@ -1234,4 +1234,30 @@ Obrigado por sua confiança! 🙏`,
       throw error;
     }
   }
+
+  async clearAllData(): Promise<void> {
+    try {
+      const db = getDb();
+      
+      // Delete all data from tables (keeping configurations)
+      console.log('[Storage] Starting database clear...');
+      
+      // Delete execution logs first (foreign key constraint)
+      await db.delete(executionLogs);
+      console.log('[Storage] Execution logs deleted');
+      
+      // Delete executions
+      await db.delete(executions);
+      console.log('[Storage] Executions deleted');
+      
+      // Delete cobranças
+      await db.delete(cobrancas);
+      console.log('[Storage] Cobranças deleted');
+      
+      console.log('[Storage] All data cleared. Configurations preserved.');
+    } catch (error) {
+      console.error('[Storage] Error clearing data:', error);
+      throw error;
+    }
+  }
 }
