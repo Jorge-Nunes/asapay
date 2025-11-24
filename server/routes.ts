@@ -1362,7 +1362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone,
         message: `✅ Teste de templates concluído! ${results.filter(r => r.status === 'sent').length} mensagens enviadas para ${phone}`,
         results,
-        fictitousData,
+        fictitiousData,
       });
     } catch (error) {
       console.error('[Routes] Error in template test:', error);
