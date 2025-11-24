@@ -1,8 +1,9 @@
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { useState, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { queryClient } from "./lib/queryClient";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -13,7 +14,6 @@ import Clientes from "@/pages/Clientes";
 import Relatorios from "@/pages/Relatorios";
 import Execucoes from "@/pages/Execucoes";
 import Configuracoes from "@/pages/Configuracoes";
-import { useEffect, useState } from "react";
 
 export default function App() {
   const style = {
@@ -21,8 +21,8 @@ export default function App() {
     "--sidebar-width-icon": "3rem",
   } as React.CSSProperties;
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -31,7 +31,7 @@ export default function App() {
   }, []);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+    return <div>Carregando...</div>;
   }
 
   if (!isAuthenticated) {
