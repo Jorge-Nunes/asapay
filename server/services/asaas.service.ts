@@ -238,30 +238,17 @@ export class AsaasService {
   }
 
   async getAllPayments(): Promise<AsaasPayment[]> {
-    const payments: AsaasPayment[] = [];
-    let offset = 0;
-    const limit = 100;
-    let hasMore = true;
+    const allPayments: AsaasPayment[] = [];
+    const statuses: Array<'PENDING' | 'RECEIVED' | 'CONFIRMED' | 'OVERDUE'> = ['PENDING', 'RECEIVED', 'CONFIRMED', 'OVERDUE'];
 
-    while (hasMore) {
-      try {
-        const response = await this.client.get<AsaasListResponse<AsaasPayment>>('/payments', {
-          params: { limit, offset },
-        });
-
-        payments.push(...response.data.data);
-        hasMore = response.data.hasMore;
-        offset += limit;
-
-        if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      } catch (error) {
-        console.error('Error fetching all payments from Asaas:', error);
-        throw error;
-      }
+    // Fetch payments for each status separately
+    for (const status of statuses) {
+      const payments = await this.getPaymentsByStatus(status);
+      allPayments.push(...payments);
+      // Add delay between status requests to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    return payments;
+    return allPayments;
   }
 }
