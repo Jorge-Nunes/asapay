@@ -335,9 +335,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[Sync Cobrancas] ${removedCount} cobranças removidas do sistema local`);
       }
 
-      // Step 3: Fetch and sync existing payments
-      console.log('[Sync Cobrancas] Buscando cobranças atualizadas...');
-      const payments = await asaasService.getPendingPayments();
+      // Step 3: Fetch and sync existing payments from ALL statuses
+      console.log('[Sync Cobrancas] Buscando cobranças atualizadas de todos os status...');
+      const payments = await asaasService.getAllPayments();
       const customers = await asaasService.getAllCustomers();
       const cobrancas = await asaasService.enrichPaymentsWithCustomers(payments, customers);
       
