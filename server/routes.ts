@@ -2078,16 +2078,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clear all data (except config) for fresh sync
   app.post("/api/clear-data", async (req, res) => {
     try {
-      // Remove all cobranças by calling removeDeletedCobrancas with empty array
-      await storage.removeDeletedCobrancas([]);
-      console.log('[Routes] All data cleared successfully');
+      // Directly clear all Maps in storage - completely wipe everything
+      const memStorage = storage as any;
+      
+      // Clear all data structures
+      memStorage.cobrancas?.clear?.();
+      memStorage.executions?.clear?.();
+      memStorage.executionLogs = [];
+      memStorage.clients?.clear?.();
+      memStorage.clientLastMessageAtraso?.clear?.();
+      memStorage.cobrancaLastMessageSent?.clear?.();
+      
+      console.log('[Routes] All data cleared successfully - maps wiped');
       res.json({ 
         success: true,
         message: "Todos os dados foram limpos. Configurações preservadas." 
       });
     } catch (error) {
       console.error('[Routes] Error clearing data:', error);
-      res.status(500).json({ error: "Erro ao limpar dados" });
+      res.status(500).json({ error: "Erro ao limpar dados", details: String(error) });
     }
   });
 
