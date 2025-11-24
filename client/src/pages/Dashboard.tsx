@@ -1,11 +1,10 @@
-import { MetricCard } from "@/components/MetricCard";
 import { ExecutionChart } from "@/components/ExecutionChart";
 import { StatusChart } from "@/components/StatusChart";
 import { FinancialSummarySection } from "@/components/FinancialSummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, FileText, MessageSquare, TrendingUp, Play, RefreshCw, AlertCircle, CheckCircle, Clock, MoreVertical } from "lucide-react";
+import { Play, RefreshCw, Clock } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -119,42 +118,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Situação das Cobranças (Estilo Asaas) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {metricsLoading ? (
-          <>
-            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
-            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
-            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
-          </>
-        ) : (
-          <>
-            <MetricCard
-              title="Recebidas"
-              value={`R$ ${(metrics?.totalRecebido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.received + statusCounts.confirmed} cobranças recebidas`}
-              icon={CheckCircle}
-              variant="received"
-            />
-            <MetricCard
-              title="Aguardando pagamento"
-              value={`R$ ${(metrics?.totalPendente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.pending} cobranças pendentes`}
-              icon={AlertCircle}
-              variant="pending"
-            />
-            <MetricCard
-              title="Vencidas"
-              value={`R$ ${(metrics?.venceHojeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              subtitle={`${statusCounts.overdue} cobranças em atraso`}
-              icon={AlertCircle}
-              variant="overdue"
-            />
-          </>
-        )}
+      {/* Situação das Cobranças */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4 text-foreground">Situação das cobranças</h2>
+        <FinancialSummarySection />
       </div>
-
-      <FinancialSummarySection />
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
