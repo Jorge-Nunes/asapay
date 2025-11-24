@@ -44,7 +44,9 @@ export class ProcessorService {
   static generateMessage(
     cobranca: ProcessedCobranca,
     template: string,
-    diasAviso: number
+    diasAviso: number,
+    overdueCount?: number,
+    totalOverdueValue?: number
   ): string {
     const valorFormatado = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -57,12 +59,21 @@ export class ProcessorService {
       { locale: ptBR }
     );
 
+    const totalOverdueFormatted = totalOverdueValue
+      ? new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        }).format(totalOverdueValue)
+      : 'Consulte sua conta';
+
     return template
       .replace(/\{\{link_fatura\}\}/g, cobranca.invoiceUrl)
       .replace(/\{\{valor\}\}/g, valorFormatado)
       .replace(/\{\{vencimento\}\}/g, vencimentoFormatado)
       .replace(/\{\{cliente_nome\}\}/g, cobranca.customerName)
-      .replace(/\{\{dias_aviso\}\}/g, String(diasAviso));
+      .replace(/\{\{dias_aviso\}\}/g, String(diasAviso))
+      .replace(/\{\{quantidade_cobrancas\}\}/g, String(overdueCount || 0))
+      .replace(/\{\{valor_total\}\}/g, totalOverdueFormatted);
   }
 
   static async processCobrancasInBatches(
@@ -83,6 +94,19 @@ export class ProcessorService {
     const toProcess = cobrancas.filter(
       c => c.tipo === 'vence_hoje' || c.tipo === 'aviso' || c.tipo === 'atraso'
     );
+
+    // Build a map of overdue counts and values per customer phone (for 'atraso' messages)
+    const overdueCounts = new Map<string, { count: number; total: number }>();
+    const overdueCobrancas = toProcess.filter(c => c.tipo === 'atraso');
+    overdueCobrancas.forEach(cobranca => {
+      const key = cobranca.customerPhone;
+      if (!overdueCounts.has(key)) {
+        overdueCounts.set(key, { count: 0, total: 0 });
+      }
+      const current = overdueCounts.get(key)!;
+      current.count++;
+      current.total += cobranca.value;
+    });
 
     for (let i = 0; i < toProcess.length; i += batchSize) {
       const batch = toProcess.slice(i, i + batchSize);
@@ -194,10 +218,17 @@ export class ProcessorService {
             ? config.messageTemplates.aviso
             : config.messageTemplates.atraso;
 
+        // For overdue messages, get the count and total value
+        const overdueInfo = cobranca.tipo === 'atraso' 
+          ? overdueCounts.get(cobranca.customerPhone)
+          : undefined;
+
         const message = this.generateMessage(
           cobranca,
           template,
-          config.diasAviso
+          config.diasAviso,
+          overdueInfo?.count,
+          overdueInfo?.total
         );
 
         try {
