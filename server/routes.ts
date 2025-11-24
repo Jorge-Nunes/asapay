@@ -1285,9 +1285,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           template: config.messageTemplates?.bloqueio || '',
           replacements: {
             '{{nome}}': fictitiousData.customerName,
-            '{{cliente_nome}}': fictitiousData.customerName,
             '{{data}}': dataAtual,
             '{{quantidade_cobrancas}}': String(fictitiousData.overdueCount),
+            '{{valor_total}}': totalFormatado,
           }
         },
         {
@@ -1296,7 +1296,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           template: config.messageTemplates?.desbloqueio || '',
           replacements: {
             '{{nome}}': fictitiousData.customerName,
-            '{{cliente_nome}}': fictitiousData.customerName,
             '{{data}}': dataAtual,
           }
         },
