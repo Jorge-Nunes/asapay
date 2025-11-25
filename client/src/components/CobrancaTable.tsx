@@ -168,9 +168,12 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
                       dueDate.setHours(0, 0, 0, 0);
                       const daysUntilDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                       
-                      if (daysUntilDue < 0) return <Circle className="h-2 w-2 fill-red-500 text-red-500" />;
-                      if (daysUntilDue === 0) return <Circle className="h-2 w-2 fill-yellow-500 text-yellow-500" />;
-                      if (daysUntilDue <= 3) return <Circle className="h-2 w-2 fill-orange-500 text-orange-500" />;
+                      // Red dot only for overdue PENDING charges
+                      if (daysUntilDue < 0 && cobranca.status === 'PENDING') return <Circle className="h-2 w-2 fill-red-500 text-red-500" />;
+                      // Yellow dot for charges due today (only if pending)
+                      if (daysUntilDue === 0 && cobranca.status === 'PENDING') return <Circle className="h-2 w-2 fill-yellow-500 text-yellow-500" />;
+                      // Orange dot for charges due within 3 days (only if pending)
+                      if (daysUntilDue > 0 && daysUntilDue <= 3 && cobranca.status === 'PENDING') return <Circle className="h-2 w-2 fill-orange-500 text-orange-500" />;
                       return null;
                     })()}
                   </div>
