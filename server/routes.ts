@@ -206,65 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Instância da Evolution é obrigatória" });
       }
 
-      // Detect if instance name changed
-      const instanceChanged = updateData.evolutionInstance !== currentConfig.evolutionInstance;
-      
       const updated = await storage.updateConfig(updateData);
-      
-      // If instance name changed, create the new instance in Evolution API
-      if (instanceChanged && updateData.evolutionUrl && updateData.evolutionApiKey && updateData.evolutionInstance) {
-        try {
-          console.log('[Routes] Instance name changed, creating new instance in Evolution API:', updateData.evolutionInstance);
-          const evolutionService = new EvolutionService(
-            updateData.evolutionUrl,
-            updateData.evolutionApiKey,
-            updateData.evolutionInstance
-          );
-          
-          const newInstance = await evolutionService.createInstance(updateData.evolutionInstance);
-          console.log('[Routes] New Evolution instance created successfully:', {
-            name: newInstance.instanceName,
-            status: newInstance.status,
-            hasQR: !!newInstance.qrCode,
-          });
-          
-          // Return success with new instance info
-          return res.json({
-            ...updated,
-            asaasToken: updated.asaasToken ? '••••••••' : '',
-            evolutionApiKey: updated.evolutionApiKey ? '••••••••' : '',
-            traccarApiKey: updated.traccarApiKey ? '••••••••' : '',
-            traccarPassword: updated.traccarPassword ? '••••••••' : '',
-            _hasAsaasToken: !!updated.asaasToken,
-            _hasEvolutionApiKey: !!updated.evolutionApiKey,
-            _hasTraccarApiKey: !!updated.traccarApiKey,
-            _instanceCreated: true,
-            _newInstanceStatus: newInstance.status,
-            _newInstanceQR: newInstance.qrCode,
-          });
-        } catch (evolutionError: any) {
-          console.warn('[Routes] Warning: Failed to create new Evolution instance, but config was saved:', {
-            error: evolutionError.message,
-            instance: updateData.evolutionInstance,
-          });
-          
-          // Don't block config update, but inform about the error
-          return res.json({
-            ...updated,
-            asaasToken: updated.asaasToken ? '••••••••' : '',
-            evolutionApiKey: updated.evolutionApiKey ? '••••••••' : '',
-            traccarApiKey: updated.traccarApiKey ? '••••••••' : '',
-            traccarPassword: updated.traccarPassword ? '••••••••' : '',
-            _hasAsaasToken: !!updated.asaasToken,
-            _hasEvolutionApiKey: !!updated.evolutionApiKey,
-            _hasTraccarApiKey: !!updated.traccarApiKey,
-            _instanceCreationWarning: true,
-            _instanceCreationError: evolutionError.message,
-            _hint: 'Configuração salva. Tente verificar o status da instância novamente em alguns segundos.',
-          });
-        }
-      }
-      
       res.json({
         ...updated,
         asaasToken: updated.asaasToken ? '••••••••' : '',
@@ -1962,6 +1904,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[Evolution] Error stopping instance:', error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao parar" });
+    }
+  });
+
+  // Diagnóstico da Evolution API
+  app.post("/api/evolution/diagnostic", async (req, res) => {
+    try {
+      const config = await storage.getConfig();
+      const diagnostics: any = {
+        timestamp: new Date().toISOString(),
+        config: {
+          url: config.evolutionUrl,
+          hasApiKey: !!config.evolutionApiKey,
+          instanceName: config.evolutionInstance,
+        },
+        tests: {},
+      };
+
+      if (!config.evolutionUrl) {
+        return res.status(400).json({ 
+          error: "Evolution URL não configurada",
+          diagnostics 
+        });
+      }
+
+      // Test 1: Basic connectivity
+      try {
+        console.log('[Diagnostic] Testing connectivity to Evolution API...');
+        const connectTest = await axios.get(config.evolutionUrl, { timeout: 5000 });
+        diagnostics.tests.connectivity = {
+          status: 'ok',
+          httpStatus: connectTest.status,
+          message: 'Servidor Evolution acessível'
+        };
+      } catch (error: any) {
+        diagnostics.tests.connectivity = {
+          status: 'error',
+          message: error.message,
+          hint: 'Verifique se a URL está correta e o servidor Evolution está online'
+        };
+      }
+
+      // Test 2: Check if instance exists
+      if (config.evolutionInstance) {
+        try {
+          console.log(`[Diagnostic] Checking instance status for: ${config.evolutionInstance}`);
+          const evolutionService = new EvolutionService(
+            config.evolutionUrl,
+            config.evolutionApiKey,
+            config.evolutionInstance
+          );
+          
+          const status = await evolutionService.getInstanceStatus();
+          diagnostics.tests.instanceStatus = {
+            status: 'checked',
+            instanceName: status.instanceName,
+            connectionStatus: status.status,
+            connected: status.connected,
+            message: `Instância encontrada com status: ${status.status}`
+          };
+
+          if (status.status === 'unknown') {
+            diagnostics.tests.instanceStatus.hint = 'Instância não encontrada no Evolution API. Crie-a primeiro no painel do Evolution.';
+          }
+        } catch (error: any) {
+          diagnostics.tests.instanceStatus = {
+            status: 'error',
+            message: error.message,
+            hint: 'Não foi possível buscar status da instância. Verifique se ela existe no Evolution.'
+          };
+        }
+      }
+
+      // Test 3: Check instance creation endpoint
+      try {
+        console.log('[Diagnostic] Testing /instance/create endpoint...');
+        const testCreate = await axios.post(
+          `${config.evolutionUrl}/instance/create`,
+          { instanceName: 'diagnostic-test-only' },
+          { 
+            timeout: 5000,
+            validateStatus: () => true // Accept any status
+          }
+        );
+        diagnostics.tests.createEndpoint = {
+          httpStatus: testCreate.status,
+          message: testCreate.status === 401 
+            ? 'Endpoint requer autenticação (401)' 
+            : testCreate.status === 201 || testCreate.status === 200
+            ? 'Endpoint respondendo'
+            : `Endpoint retornou ${testCreate.status}`,
+          hint: testCreate.status === 401 
+            ? 'A criação de instâncias via API não é suportada ou requer autenticação especial. Crie manualmente no painel.'
+            : undefined
+        };
+      } catch (error: any) {
+        diagnostics.tests.createEndpoint = {
+          status: 'error',
+          message: error.message
+        };
+      }
+
+      res.json({
+        success: true,
+        diagnostics
+      });
+    } catch (error) {
+      console.error('[Evolution] Error in diagnostic:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Erro no diagnóstico",
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
