@@ -71,16 +71,9 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header com Status e Ações */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <img 
-            src="/asapay-logo.png?v=1763982786" 
-            alt="AsaPay Logo" 
-            className="h-16 w-auto object-contain"
-          />
-          <div>
-            <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Visão completa da situação das cobranças</p>
-          </div>
+        <div className="flex-1">
+          <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Visão completa da situação das cobranças</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button 

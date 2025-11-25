@@ -48,7 +48,6 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             alt="AsaPay Logo" 
             className="h-32 w-auto mx-auto mb-4 object-contain"
           />
-          <h1 className="text-2xl font-bold">AsaPay</h1>
           <p className="text-muted-foreground mt-2">Gestão de Cobranças</p>
         </div>
 
