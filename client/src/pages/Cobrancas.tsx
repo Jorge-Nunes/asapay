@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CobrancaTable } from "@/components/CobrancaTable";
 import { SortIcon } from "@/components/SortIcon";
 import { Card } from "@/components/ui/card";
@@ -37,6 +37,7 @@ export default function Cobrancas() {
   const { sortField, sortOrder, handleSort } = useSort<SortFieldCobranca>('dueDate', 'desc');
   const [page, setPage] = useState(0);
   const pageSize = 10;
+  const autoSyncDoneRef = useRef(false);
 
   const { data: paginatedData = { data: [], total: 0, limit: pageSize, offset: 0 }, isLoading } = useQuery<PaginatedResponse>({
     queryKey: ['/api/cobrancas', statusFilter, tipoFilter, page, sortField, sortOrder],
@@ -188,6 +189,14 @@ export default function Cobrancas() {
     URL.revokeObjectURL(url);
     toast({ title: "Exportado", description: `${filteredCobrancas.length} cobranças exportadas em CSV` });
   };
+
+  // Auto-sync cobranças when page loads
+  useEffect(() => {
+    if (!autoSyncDoneRef.current) {
+      autoSyncDoneRef.current = true;
+      syncMutation.mutate();
+    }
+  }, []);
 
   return (
     <div className="space-y-3">
