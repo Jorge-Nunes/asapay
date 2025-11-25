@@ -2062,87 +2062,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Evolution não configurada" });
       }
 
-      // Create instance locally
-      await storage.createEvolutionInstance(
-        instanceName,
-        'qr',
-        false,
-        undefined
-      );
-
       const evolutionService = new EvolutionService(
         config.evolutionUrl,
         config.evolutionApiKey,
         instanceName
       );
 
-      console.log('[Evolution] Creating instance:', instanceName);
-      
-      // Try to create instance in Evolution
-      let createdInstance;
+      // First, check if instance already exists
+      console.log('[Evolution] Checking if instance already exists:', instanceName);
+      let alreadyExists = false;
+      let existingStatus = null;
+      let existingQrCode = null;
+
       try {
-        createdInstance = await evolutionService.createInstance(instanceName);
-        console.log('[Evolution] Instance created, will fetch QR code next');
-      } catch (createError: any) {
-        console.log('[Evolution] Create failed:', createError.response?.status, createError.message);
-        // If creation fails, might already exist, continue to fetch status
-      }
-
-      // Wait for instance to be ready
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Fetch the actual status and QR code (with retries)
-      let finalStatus = null;
-      let finalQrCode = null;
-      let attempts = 0;
-      const maxAttempts = 3;
-
-      while (attempts < maxAttempts && !finalQrCode) {
-        try {
-          finalStatus = await evolutionService.getInstanceStatus();
-          finalQrCode = await evolutionService.getQrCode();
-          
-          console.log('[Evolution] Got status after attempt', attempts + 1, {
-            status: finalStatus?.status,
-            hasQR: !!finalQrCode,
-          });
-          
-          if (finalQrCode || finalStatus?.status === 'open') {
-            break; // Got QR or already connected
+        existingStatus = await evolutionService.getInstanceStatus();
+        console.log('[Evolution] Instance already exists with status:', existingStatus?.status);
+        alreadyExists = true;
+        
+        // Try to get QR code if it exists and is not connected
+        if (existingStatus?.status !== 'open') {
+          try {
+            existingQrCode = await evolutionService.getQrCode();
+          } catch (error) {
+            console.log('[Evolution] Could not fetch QR code for existing instance');
           }
-        } catch (error) {
-          console.log('[Evolution] Error fetching status (attempt', attempts + 1, '):', error instanceof Error ? error.message : error);
         }
-
-        attempts++;
-        if (attempts < maxAttempts && !finalQrCode) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+      } catch (checkError) {
+        // Instance doesn't exist yet, proceed to create
+        console.log('[Evolution] Instance does not exist yet, will create:', checkError instanceof Error ? checkError.message : '');
       }
 
-      // If still no status, instance doesn't exist
-      if (!finalStatus || finalStatus.status === 'unknown') {
-        console.log('[Evolution] Instance not found after creation attempts');
-        return res.status(400).json({
-          error: 'Instância não encontrada na Evolution API.',
-          message: 'Verifique se conseguiu criar. A instância deve estar ativa no painel do Evolution.',
+      // Create instance locally (or update if already exists)
+      await storage.createEvolutionInstance(
+        instanceName,
+        existingStatus?.status || 'qr',
+        existingStatus?.connected || false,
+        existingStatus?.phone
+      );
+
+      // If instance doesn't already exist, try to create it in Evolution
+      if (!alreadyExists) {
+        console.log('[Evolution] Creating new instance:', instanceName);
+        try {
+          const createdInstance = await evolutionService.createInstance(instanceName);
+          console.log('[Evolution] Instance created, will fetch QR code next');
+        } catch (createError: any) {
+          console.log('[Evolution] Create failed:', createError.response?.status, createError.message);
+          // If creation fails, might already exist, continue to fetch status
+        }
+
+        // Wait for instance to be ready
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Fetch the actual status and QR code (with retries)
+        let finalStatus = null;
+        let finalQrCode = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts && !finalQrCode) {
+          try {
+            finalStatus = await evolutionService.getInstanceStatus();
+            finalQrCode = await evolutionService.getQrCode();
+            
+            console.log('[Evolution] Got status after attempt', attempts + 1, {
+              status: finalStatus?.status,
+              hasQR: !!finalQrCode,
+            });
+            
+            if (finalQrCode || finalStatus?.status === 'open') {
+              break;
+            }
+          } catch (error) {
+            console.log('[Evolution] Error fetching status (attempt', attempts + 1, '):', error instanceof Error ? error.message : error);
+          }
+
+          attempts++;
+          if (attempts < maxAttempts && !finalQrCode) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+
+        // If still no status, instance doesn't exist
+        if (!finalStatus || finalStatus.status === 'unknown') {
+          console.log('[Evolution] Instance not found after creation attempts');
+          return res.status(400).json({
+            error: 'Instância não encontrada na Evolution API.',
+            message: 'Verifique se conseguiu criar. A instância deve estar ativa no painel do Evolution.',
+          });
+        }
+
+        console.log('[Evolution] Instance ready:', {
+          name: instanceName,
+          status: finalStatus.status,
+          hasQR: !!finalQrCode,
+        });
+
+        res.json({
+          success: true,
+          alreadyExists: false,
+          instance: finalStatus,
+          message: finalStatus.status === 'open' 
+            ? '✓ WhatsApp já está conectado!' 
+            : 'Escaneie o QR code para conectar.',
+          qrCode: finalQrCode || null,
+        });
+      } else {
+        // Instance already exists, use it
+        console.log('[Evolution] Using existing instance:', instanceName);
+        res.json({
+          success: true,
+          alreadyExists: true,
+          instance: existingStatus,
+          message: existingStatus?.status === 'open' 
+            ? '✓ WhatsApp já está conectado!' 
+            : 'Escaneie o QR code para conectar.',
+          qrCode: existingQrCode || null,
         });
       }
-
-      console.log('[Evolution] Instance ready:', {
-        name: instanceName,
-        status: finalStatus.status,
-        hasQR: !!finalQrCode,
-      });
-
-      res.json({
-        success: true,
-        instance: finalStatus,
-        message: finalStatus.status === 'open' 
-          ? '✓ WhatsApp já está conectado!' 
-          : 'Escaneie o QR code para conectar.',
-        qrCode: finalQrCode || null,
-      });
     } catch (error) {
       console.error('[Evolution] Error in create-and-connect:', error);
       res.status(500).json({ 

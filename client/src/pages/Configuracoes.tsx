@@ -314,16 +314,32 @@ export default function Configuracoes() {
       
       // Just show success toast - don't auto-open modal
       // User will click "Conectar" button to see QR code
-      if (data.instance?.status === 'open' || data.connected) {
-        toast({
-          title: '✓ Conectado',
-          description: 'Sua instância está pronta para enviar mensagens.',
-        });
+      if (data.alreadyExists) {
+        // Instance already exists - warn user
+        if (data.instance?.status === 'open' || data.connected) {
+          toast({
+            title: '⚠️ Instância já existente',
+            description: 'Sua instância já existe e está conectada. Usando a instância existente.',
+          });
+        } else {
+          toast({
+            title: '⚠️ Instância já existente',
+            description: 'Sua instância já existe. Clique em "Conectar" para escanear o QR code.',
+          });
+        }
       } else {
-        toast({
-          title: '✓ Instância criada',
-          description: 'Clique em "Conectar" para escanear o QR code.',
-        });
+        // New instance created
+        if (data.instance?.status === 'open' || data.connected) {
+          toast({
+            title: '✓ Conectado',
+            description: 'Sua instância está pronta para enviar mensagens.',
+          });
+        } else {
+          toast({
+            title: '✓ Instância criada',
+            description: 'Clique em "Conectar" para escanear o QR code.',
+          });
+        }
       }
     },
     onError: (error: Error) => {
