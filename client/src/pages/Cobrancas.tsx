@@ -32,8 +32,6 @@ export default function Cobrancas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tipoFilter, setTipoFilter] = useState<string>("all");
-  const [minValue, setMinValue] = useState<string>("");
-  const [maxValue, setMaxValue] = useState<string>("");
   const { sortField, sortOrder, handleSort } = useSort<SortFieldCobranca>('dueDate', 'desc');
   const [page, setPage] = useState(0);
   const pageSize = 10;
@@ -89,13 +87,11 @@ export default function Cobrancas() {
   );
 
   // Note: Filtering and sorting now happens on the server side
-  // Local filtering for search and min/max value is still done on the current page results
+  // Local filtering for search is still done on the current page results
   const filteredCobrancas = cobrancas.filter((cobranca) => {
     const matchesSearch = cobranca.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (cobranca.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    const matchesMinValue = minValue ? cobranca.value >= parseFloat(minValue) : true;
-    const matchesMaxValue = maxValue ? cobranca.value <= parseFloat(maxValue) : true;
-    return matchesSearch && matchesMinValue && matchesMaxValue;
+    return matchesSearch;
   });
 
   const sendMessageMutation = useMutation({
@@ -264,24 +260,6 @@ export default function Cobrancas() {
               <SelectItem value="processada">Processada</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Min valor"
-              type="number"
-              value={minValue}
-              onChange={(e) => setMinValue(e.target.value)}
-              className="w-24 border-2"
-              data-testid="input-min-value"
-            />
-            <Input
-              placeholder="Max valor"
-              type="number"
-              value={maxValue}
-              onChange={(e) => setMaxValue(e.target.value)}
-              className="w-24 border-2"
-              data-testid="input-max-value"
-            />
-          </div>
           <Button 
             onClick={handleExportCSV}
             variant="outline" 
