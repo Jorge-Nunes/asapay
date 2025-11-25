@@ -312,32 +312,18 @@ export default function Configuracoes() {
     onSuccess: (data) => {
       console.log('[CreateAndConnect] Response:', data);
       
-      // Show QR code if available
-      if (data.qrCode) {
-        setQrCode(data.qrCode);
-        setQrMessage(null);
-        setQrCodeError(null);
-        setShowQrModal(true);
+      // Just show success toast - don't auto-open modal
+      // User will click "Conectar" button to see QR code
+      if (data.instance?.status === 'open' || data.connected) {
         toast({
-          title: 'Pronto para conectar!',
-          description: 'Escaneie o QR code com o WhatsApp.',
-        });
-      } else if (data.instance?.status === 'open') {
-        // Already connected
-        setQrCode(null);
-        setQrMessage('✓ WhatsApp já está conectado!');
-        setQrCodeError(null);
-        setShowQrModal(true);
-        toast({
-          title: 'Conectado',
+          title: '✓ Conectado',
           description: 'Sua instância está pronta para enviar mensagens.',
         });
       } else {
-        // Status unknown or not connected
-        setQrCode(null);
-        setQrMessage(data.message || 'Instância sincronizada. Aguarde o status atualizar.');
-        setQrCodeError(null);
-        setShowQrModal(true);
+        toast({
+          title: '✓ Instância criada',
+          description: 'Clique em "Conectar" para escanear o QR code.',
+        });
       }
     },
     onError: (error: Error) => {
