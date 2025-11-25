@@ -351,9 +351,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.saveCobrancas(categorizedCobrancas);
       await storage.updateSyncTimestamp('cobrancas');
 
+      // Step 4: Re-categorize ALL existing cobranças to fix any with tipo = null/undefined
+      console.log('[Sync Cobrancas] Re-categorizando todas as cobranças existentes...');
+      const allCobrancas = await storage.getCobrancas();
+      const recategorizedCobrancas = ProcessorService.categorizeCobrancas(allCobrancas, config.diasAviso);
+      await storage.saveCobrancas(recategorizedCobrancas);
+      console.log(`[Sync Cobrancas] ${recategorizedCobrancas.length} cobranças re-categorizadas`);
+
       res.json({
         success: true,
-        message: `Sincronização concluída: ${cobrancas.length} cobranças sincronizadas${removedCount > 0 ? `, ${removedCount} removidas` : ''}`,
+        message: `Sincronização concluída: ${cobrancas.length} cobranças sincronizadas${removedCount > 0 ? `, ${removedCount} removidas` : ''}, todas re-categorizadas`,
         totalCobrancas: cobrancas.length,
         removedCobrancas: removedCount,
         timestamp: new Date().toISOString(),
