@@ -36,6 +36,7 @@ const statusConfig = {
 const tipoConfig = {
   vence_hoje: { label: "Vence Hoje", variant: "destructive" as const },
   aviso: { label: "Aviso", variant: "secondary" as const },
+  atraso: { label: "Atraso", variant: "destructive" as const },
   processada: { label: "Processada", variant: "outline" as const },
   importada: { label: "Importada", variant: "default" as const },
 };
