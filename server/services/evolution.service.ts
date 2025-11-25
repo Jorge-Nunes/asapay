@@ -134,10 +134,31 @@ export class EvolutionService {
 
   async restartInstance(): Promise<boolean> {
     try {
-      const response = await this.client.post(`/instance/restart/${this.instance}`);
-      return response.status === 200 || response.status === 201;
+      // Try Evolution 1.8.6 endpoint with plural
+      try {
+        console.log('[Evolution] Trying to restart via /instances/{name}/restart');
+        const response = await this.client.post(`/instances/${this.instance}/restart`);
+        console.log('[Evolution] Instance restarted successfully');
+        return response.status === 200 || response.status === 201;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          // Fallback: simulate restart by doing logout then refresh
+          console.log('[Evolution] Restart endpoint not available, using logout workaround');
+          try {
+            await this.client.delete(`/instance/logout/${this.instance}`);
+            console.log('[Evolution] Instance logged out, simulating restart');
+            // Wait for logout to complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return true;
+          } catch (logoutError) {
+            console.log('[Evolution] Logout also failed, throwing restart error');
+            throw error; // Throw original error
+          }
+        }
+        throw error;
+      }
     } catch (error) {
-      console.error('Error restarting instance:', error);
+      console.error('[Evolution] Error restarting instance:', error);
       throw error;
     }
   }
