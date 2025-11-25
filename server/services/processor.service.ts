@@ -70,13 +70,13 @@ export class ProcessorService {
       : 'Consulte sua conta';
 
     return template
-      .replace(/\{\{link_fatura\}\}/g, cobranca.invoiceUrl)
-      .replace(/\{\{valor\}\}/g, valorFormatado)
-      .replace(/\{\{vencimento\}\}/g, vencimentoFormatado)
-      .replace(/\{\{cliente_nome\}\}/g, cobranca.customerName)
-      .replace(/\{\{dias_aviso\}\}/g, String(diasAviso))
-      .replace(/\{\{quantidade_cobrancas\}\}/g, String(overdueCount || 0))
-      .replace(/\{\{valor_total\}\}/g, totalOverdueFormatted);
+      .replace(/\{\{\s*link_fatura\s*\}\}/g, cobranca.invoiceUrl)
+      .replace(/\{\{\s*valor\s*\}\}/g, valorFormatado)
+      .replace(/\{\{\s*vencimento\s*\}\}/g, vencimentoFormatado)
+      .replace(/\{\{\s*cliente_nome\s*\}\}/g, cobranca.customerName)
+      .replace(/\{\{\s*dias_aviso\s*\}\}/g, String(diasAviso))
+      .replace(/\{\{\s*quantidade_cobrancas\s*\}\}/g, String(overdueCount || 0))
+      .replace(/\{\{\s*valor_total\s*\}\}/g, totalOverdueFormatted);
   }
 
   static async processCobrancasInBatches(
