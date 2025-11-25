@@ -179,7 +179,7 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
                 {/* Ações */}
                 <TableCell className="text-right px-2 py-2">
                   <div className="flex items-center justify-end gap-1">
-                    {onSendMessage && (
+                    {onSendMessage && cobranca.tipo !== 'processada' && (
                       <Button
                         size="icon"
                         variant="ghost"

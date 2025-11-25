@@ -395,6 +395,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         config.evolutionInstance
       );
 
+      // Validate that cobrança tipo requires a message
+      if (!cobranca.tipo || cobranca.tipo === 'processada') {
+        return res.status(400).json({ error: "Esta cobrança não requer mensagem (tipo: processada)" });
+      }
+
       // Format phone number (remove special characters)
       const phone = cobranca.customerPhone?.replace(/\D/g, '') || '';
       if (!phone) {
