@@ -150,7 +150,7 @@ export default function Relatorios() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold tabular-nums">
-                  R$ {cobrancas.reduce((sum, c) => sum + (c.value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  R$ {cobrancas.filter(c => c.status === 'PENDING').reduce((sum, c) => sum + (c.value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Pendente de recebimento</p>
               </CardContent>
