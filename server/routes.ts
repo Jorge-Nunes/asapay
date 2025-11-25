@@ -206,7 +206,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Instância da Evolution é obrigatória" });
       }
 
+      // Detect if instance name changed
+      const instanceChanged = updateData.evolutionInstance !== currentConfig.evolutionInstance;
+      
       const updated = await storage.updateConfig(updateData);
+      
+      // If instance name changed, create the new instance in Evolution API
+      if (instanceChanged && updateData.evolutionUrl && updateData.evolutionApiKey && updateData.evolutionInstance) {
+        try {
+          console.log('[Routes] Instance name changed, creating new instance in Evolution API:', updateData.evolutionInstance);
+          const evolutionService = new EvolutionService(
+            updateData.evolutionUrl,
+            updateData.evolutionApiKey,
+            updateData.evolutionInstance
+          );
+          
+          const newInstance = await evolutionService.createInstance(updateData.evolutionInstance);
+          console.log('[Routes] New Evolution instance created successfully:', {
+            name: newInstance.instanceName,
+            status: newInstance.status,
+            hasQR: !!newInstance.qrCode,
+          });
+          
+          // Return success with new instance info
+          return res.json({
+            ...updated,
+            asaasToken: updated.asaasToken ? '••••••••' : '',
+            evolutionApiKey: updated.evolutionApiKey ? '••••••••' : '',
+            traccarApiKey: updated.traccarApiKey ? '••••••••' : '',
+            traccarPassword: updated.traccarPassword ? '••••••••' : '',
+            _hasAsaasToken: !!updated.asaasToken,
+            _hasEvolutionApiKey: !!updated.evolutionApiKey,
+            _hasTraccarApiKey: !!updated.traccarApiKey,
+            _instanceCreated: true,
+            _newInstanceStatus: newInstance.status,
+            _newInstanceQR: newInstance.qrCode,
+          });
+        } catch (evolutionError: any) {
+          console.warn('[Routes] Warning: Failed to create new Evolution instance, but config was saved:', {
+            error: evolutionError.message,
+            instance: updateData.evolutionInstance,
+          });
+          
+          // Don't block config update, but inform about the error
+          return res.json({
+            ...updated,
+            asaasToken: updated.asaasToken ? '••••••••' : '',
+            evolutionApiKey: updated.evolutionApiKey ? '••••••••' : '',
+            traccarApiKey: updated.traccarApiKey ? '••••••••' : '',
+            traccarPassword: updated.traccarPassword ? '••••••••' : '',
+            _hasAsaasToken: !!updated.asaasToken,
+            _hasEvolutionApiKey: !!updated.evolutionApiKey,
+            _hasTraccarApiKey: !!updated.traccarApiKey,
+            _instanceCreationWarning: true,
+            _instanceCreationError: evolutionError.message,
+            _hint: 'Configuração salva. Tente verificar o status da instância novamente em alguns segundos.',
+          });
+        }
+      }
+      
       res.json({
         ...updated,
         asaasToken: updated.asaasToken ? '••••••••' : '',
