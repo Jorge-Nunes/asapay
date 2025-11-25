@@ -197,6 +197,7 @@ Obrigado por sua confiança! 🙏`,
         evolutionInstance: result.evolutionInstance ? result.evolutionInstance : 'EMPTY',
         traccarUrl: result.traccarUrl ? result.traccarUrl : 'EMPTY',
         traccarApiKey: result.traccarApiKey ? 'SET' : 'EMPTY',
+        diasAviso: result.diasAviso,
       });
 
       return result;
