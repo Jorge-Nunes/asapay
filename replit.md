@@ -19,6 +19,37 @@ Key features include:
 - **Execuções**: Full execution history with expandable logs for each run
 - **Configurações**: Secure configuration management with secret masking and validation
 
+## Message Categorization Logic
+
+**Critical Rule**: Mensagens de atraso (cobranças atrasadas) são enviadas APENAS se:
+- Status = **`OVERDUE`** OU
+- Status = **`PENDING`** + data de vencimento já passou (diffDays < 0)
+
+Cobranças com status `RECEIVED` ou `CONFIRMED` (pagas) NUNCA recebem mensagens de atraso.
+
+Intervalos de envio por tipo:
+- **vence_hoje**: Envia uma vez quando diffDays === 0
+- **aviso**: Envia uma vez quando faltam X dias (configurável, padrão 5 dias)
+- **atraso**: Envia a cada 3 dias (intervalo configurável por cliente) enquanto diffDays < 0
+- **processada**: Não envia mensagem
+
+**Recent Changes (November 25, 2025)**:
+✅ **FIXED TEMPLATE VARIABLES** - Variables with spaces now work:
+  - Changed regex from `/{{cliente_nome}}/g` to `/\{\{\s*cliente_nome\s*\}\}/g`
+  - Now supports: `{{ cliente_nome }}`, `{{cliente_nome}}`, `{{  cliente_nome  }}`
+  - All variables work: cliente_nome, valor, vencimento, link_fatura, dias_aviso, quantidade_cobrancas, valor_total
+
+✅ **FIXED RESTART BUTTON** - Instance restart now works properly:
+  - Tries endpoint `POST /instances/{name}/restart` first (Evolution 1.8.6)
+  - Falls back to logout if restart endpoint returns 404
+  - No more 500 errors
+
+✅ **UI IMPROVEMENTS**:
+  - Removed "AsaPay" text from sidebar and login
+  - Logo + "Gestão de Cobranças" aligned to left in sidebar
+  - Login page shows only logo + "Gestão de Cobranças"
+  - Automatic instance detection prevents duplicate creation attempts
+
 **Recent Changes (November 24, 2025)**:
 ✅ **FIXED FALSE OVERDUE MESSAGES BUG** - Resolved critical categorization bug:
   - **Problem**: Clientes sem pendências recebiam mensagens dizendo que tinham múltiplas cobranças em atraso
