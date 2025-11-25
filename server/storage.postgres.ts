@@ -654,7 +654,9 @@ Obrigado por sua confiança! 🙏`,
         status: execution.status,
         cobrancasProcessadas: execution.cobrancasProcessadas,
         mensagensEnviadas: execution.mensagensEnviadas,
+        usuariosBloqueados: execution.usuariosBloqueados,
         erros: execution.erros,
+        detalhes: execution.detalhes || [],
       }).returning();
 
       return {
@@ -663,8 +665,9 @@ Obrigado por sua confiança! 🙏`,
         status: result[0].status as any,
         cobrancasProcessadas: result[0].cobrancasProcessadas,
         mensagensEnviadas: result[0].mensagensEnviadas,
+        usuariosBloqueados: result[0].usuariosBloqueados,
         erros: result[0].erros,
-        detalhes: [],
+        detalhes: (result[0].detalhes as any) || [],
       };
     } catch (error) {
       console.error('[Storage] Error in createExecution:', error);
@@ -676,13 +679,20 @@ Obrigado por sua confiança! 🙏`,
     try {
       const db = getDb();
       
+      const setData: any = {
+        status: data.status,
+        cobrancasProcessadas: data.cobrancasProcessadas,
+        mensagensEnviadas: data.mensagensEnviadas,
+        usuariosBloqueados: data.usuariosBloqueados,
+        erros: data.erros,
+      };
+
+      if (data.detalhes !== undefined) {
+        setData.detalhes = data.detalhes;
+      }
+
       await db.update(executions)
-        .set({
-          status: data.status,
-          cobrancasProcessadas: data.cobrancasProcessadas,
-          mensagensEnviadas: data.mensagensEnviadas,
-          erros: data.erros,
-        })
+        .set(setData)
         .where(eq(executions.id, id));
 
       return this.getExecutionById(id);

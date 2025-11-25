@@ -73,6 +73,7 @@ export const executions = pgTable("executions", {
   mensagensEnviadas: integer("mensagens_enviadas").notNull().default(0),
   usuariosBloqueados: integer("usuarios_bloqueados").notNull().default(0),
   erros: integer("erros").notNull().default(0),
+  detalhes: json("detalhes").notNull().default(sql`'[]'`), // Array of ExecutionLog
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   timestampIdx: index("idx_executions_timestamp").on(table.timestamp),
