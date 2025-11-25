@@ -341,10 +341,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[Sync Cobrancas] Buscando cobranças atualizadas de todos os status...');
       const payments = await asaasService.getAllPayments();
       const customers = await asaasService.getAllCustomers();
-      const cobrancas = await asaasService.enrichPaymentsWithCustomers(payments, customers);
+      let cobrancas = await asaasService.enrichPaymentsWithCustomers(payments, customers);
       
-      console.log(`[Sync Cobrancas] Sincronizando ${cobrancas.length} cobranças...`);
-      await storage.saveCobrancas(cobrancas);
+      // Step 3.5: Categorize cobrancas automatically before saving
+      console.log('[Sync Cobrancas] Categorizando cobranças...');
+      const categorizedCobrancas = ProcessorService.categorizeCobrancas(cobrancas, config.diasAviso);
+      
+      console.log(`[Sync Cobrancas] Sincronizando ${categorizedCobrancas.length} cobranças...`);
+      await storage.saveCobrancas(categorizedCobrancas);
       await storage.updateSyncTimestamp('cobrancas');
 
       res.json({

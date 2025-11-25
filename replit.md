@@ -34,6 +34,15 @@ Intervalos de envio por tipo:
 - **processada**: Não envia mensagem
 
 **Recent Changes (November 25, 2025)**:
+✅ **AUTOMATIC TIPO CATEGORIZATION** - Cobranças now auto-categorized on any sync:
+  - Sync endpoints (`POST /api/cobrancas/sync`) categorize before saving
+  - Webhooks (`PAYMENT_CREATED`, `PAYMENT_OVERDUE`) categorize automatically  
+  - No more "Indefinido" type - all cobranças get proper tipo immediately on arrival
+  - Type determined by: Status + Due Date + Dias de Aviso
+  - Schema updated: tipo now includes `'atraso'` alongside vence_hoje | aviso | processada
+  - **FIXED**: Users saw "Indefinido" when cobranças hadn't been processed by 10 AM execution
+  - **NOW**: Proper categorization happens IMMEDIATELY when synced or created via webhook
+
 ✅ **FIXED TEMPLATE VARIABLES** - Variables with spaces now work:
   - Changed regex from `/{{cliente_nome}}/g` to `/\{\{\s*cliente_nome\s*\}\}/g`
   - Now supports: `{{ cliente_nome }}`, `{{cliente_nome}}`, `{{  cliente_nome  }}`

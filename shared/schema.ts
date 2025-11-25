@@ -152,7 +152,7 @@ export type Cobranca = {
   status: 'PENDING' | 'RECEIVED' | 'CONFIRMED' | 'OVERDUE';
   invoiceUrl: string;
   description: string;
-  tipo?: 'vence_hoje' | 'aviso' | 'processada';
+  tipo?: 'vence_hoje' | 'aviso' | 'atraso' | 'processada';
 };
 
 export type Execution = {

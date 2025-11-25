@@ -170,8 +170,13 @@ export class WebhookService {
               description: fullPaymentData.description || '',
             };
 
-            await storage.createCobranca(newCobranca);
-            console.log(`[Webhook] Cobrança ${paymentId} sincronizada com sucesso`);
+            // Categorize the cobrança before saving
+            const ProcessorService = (await import('./processor.service')).ProcessorService;
+            const categorized = ProcessorService.categorizeCobrancas([newCobranca], config.diasAviso);
+            const categorizedCobranca = categorized[0];
+
+            await storage.createCobranca(categorizedCobranca);
+            console.log(`[Webhook] Cobrança ${paymentId} sincronizada com sucesso (tipo: ${categorizedCobranca.tipo})`);
 
             // Also check if customer exists and create if needed
             const clientExists = await storage.getClientByAsaasId(customerId);
@@ -377,11 +382,19 @@ export class WebhookService {
       const cobranca = allCobrancas.find(c => c.id === paymentId);
 
       if (cobranca) {
+        // Categorize the cobrança with new OVERDUE status before updating
+        const config = await storage.getConfig();
+        const ProcessorService = (await import('./processor.service')).ProcessorService;
+        const updatedCobrancaForCategorization = { ...cobranca, status: 'OVERDUE' as const };
+        const categorized = ProcessorService.categorizeCobrancas([updatedCobrancaForCategorization], config.diasAviso);
+        const categorizedTipo = categorized[0].tipo;
+
         await storage.updateCobranca(cobranca.id, {
           status: "OVERDUE",
+          tipo: categorizedTipo,
         });
 
-        console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para OVERDUE`);
+        console.log(`[Webhook] Cobrança ${cobranca.id} atualizada para OVERDUE (tipo: ${categorizedTipo})`);
       } else {
         console.log(`[Webhook] Cobrança com ID ${paymentId} não encontrada`);
       }
