@@ -122,13 +122,6 @@ export default function Configuracoes() {
     }
   }, [config]);
 
-  // Auto-show QR code when device needs connection
-  useEffect(() => {
-    if (instanceStatus?.status === 'qr' || instanceStatus?.status === 'connecting') {
-      qrMutation.mutate();
-      setShowQrModal(true);
-    }
-  }, [instanceStatus?.status]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: Partial<Config>) => {
