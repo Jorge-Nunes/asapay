@@ -240,12 +240,12 @@ export class ExecutionService {
                   try {
                     if (config.messageTemplates?.bloqueio) {
                       const blockingMessage = config.messageTemplates.bloqueio
-                        .replace(/\{\{nome\}\}/g, traccarUser.name || customerPhone)
-                        .replace(/\{\{data\}\}/g, new Date().toLocaleDateString('pt-BR'))
-                        .replace(/\{\{cliente_nome\}\}/g, traccarUser.name || customerPhone)
-                        .replace(/\{\{quantidade_cobrancas\}\}/g, String(overdueCount))
-                        .replace(/\{\{link_fatura\}\}/g, 'Acesse sua conta no Asaas')
-                        .replace(/\{\{valor_total\}\}/g, 'Consulte sua conta');
+                        .replace(/\{\{\s*nome\s*\}\}/g, traccarUser.name || customerPhone)
+                        .replace(/\{\{\s*data\s*\}\}/g, new Date().toLocaleDateString('pt-BR'))
+                        .replace(/\{\{\s*cliente_nome\s*\}\}/g, traccarUser.name || customerPhone)
+                        .replace(/\{\{\s*quantidade_cobrancas\s*\}\}/g, String(overdueCount))
+                        .replace(/\{\{\s*link_fatura\s*\}\}/g, 'Acesse sua conta no Asaas')
+                        .replace(/\{\{\s*valor_total\s*\}\}/g, 'Consulte sua conta');
                       
                       await evolutionService.sendTextMessage(customerPhone, blockingMessage);
                       
