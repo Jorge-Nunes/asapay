@@ -186,6 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? req.body.traccarPassword 
         : currentConfig.traccarPassword;
       updateData.traccarVersion = req.body.traccarVersion || currentConfig.traccarVersion;
+      updateData.traccarAuthMethod = req.body.traccarAuthMethod || currentConfig.traccarAuthMethod;
       updateData.traccarLimiteCobrancasVencidas = req.body.traccarLimiteCobrancasVencidas || currentConfig.traccarLimiteCobrancasVencidas;
       updateData.webhookUrl = req.body.webhookUrl || currentConfig.webhookUrl;
       updateData.diasAviso = req.body.diasAviso || currentConfig.diasAviso;
