@@ -198,10 +198,15 @@ export class ExecutionService {
           const traccarService = new TraccarService(config);
           
           // Count overdue invoices per customer (by asaasCustomerId)
+          // Include both OVERDUE status AND PENDING with tipo='atraso'
           const overdueByAsaasId = new Map<string, { count: number; customerPhone: string }>();
           
           cobrancas.forEach(cobranca => {
-            if (cobranca.status === 'OVERDUE') {
+            // Count if OVERDUE status OR (PENDING status with tipo='atraso')
+            const isOverdue = cobranca.status === 'OVERDUE' || 
+                             (cobranca.status === 'PENDING' && cobranca.tipo === 'atraso');
+            
+            if (isOverdue) {
               // Use Asaas customer ID as identifier (unique)
               const current = overdueByAsaasId.get(cobranca.customer) || { count: 0, customerPhone: cobranca.customerPhone };
               overdueByAsaasId.set(cobranca.customer, {
