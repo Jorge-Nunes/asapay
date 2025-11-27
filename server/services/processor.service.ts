@@ -8,16 +8,21 @@ interface ProcessedCobranca extends Cobranca {
 }
 
 export class ProcessorService {
+  // Helper: Parse YYYY-MM-DD string without timezone conversion
+  private static parseLocalDate(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date;
+  }
+
   static categorizeCobrancas(
     cobrancas: Cobranca[],
     diasAviso: number
   ): ProcessedCobranca[] {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const hoje = this.parseLocalDate(new Date().toISOString().split('T')[0]);
 
     return cobrancas.map(cobranca => {
-      const dueDate = new Date(cobranca.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
+      const dueDate = this.parseLocalDate(cobranca.dueDate);
 
       const diffTime = dueDate.getTime() - hoje.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -63,10 +68,8 @@ export class ProcessorService {
     );
 
     // Calculate dias_falta
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const dueDate = new Date(cobranca.dueDate);
-    dueDate.setHours(0, 0, 0, 0);
+    const hoje = this.parseLocalDate(new Date().toISOString().split('T')[0]);
+    const dueDate = this.parseLocalDate(cobranca.dueDate);
     const diffTime = dueDate.getTime() - hoje.getTime();
     const diasFalta = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
