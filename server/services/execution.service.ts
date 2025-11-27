@@ -241,6 +241,9 @@ export class ExecutionService {
                   console.log(`[Traccar] Bloqueando usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId}) - ${overdueCount} cobranças vencidas`);
                   await traccarService.blockUser(parseInt(client.traccarUserId));
                   
+                  // Update client blocked status in database
+                  await storage.blockClientTraccar(client.id);
+                  
                   // Send blocking message
                   try {
                     if (config.messageTemplates?.bloqueio) {
@@ -282,6 +285,9 @@ export class ExecutionService {
                   // Unblock user if they no longer meet the blocking criteria
                   console.log(`[Traccar] Desbloqueando usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId})`);
                   await traccarService.unblockUser(parseInt(client.traccarUserId));
+                  
+                  // Update client blocked status in database
+                  await storage.unblockClientTraccar(client.id);
                   
                   // Send unblocking message
                   try {
