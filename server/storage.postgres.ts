@@ -482,14 +482,7 @@ Obrigado por sua confiança! 🙏`,
           },
         });
       
-      // Force update ALL cobrancas tipo to ensure recategorization works
-      console.log('[Storage] Forcing tipo update for all cobrancas...');
-      for (const cobranca of newCobrancas) {
-        await db.update(cobrancas)
-          .set({ tipo: cobranca.tipo })
-          .where(eq(cobrancas.id, cobranca.id));
-      }
-      console.log(`[Storage] Forced update of ${newCobrancas.length} cobrancas tipos`);
+      console.log(`[Storage] Saved/updated ${newCobrancas.length} cobrancas`);
     } catch (error) {
       console.error('[Storage] Error in saveCobrancas:', error);
       throw error;

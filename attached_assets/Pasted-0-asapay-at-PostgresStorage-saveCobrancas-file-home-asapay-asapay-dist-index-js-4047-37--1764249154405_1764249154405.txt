@@ -1,0 +1,32 @@
+0|asapay   |     at PostgresStorage.saveCobrancas (file:///home/asapay/asapay/dist/index.js:4047:37)
+0|asapay   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|asapay   |     at async ExecutionService.runExecution (file:///home/asapay/asapay/dist/index.js:1063:9)
+0|asapay   |     at async cron.schedule.timezone (file:///home/asapay/asapay/dist/index.js:1545:7)
+0|asapay   |     at async Timeout._onTimeout (/home/asapay/asapay/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44)
+0|asapay   | Execution failed: Error: Falha ao sincronizar cobranças: No values to set
+0|asapay   |     at ExecutionService.runExecution (file:///home/asapay/asapay/dist/index.js:1069:15)
+0|asapay   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|asapay   |     at async cron.schedule.timezone (file:///home/asapay/asapay/dist/index.js:1545:7)
+0|asapay   |     at async Timeout._onTimeout (/home/asapay/asapay/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44)
+0|asapay   | [CRON] Scheduled execution failed: Error: Falha ao sincronizar cobranças: No values to set
+0|asapay   |     at ExecutionService.runExecution (file:///home/asapay/asapay/dist/index.js:1069:15)
+0|asapay   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|asapay   |     at async cron.schedule.timezone (file:///home/asapay/asapay/dist/index.js:1545:7)
+0|asapay   |     at async Timeout._onTimeout (/home/asapay/asapay/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44)
+
+/home/asapay/.pm2/logs/asapay-error-1.log last 15 lines:
+1|asapay   |     at PostgresStorage.saveCobrancas (file:///home/asapay/asapay/dist/index.js:4047:37)
+1|asapay   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+1|asapay   |     at async ExecutionService.runExecution (file:///home/asapay/asapay/dist/index.js:1063:9)
+1|asapay   |     at async cron.schedule.timezone (file:///home/asapay/asapay/dist/index.js:1545:7)
+1|asapay   |     at async Timeout._onTimeout (/home/asapay/asapay/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44)
+1|asapay   | Execution failed: Error: Falha ao sincronizar cobranças: No values to set
+1|asapay   |     at ExecutionService.runExecution (file:///home/asapay/asapay/dist/index.js:1069:15)
+1|asapay   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+1|asapay   |     at async cron.schedule.timezone (file:///home/asapay/asapay/dist/index.js:1545:7)
+1|asapay   |     at async Timeout._onTimeout (/home/asapay/asapay/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44)
+1|asapay   | [CRON] Scheduled execution failed: Error: Falha ao sincronizar cobranças: No values to set
+1|asapay   |     at ExecutionService.runExecution (file:///home/asapay/asapay/dist/index.js:1069:15)
+1|asapay   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+1|asapay   |     at async cron.schedule.timezone (file:///home/asapay/asapay/dist/index.js:1545:7)
+1|asapay   |     at async Timeout._onTimeout (/home/asapay/asapay/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44)
