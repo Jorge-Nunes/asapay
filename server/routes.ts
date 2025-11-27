@@ -419,10 +419,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         value: parseFloat(cobranca.value.toString()),
       };
       
+      // For overdue messages, calculate count and total of all overdue cobrancas for this customer
+      let overdueCount = 0;
+      let totalOverdueValue = 0;
+      if (cobranca.tipo === 'atraso') {
+        const allCobrancas = await storage.getCobrancas();
+        const overdueCobrancas = allCobrancas.filter(c => 
+          c.customerPhone === cobranca.customerPhone && c.tipo === 'atraso'
+        );
+        overdueCount = overdueCobrancas.length;
+        totalOverdueValue = overdueCobrancas.reduce((sum, c) => sum + parseFloat(c.value.toString()), 0);
+      }
+      
       const message = ProcessorService.generateMessage(
         processedCobranca,
         template,
-        config.diasAviso
+        config.diasAviso,
+        overdueCount,
+        totalOverdueValue
       );
 
       const success = await evolutionService.sendTextMessage(phone, message);
