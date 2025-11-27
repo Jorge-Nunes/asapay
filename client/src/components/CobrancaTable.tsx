@@ -160,13 +160,18 @@ export function CobrancaTable({ cobrancas, onSendMessage, sortField, sortDirecti
                 {/* Data de Vencimento */}
                 <TableCell className="px-2 py-2 text-xs tabular-nums">
                   <div className="flex items-center gap-1">
-                    {format(new Date(cobranca.dueDate), 'dd/MM/yyyy', { locale: ptBR })}
+                    {(() => {
+                      const [year, month, day] = cobranca.dueDate.split('-').map(Number);
+                      return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+                    })()}
                     {(() => {
                       const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const dueDate = new Date(cobranca.dueDate);
-                      dueDate.setHours(0, 0, 0, 0);
-                      const daysUntilDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                      const [todayY, todayM, todayD] = todayStr.split('-').map(Number);
+                      const [dueY, dueM, dueD] = cobranca.dueDate.split('-').map(Number);
+                      const todayDate = new Date(todayY, todayM - 1, todayD, 12, 0, 0);
+                      const dueDate = new Date(dueY, dueM - 1, dueD, 12, 0, 0);
+                      const daysUntilDue = Math.floor((dueDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
                       
                       // Red dot only for overdue PENDING charges
                       if (daysUntilDue < 0 && cobranca.status === 'PENDING') return <Circle className="h-2 w-2 fill-red-500 text-red-500" />;
