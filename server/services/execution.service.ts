@@ -216,18 +216,31 @@ export class ExecutionService {
             }
           });
 
+          console.log(`[Traccar] Mapa de clientes vencidos: ${overdueByAsaasId.size} clientes com débitos`);
+          overdueByAsaasId.forEach((data, asaasId) => {
+            console.log(`[Traccar] - ${asaasId}: ${data.count} cobranças vencidas (${data.customerPhone})`);
+          });
+
           const limiteCobrancas = config.traccarLimiteCobrancasVencidas || 3;
           
           // Process blocking/unblocking
           for (const [asaasCustomerId, { count: overdueCount, customerPhone }] of overdueByAsaasId.entries()) {
             try {
               // Get client from Asaas ID to find Traccar mapping
+              console.log(`[Traccar] Processando cliente ${asaasCustomerId} com ${overdueCount} cobranças vencidas`);
               const client = await storage.getClientByAsaasId(asaasCustomerId);
               
-              if (!client?.traccarUserId) {
-                console.log(`[Traccar] Cliente ${asaasCustomerId} não tem usuário Traccar mapeado`);
+              if (!client) {
+                console.log(`[Traccar] Cliente ${asaasCustomerId} não encontrado no banco`);
                 continue;
               }
+              
+              if (!client?.traccarUserId) {
+                console.log(`[Traccar] Cliente ${asaasCustomerId} (${client.name}) não tem usuário Traccar mapeado`);
+                continue;
+              }
+              
+              console.log(`[Traccar] Cliente encontrado: ${client.name} (ID: ${client.traccarUserId})`);
 
               // Get user directly by ID (not by phone) - more reliable
               const traccarUser = await traccarService.getUserById(client.traccarUserId);
