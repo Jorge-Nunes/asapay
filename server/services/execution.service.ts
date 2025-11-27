@@ -317,6 +317,19 @@ export class ExecutionService {
                       mensagem: `Usuário bloqueado no Traccar mas falha ao enviar mensagem: ${error instanceof Error ? error.message : 'erro desconhecido'}`,
                     } as ExecutionLog);
                   }
+                } else if (shouldBlock && isCurrentlyBlocked) {
+                  // User should be blocked and IS blocked - no action needed
+                  console.log(`[Traccar] ✅ ESTADO CORRETO - Usuário ${client.traccarUserId} já está bloqueado conforme esperado (${overdueCount} cobranças vencidas)`);
+                  logs.push({
+                    id: `traccar-${traccarUser.id}-already-blocked`,
+                    cobrancaId: 'N/A',
+                    customerName: traccarUser.name || customerPhone,
+                    customerPhone,
+                    tipo: 'atraso',
+                    status: 'success',
+                    timestamp: new Date().toISOString(),
+                    mensagem: `Usuário já estava bloqueado no Traccar (${overdueCount}/${limiteCobrancas} cobranças vencidas) - estado mantido`,
+                  } as ExecutionLog);
                 } else if (!shouldBlock && isCurrentlyBlocked) {
                   // Unblock user if they no longer meet the blocking criteria
                   console.log(`[Traccar] 🔓 EXECUTANDO: unblockUser(${client.traccarUserId})`);
