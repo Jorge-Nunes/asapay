@@ -453,10 +453,37 @@ Obrigado por sua confiança! 🙏`,
       
       const db = getDb();
       
-      // Use UPSERT (INSERT ... ON CONFLICT) for batch efficiency
-      // This does 484 operations in 1 query instead of 484 * 2 = 968 queries
+      // Get existing cobrancas to preserve OVERDUE status during sync
+      const existingCobrancas = await db.query.cobrancas.findMany();
+      const existingMap = new Map(existingCobrancas.map(c => [c.id, c]));
+      
+      // Merge: preserve OVERDUE/atraso status, don't overwrite with API data
+      const mergedCobrancas = newCobrancas.map(newC => {
+        const existing = existingMap.get(newC.id);
+        
+        // If existing cobrança has OVERDUE or tipo='atraso', preserve it
+        // Only update if new status is a payment confirmation (RECEIVED/CONFIRMED)
+        if (existing && (existing.status === 'OVERDUE' || existing.tipo === 'atraso')) {
+          // Only change if new status indicates payment was made
+          if (newC.status === 'RECEIVED' || newC.status === 'CONFIRMED') {
+            // Payment confirmed - update status
+            return newC;
+          }
+          // Keep existing OVERDUE status
+          return {
+            ...newC,
+            status: existing.status,
+            tipo: existing.tipo,
+          };
+        }
+        
+        // New cobrança or existing without OVERDUE - use new data
+        return newC;
+      });
+      
+      // Use UPSERT for batch efficiency with merged data
       await db.insert(cobrancas)
-        .values(newCobrancas.map(c => ({
+        .values(mergedCobrancas.map(c => ({
           id: c.id,
           customer: c.customer,
           customerName: c.customerName,
@@ -484,7 +511,7 @@ Obrigado por sua confiança! 🙏`,
           },
         });
       
-      console.log(`[Storage] Saved/updated ${newCobrancas.length} cobrancas`);
+      console.log(`[Storage] Saved/updated ${newCobrancas.length} cobrancas (preserving OVERDUE status)`);
     } catch (error) {
       console.error('[Storage] Error in saveCobrancas:', error);
       throw error;
