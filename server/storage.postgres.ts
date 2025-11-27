@@ -453,38 +453,14 @@ Obrigado por sua confiança! 🙏`,
       
       const db = getDb();
       
-      // Process each cobrancas with intelligent merge logic
+      // STEP 1: Capture all OVERDUE cobranças BEFORE sync
+      const existingOverdue = await db.query.cobrancas.findMany({
+        where: sql`status = 'OVERDUE' OR tipo = 'atraso'`,
+      });
+      const overdueMap = new Map(existingOverdue.map(c => [c.id, { status: c.status, tipo: c.tipo }]));
+      
+      // STEP 2: UPSERT all new cobranças (this may overwrite OVERDUE with API data)
       for (const newC of newCobrancas) {
-        const existing = await db.query.cobrancas.findFirst({
-          where: eq(cobrancas.id, newC.id),
-        });
-        
-        let finalStatus = newC.status;
-        let finalTipo = newC.tipo;
-        
-        // DEBUG: Log merge logic for critical IDs
-        const isCritical = ['pay_949d63o7ogbw9foh', 'pay_qey9uuxv9oz1we6g', 'pay_yk8y8v4lq87u4md5'].includes(newC.id);
-        if (isCritical) {
-          console.log(`[Storage] MERGE DEBUG ${newC.id}:
-  existing: ${existing ? `{status: "${existing.status}", tipo: "${existing.tipo}"}` : 'NULL'}
-  new: {status: "${newC.status}", tipo: "${newC.tipo}"}
-  Check: existing.status === "OVERDUE"? ${existing?.status === 'OVERDUE'}
-  Check: !includes RECEIVED/CONFIRMED? ${!['RECEIVED', 'CONFIRMED'].includes(newC.status)}`);
-        }
-        
-        // Preserve OVERDUE/atraso status unless payment confirmed
-        if (existing) {
-          if (existing.status === 'OVERDUE' && !['RECEIVED', 'CONFIRMED'].includes(newC.status)) {
-            finalStatus = 'OVERDUE';
-            if (isCritical) console.log(`[Storage] ✅ PRESERVING OVERDUE for ${newC.id}`);
-          }
-          if (existing.tipo === 'atraso' && !['RECEIVED', 'CONFIRMED'].includes(newC.status)) {
-            finalTipo = 'atraso';
-            if (isCritical) console.log(`[Storage] ✅ PRESERVING atraso for ${newC.id}`);
-          }
-        }
-        
-        // UPSERT with merged data
         await db.insert(cobrancas)
           .values({
             id: newC.id,
@@ -493,10 +469,10 @@ Obrigado por sua confiança! 🙏`,
             customerPhone: newC.customerPhone,
             value: newC.value.toString(),
             dueDate: newC.dueDate,
-            status: finalStatus,
+            status: newC.status,
             invoiceUrl: newC.invoiceUrl,
             description: newC.description,
-            tipo: finalTipo,
+            tipo: newC.tipo,
           })
           .onConflictDoUpdate({
             target: cobrancas.id,
@@ -506,16 +482,32 @@ Obrigado por sua confiança! 🙏`,
               customerPhone: newC.customerPhone,
               value: newC.value.toString(),
               dueDate: newC.dueDate,
-              status: finalStatus,
+              status: newC.status,
               invoiceUrl: newC.invoiceUrl,
               description: newC.description,
-              tipo: finalTipo,
+              tipo: newC.tipo,
               updatedAt: new Date(),
             },
           });
       }
       
-      console.log(`[Storage] ✅ Saved/updated ${newCobrancas.length} cobrancas (OVERDUE status preserved)`);
+      // STEP 3: Restore OVERDUE status for cobranças that WERE overdue, UNLESS payment confirmed
+      for (const [cobrancaId, overdueData] of overdueMap) {
+        const newCobranca = newCobrancas.find(c => c.id === cobrancaId);
+        // Only restore OVERDUE if new status is NOT a payment confirmation
+        if (newCobranca && !['RECEIVED', 'CONFIRMED'].includes(newCobranca.status)) {
+          await db.update(cobrancas)
+            .set({
+              status: overdueData.status,
+              tipo: overdueData.tipo,
+              updatedAt: new Date(),
+            })
+            .where(eq(cobrancas.id, cobrancaId));
+          console.log(`[Storage] ✅ Restored OVERDUE/atraso for ${cobrancaId}`);
+        }
+      }
+      
+      console.log(`[Storage] ✅ Saved/updated ${newCobrancas.length} cobrancas (OVERDUE status preserved via post-sync restore)`);
     } catch (error) {
       console.error('[Storage] Error in saveCobrancas:', error);
       throw error;
