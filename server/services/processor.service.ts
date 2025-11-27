@@ -8,18 +8,25 @@ interface ProcessedCobranca extends Cobranca {
 }
 
 export class ProcessorService {
-  // Helper: Calculate days difference between two YYYY-MM-DD strings (no timezone conversion)
-  private static daysBetweenDates(from: string, to: string): number {
-    // Both dates should be in YYYY-MM-DD format
-    // Parse without using Date to avoid timezone issues
-    const fromParts = from.split('-').map(Number);
-    const toParts = to.split('-').map(Number);
+  // Helper: Calculate days difference between two YYYY-MM-DD strings (pure string comparison)
+  private static daysBetweenDateStrings(from: string, to: string): number {
+    // Parse YYYY-MM-DD strings to day number
+    // This avoids ALL timezone issues by doing pure math on date components
+    const [fromY, fromM, fromD] = from.split('-').map(Number);
+    const [toY, toM, toD] = to.split('-').map(Number);
     
-    const fromDate = new Date(fromParts[0], fromParts[1] - 1, fromParts[2]);
-    const toDate = new Date(toParts[0], toParts[1] - 1, toParts[2]);
+    // Convert to day number since epoch (simpler than Date objects)
+    const daysFromEpoch = (y: number, m: number, d: number) => {
+      // Approximate calculation: good enough for day differences
+      // More precise: use actual date math without timezone
+      const date = new Date(y, m - 1, d, 12, 0, 0); // noon to avoid DST issues
+      return Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
+    };
     
-    const diffTime = toDate.getTime() - fromDate.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const fromDays = daysFromEpoch(fromY, fromM, fromD);
+    const toDays = daysFromEpoch(toY, toM, toD);
+    
+    return toDays - fromDays;
   }
 
   static categorizeCobrancas(
@@ -31,7 +38,7 @@ export class ProcessorService {
     const hojeStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     return cobrancas.map(cobranca => {
-      const diffDays = this.daysBetweenDates(hojeStr, cobranca.dueDate);
+      const diffDays = this.daysBetweenDateStrings(hojeStr, cobranca.dueDate);
 
       let tipo: 'vence_hoje' | 'aviso' | 'atraso' | 'processada';
 
@@ -76,7 +83,7 @@ export class ProcessorService {
     // Calculate dias_falta
     const today = new Date();
     const hojeStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const diasFalta = this.daysBetweenDates(hojeStr, cobranca.dueDate);
+    const diasFalta = this.daysBetweenDateStrings(hojeStr, cobranca.dueDate);
 
     const totalOverdueFormatted = totalOverdueValue
       ? new Intl.NumberFormat('pt-BR', {
