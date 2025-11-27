@@ -2,113 +2,18 @@
 
 ## Overview
 
-This is a **fully functional** billing management system for TEKSAT, a vehicle tracking service provider. The application automates payment notifications via WhatsApp by integrating with Asaas (payment gateway) and Evolution API (WhatsApp messaging). 
+This is a **fully functional** billing management system for TEKSAT, a vehicle tracking service provider. The application automates payment notifications via WhatsApp by integrating with Asaas (payment gateway) and Evolution API (WhatsApp messaging). It aims to streamline collections, improve payment rates, and reduce manual effort for TEKSAT.
 
-**Status**: ✅ Complete and operational
+Key capabilities include:
+- Automated daily processing to fetch invoices, categorize them by due date, and send personalized WhatsApp notifications.
+- Real-time dashboard with key metrics (Total Pending, Due Today, Messages Sent, Conversion Rate) and interactive charts.
+- Comprehensive billing tables with filtering and reporting tools for detailed analytics.
+- Full execution history with detailed logs for tracking system operations.
+- Secure configuration management with secret masking and validation.
+- Automatic synchronization with Asaas, including detection and removal of deleted invoices.
+- Automated WhatsApp instance management, including QR code display for easy connection.
 
-The system runs scheduled daily executions at 10 AM (America/Sao_Paulo timezone) to:
-1. Fetch customers and pending invoices from Asaas (with pagination)
-2. Categorize invoices based on due dates (due today, advance warnings)
-3. Send automated WhatsApp notifications with customizable message templates
-4. Track execution history and message delivery status with detailed logs
-
-Key features include:
-- **Dashboard**: Real-time metrics (Total Pendente, Vence Hoje, Mensagens Enviadas, Taxa de Conversão) with interactive charts
-- **Cobranças**: Comprehensive billing table with filtering by status and type
-- **Relatórios**: Detailed analytics with multiple tabs (Overview, Messages, Cobranças, Executions)
-- **Execuções**: Full execution history with expandable logs for each run
-- **Configurações**: Secure configuration management with secret masking and validation
-
-## Message Categorization Logic
-
-**Critical Rule**: Mensagens de atraso (cobranças atrasadas) são enviadas APENAS se:
-- Status = **`OVERDUE`** OU
-- Status = **`PENDING`** + data de vencimento já passou (diffDays < 0)
-
-Cobranças com status `RECEIVED` ou `CONFIRMED` (pagas) NUNCA recebem mensagens de atraso.
-
-Intervalos de envio por tipo:
-- **vence_hoje**: Envia uma vez quando diffDays === 0
-- **aviso**: Envia uma vez quando faltam X dias (configurável, padrão 5 dias)
-- **atraso**: Envia a cada 3 dias (intervalo configurável por cliente) enquanto diffDays < 0
-- **processada**: Não envia mensagem
-
-**Recent Changes (November 25, 2025)**:
-✅ **AUTOMATIC TIPO CATEGORIZATION** - Cobranças now auto-categorized on any sync:
-  - Sync endpoints (`POST /api/cobrancas/sync`) categorize before saving
-  - Webhooks (`PAYMENT_CREATED`, `PAYMENT_OVERDUE`) categorize automatically  
-  - No more "Indefinido" type - all cobranças get proper tipo immediately on arrival
-  - Type determined by: Status + Due Date + Dias de Aviso
-  - Schema updated: tipo now includes `'atraso'` alongside vence_hoje | aviso | processada
-  - **FIXED**: Users saw "Indefinido" when cobranças hadn't been processed by 10 AM execution
-  - **NOW**: Proper categorization happens IMMEDIATELY when synced or created via webhook
-
-✅ **FIXED TEMPLATE VARIABLES** - Variables with spaces now work:
-  - Changed regex from `/{{cliente_nome}}/g` to `/\{\{\s*cliente_nome\s*\}\}/g`
-  - Now supports: `{{ cliente_nome }}`, `{{cliente_nome}}`, `{{  cliente_nome  }}`
-  - All variables work: cliente_nome, valor, vencimento, link_fatura, dias_aviso, quantidade_cobrancas, valor_total
-
-✅ **FIXED RESTART BUTTON** - Instance restart now works properly:
-  - Tries endpoint `POST /instances/{name}/restart` first (Evolution 1.8.6)
-  - Falls back to logout if restart endpoint returns 404
-  - No more 500 errors
-
-✅ **UI IMPROVEMENTS**:
-  - Removed "AsaPay" text from sidebar and login
-  - Logo + "Gestão de Cobranças" aligned to left in sidebar
-  - Login page shows only logo + "Gestão de Cobranças"
-  - Automatic instance detection prevents duplicate creation attempts
-
-**Recent Changes (November 24, 2025)**:
-✅ **FIXED FALSE OVERDUE MESSAGES BUG** - Resolved critical categorization bug:
-  - **Problem**: Clientes sem pendências recebiam mensagens dizendo que tinham múltiplas cobranças em atraso
-  - **Root Cause**: Categorização marcava cobranças RECEIVED/CONFIRMED como 'atraso' se dueDate < hoje
-  - **Solution**: Verificar status PRIMEIRO - cobranças pagas NUNCA são 'atraso'
-  - **Implementation**: 
-    - RECEIVED/CONFIRMED → sempre 'processada'
-    - OVERDUE com diffDays < 0 → 'atraso'
-    - Ordem correta previne false positives
-  - **Result**: Apenas cobranças genuinamente pendentes recebem mensagens de atraso
-
-✅ **FIXED EXECUTION HANGING ISSUE** - Resolved critical performance bug:
-  - **Problem**: Execuções ficavam presas em status "running" indefinidamente durante a fase de "Salvando cobranças"
-  - **Root Cause**: `saveCobrancas()` estava fazendo ~968 queries sequenciais (484 cobranças × 2 queries: 1 SELECT + 1 INSERT/UPDATE)
-  - **Solution**: Implementado UPSERT batch (INSERT ... ON CONFLICT ... UPDATE) - reduz 968 queries para 1 única query
-  - **Performance**: Sincronização de 484 cobranças agora leva < 1s em vez de travamento indefinido
-  - **Implementation**: 
-    - Drizzle ORM `onConflictDoUpdate()` com `sql` helper para referências corretas aos aliases do PostgreSQL
-    - Correção de column names (camelCase JavaScript → snake_case PostgreSQL em excluded references)
-    - Validação de empty arrays para evitar erro de constraint violation
-  - **Result**: Execuções agora completam corretamente sem travamentos
-
-**Previous Changes (November 23, 2025)**:
-✅ **DELETION DETECTION AND SYNC** - Automatically removes deleted cobranças:
-  - New endpoint `POST /api/cobrancas/sync` for full synchronization with deletion detection
-  - Compares local cobranças with all IDs from Asaas
-  - Automatically removes cobranças that no longer exist in Asaas
-  - Syncs and updates remaining cobranças from Asaas
-  - UI button in Cobranças page: "Sincronizar" with loading state
-  - Toast notifications with sync results (count of removed/synced cobranças)
-  - Implemented in both MemStorage (test) and PostgresStorage (production)
-  - Query parameters: `getAllPaymentIds()` fetches all payment IDs regardless of status
-
-✅ **AUTOMATED WHATSAPP INSTANCE MANAGEMENT** - Complete lifecycle automation:
-  - User changes instance name in Configurações → System creates in Evolution API automatically
-  - Automatic QR code extraction from Evolution 1.8.6 API (field: `base64`)
-  - Modal display of QR code for instant scanning
-  - Status tracking: 'qr' (waiting), 'open' (connected), 'unknown' (error)
-
-**Technical Details**:
-  - AsaasService.getAllPaymentIds(): Fetches all payment IDs with pagination
-  - Storage.removeDeletedCobrancas(existingIds): Deletes local cobranças not in Asaas
-  - Sync process: get all IDs → detect deletions → remove locally → sync remaining
-  - UI provides real-time feedback with loading spinner and toast notifications
-
-**Previous Changes (November 22, 2025)**:
-✅ **WEBHOOK DO ASAAS** - Receives real-time payment notifications
-✅ **INCREMENTAL SYNC** - Optimized client synchronization
-
-**Impact**: When users delete cobranças in Asaas, the system automatically detects and removes them locally on next sync. No stale data remains in the system.
+The system significantly enhances TEKSAT's operational efficiency in managing customer billing and communication, ensuring timely payments and a better customer experience.
 
 ## User Preferences
 
@@ -118,113 +23,46 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-**Framework**: React with TypeScript using Vite as the build tool and development server.
-
-**UI Component Library**: Shadcn/ui (Radix UI primitives) with Tailwind CSS for styling. The design follows a SaaS dashboard pattern inspired by fintech platforms like Asaas and Stripe, prioritizing clarity and efficient data scanning over decoration.
-
-**Routing**: Wouter for lightweight client-side routing with the following main routes:
-- `/` - Dashboard with metrics and charts
-- `/cobrancas` - Billing management with filtering
-- `/relatorios` - Reporting and analytics
-- `/execucoes` - Execution history and logs
-- `/configuracoes` - System configuration
-
-**State Management**: TanStack Query (React Query) for server state management with optimistic updates and automatic refetching. No complex global state library needed as most state is server-driven.
-
-**Design System**: Custom theme using CSS variables for light/dark mode support. Typography uses Inter font for UI and JetBrains Mono for numerical/tabular data. Spacing follows Tailwind's 4px grid system (units: 4, 6, 8, 12, 16).
+**Framework**: React with TypeScript, using Vite.
+**UI Component Library**: Shadcn/ui (Radix UI primitives) with Tailwind CSS, following a SaaS dashboard design inspired by fintech platforms.
+**Routing**: Wouter for lightweight client-side navigation.
+**State Management**: TanStack Query (React Query) for server state management.
+**Design System**: Custom theme with CSS variables for dark/light mode, Inter font for UI, and JetBrains Mono for data.
 
 ### Backend Architecture
 
-**Runtime**: Node.js with Express.js server.
-
+**Runtime**: Node.js with Express.js.
 **Language**: TypeScript with ES modules.
-
-**API Structure**: RESTful API with the following main endpoints:
-- **Config**: `GET/PUT /api/config` - Configuration management
-- **Webhooks**: 
-  - `POST /api/webhooks/asaas` - Receive Asaas webhook events (PAYMENT_RECEIVED, OVERDUE, etc)
-  - `POST /api/webhook/asaas` - Alternative webhook endpoint (same handler)
-  - `POST /api/webhook/register` - Auto-register webhook in Asaas platform
-  - `GET /api/webhook/list` - List all registered webhooks
-- **Billing**: `GET /api/cobrancas` - Fetch invoices with filtering, status, payment status
-- **Sync**: `POST /api/sync/incremental` - Incremental client/cobrança sync
-- **Executions**: `GET/POST /api/executions`, `POST /api/executions/run` - Execution management
-- **Dashboard**: `GET /api/dashboard/*` - Metrics and chart data
-- **Clients**: `GET /api/clients`, `PUT /api/clients/:id/*` - Client management and preferences
-
-**Storage Pattern**: Currently uses in-memory storage (`MemStorage` class implementing `IStorage` interface) with support for migrating to database persistence. The storage abstraction allows easy swapping of storage backends.
-
-**Schema Definition**: Drizzle ORM with Zod validation for type safety. Schema is defined in `shared/schema.ts` and shared between client and server.
-
-**Scheduled Jobs**: Node-cron for daily automated executions at 10 AM Brazil time.
-
-**Service Layer Pattern**: Business logic is separated into dedicated service classes:
-- `AsaasService` - Handles Asaas API (pagination for customers/payments, getCustomersUpdatedSince for incremental sync)
-- `EvolutionService` - Manages WhatsApp messaging with batch sending and rate limiting (1s delays)
-- `ExecutionService` - Orchestrates main flow: fetch → categorize → send → log
-- `ProcessorService` - Categorizes invoices (vence_hoje/aviso) and generates personalized messages
-- `WebhookService` - Processes Asaas webhooks with signature validation (HMAC-SHA256), auto-syncs new payments, blocks/unblocks Traccar users
-- `TraccarService` - Manages Traccar API (blockUser, unblockUser for overdue payments)
-
-**Key Implementation Details**:
-- Batch processing with delays to avoid API rate limits (1s between messages, 2s between batches)
-- Proper error handling with detailed logging for each message sent
-- Secret masking on GET /api/config with validation on PUT to prevent credential overwrites
-- Query parameter filtering for cobranças with proper URL construction
+**API Structure**: RESTful API for configurations, webhooks (Asaas), billing, synchronization, executions, dashboard metrics, and client management.
+**Storage Pattern**: PostgreSQL database with Drizzle ORM for persistent data, implementing an `IStorage` interface for abstraction. Configuration is managed via environment variables.
+**Scheduled Jobs**: Node-cron for daily automated executions at 10 AM (America/Sao_Paulo).
+**Service Layer Pattern**: Business logic is encapsulated in dedicated services for Asaas API, Evolution API (WhatsApp), execution orchestration, invoice processing, webhook handling, and Traccar (user blocking/unblocking).
+**Key Implementations**: Includes batch processing with delays for API rate limiting, robust error handling, secret masking, and query parameter filtering.
 
 ### Data Storage Solutions
 
-**Current Implementation**: ✅ PostgreSQL database with Drizzle ORM for persistent data storage.
-- Cobranças (billing data) persisted across restarts
-- Clients, executions, and logs stored in database
-- Configuration stored in environment variables
-- Database: Neon Serverless PostgreSQL (@neondatabase/serverless)
-
-**Storage Class**: `PostgresStorage` (implements `IStorage` interface)
-- Handles all CRUD operations with Drizzle ORM
-- Automatic connection pooling
-- Data persists even after server restart
-
-**Session Management**: Connect-pg-simple for PostgreSQL session storage.
-
-**Environment Variables**: Configuration stored in environment variables:
-- `DATABASE_URL` - PostgreSQL connection string
-- `ASAAS_TOKEN` - Asaas API authentication
-- `ASAAS_URL` - Asaas API base URL
-- `EVOLUTION_URL` - Evolution API base URL
-- `EVOLUTION_INSTANCE` - WhatsApp instance name
-- `EVOLUTION_APIKEY` - Evolution API key
+**Database**: PostgreSQL using Neon Serverless PostgreSQL with Drizzle ORM.
+**Data Persistence**: Billing data, clients, executions, and logs are stored in the database.
+**Session Management**: `connect-pg-simple` for PostgreSQL session storage.
+**Environment Variables**: Critical configurations (database URL, API tokens for Asaas and Evolution) are managed via environment variables.
 
 ### Authentication and Authorization
 
-**Current State**: Basic user schema defined with username/password fields, but authentication is not yet implemented in the application flow.
-
-**Planned Implementation**: The schema includes a users table with password hashing support, suggesting planned authentication functionality.
+A basic user schema is defined with support for password hashing, indicating planned authentication features.
 
 ## External Dependencies
 
 ### Payment Gateway
-**Asaas API** - Third-party payment platform integration
-- Fetches customer data with pagination support (100 records per request)
-- Retrieves pending payment information including invoice URLs
-- Base URL: `https://api.asaas.com/v3`
-- Authentication: Access token via headers
+**Asaas API**: Integrates for fetching customer data, payment information, and invoice URLs.
 
 ### WhatsApp Messaging
-**Evolution API** - WhatsApp messaging service
-- Sends text messages to customers via WhatsApp
-- Formats phone numbers with Brazilian country code (+55)
-- Implements rate limiting delays (1 second between messages)
-- Requires instance name and API key for authentication
+**Evolution API**: Used for sending automated WhatsApp messages to customers, including rate limiting and phone number formatting.
 
 ### Database
-**Neon Serverless PostgreSQL** - Serverless PostgreSQL database (@neondatabase/serverless)
-- Configured via Drizzle ORM
-- Schema migrations stored in `/migrations` directory
-- Not yet actively used but infrastructure is in place
+**Neon Serverless PostgreSQL**: The primary database solution for persistent data storage, configured via Drizzle ORM.
 
 ### Development Tools
-**N8N Workflow** - The `attached_assets` folder contains an N8N automation configuration that appears to be a reference implementation for the Asaas integration workflow, suggesting the system may have been initially prototyped or designed to work alongside N8N automation.
+**N8N Workflow**: An N8N automation configuration is included in `attached_assets`, potentially used for prototyping or extended integration with Asaas.
 
 ### Infrastructure
-**Replit Platform** - The application is configured to run on Replit with specific plugins for development experience (runtime error overlay, cartographer, dev banner).
+**Replit Platform**: The application is developed and configured to run on Replit, utilizing its development environment features.
