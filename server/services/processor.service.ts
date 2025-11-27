@@ -31,7 +31,7 @@ export class ProcessorService {
         tipo = 'atraso';
       } else if (diffDays === 0) {
         tipo = 'vence_hoje';
-      } else if (diffDays === diasAviso) {
+      } else if (diffDays > 0 && diffDays <= diasAviso) {
         tipo = 'aviso';
       } else {
         tipo = 'processada';
