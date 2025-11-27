@@ -1094,14 +1094,16 @@ Obrigado por sua confiança! 🙏`,
   async blockClientTraccar(clientId: string): Promise<void> {
     try {
       const db = getDb();
+      console.log(`[Storage] 🔒 Bloqueando cliente ${clientId} no banco de dados`);
       await db.update(schema.clients)
         .set({
           isTraccarBlocked: 1,
           updatedAt: new Date(),
         })
         .where(eq(schema.clients.id, clientId));
+      console.log(`[Storage] ✅ Cliente ${clientId} bloqueado com sucesso`);
     } catch (error) {
-      console.error('[Storage] Error in blockClientTraccar:', error);
+      console.error('[Storage] ❌ Error in blockClientTraccar:', error);
       throw error;
     }
   }
@@ -1109,14 +1111,16 @@ Obrigado por sua confiança! 🙏`,
   async unblockClientTraccar(clientId: string): Promise<void> {
     try {
       const db = getDb();
+      console.log(`[Storage] 🔓 Desbloqueando cliente ${clientId} no banco de dados`);
       await db.update(schema.clients)
         .set({
           isTraccarBlocked: 0,
           updatedAt: new Date(),
         })
         .where(eq(schema.clients.id, clientId));
+      console.log(`[Storage] ✅ Cliente ${clientId} desbloqueado com sucesso`);
     } catch (error) {
-      console.error('[Storage] Error in unblockClientTraccar:', error);
+      console.error('[Storage] ❌ Error in unblockClientTraccar:', error);
       throw error;
     }
   }
