@@ -8,24 +8,30 @@ interface ProcessedCobranca extends Cobranca {
 }
 
 export class ProcessorService {
-  // Helper: Parse YYYY-MM-DD string without timezone conversion
-  private static parseLocalDate(dateStr: string): Date {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date;
+  // Helper: Calculate days difference between two YYYY-MM-DD strings (no timezone conversion)
+  private static daysBetweenDates(from: string, to: string): number {
+    // Both dates should be in YYYY-MM-DD format
+    // Parse without using Date to avoid timezone issues
+    const fromParts = from.split('-').map(Number);
+    const toParts = to.split('-').map(Number);
+    
+    const fromDate = new Date(fromParts[0], fromParts[1] - 1, fromParts[2]);
+    const toDate = new Date(toParts[0], toParts[1] - 1, toParts[2]);
+    
+    const diffTime = toDate.getTime() - fromDate.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
   static categorizeCobrancas(
     cobrancas: Cobranca[],
     diasAviso: number
   ): ProcessedCobranca[] {
-    const hoje = this.parseLocalDate(new Date().toISOString().split('T')[0]);
+    // Get today's date in YYYY-MM-DD format (local time, no timezone conversion)
+    const today = new Date();
+    const hojeStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     return cobrancas.map(cobranca => {
-      const dueDate = this.parseLocalDate(cobranca.dueDate);
-
-      const diffTime = dueDate.getTime() - hoje.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = this.daysBetweenDates(hojeStr, cobranca.dueDate);
 
       let tipo: 'vence_hoje' | 'aviso' | 'atraso' | 'processada';
 
@@ -68,10 +74,9 @@ export class ProcessorService {
     );
 
     // Calculate dias_falta
-    const hoje = this.parseLocalDate(new Date().toISOString().split('T')[0]);
-    const dueDate = this.parseLocalDate(cobranca.dueDate);
-    const diffTime = dueDate.getTime() - hoje.getTime();
-    const diasFalta = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    const hojeStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const diasFalta = this.daysBetweenDates(hojeStr, cobranca.dueDate);
 
     const totalOverdueFormatted = totalOverdueValue
       ? new Intl.NumberFormat('pt-BR', {
