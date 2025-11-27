@@ -6,6 +6,7 @@ export class TraccarService {
   private username: string;
   private password: string;
   private version: string;
+  private authMethod: string;
   private sessionCookie: string | null = null;
 
   constructor(config: Config) {
@@ -14,6 +15,7 @@ export class TraccarService {
     this.username = config.traccarUsername || 'admin'; // Default Traccar user
     this.password = config.traccarPassword || this.apiKey; // Use password if provided, otherwise API key
     this.version = config.traccarVersion || 'latest';
+    this.authMethod = config.traccarAuthMethod || 'session'; // 'session' or 'bearer'
   }
 
   // Method for latest Traccar versions (uses Bearer token)
@@ -88,13 +90,14 @@ export class TraccarService {
     }
 
     try {
-      if (this.version === '4.15') {
+      console.log(`[TraccarService] Usando método de autenticação: ${this.authMethod}`);
+      if (this.authMethod === 'session') {
         return await this.getUsersV415();
       } else {
         return await this.getUsersLatest();
       }
     } catch (error) {
-      console.error(`[TraccarService] Error getting users (v${this.version}):`, error);
+      console.error(`[TraccarService] Error getting users (method=${this.authMethod}):`, error);
       throw error;
     }
   }
@@ -118,15 +121,15 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
-    const headers = this.version === '4.15'
+    const headers = this.authMethod === 'session'
       ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
       : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
 
     let response = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers });
 
     if (!response.ok) {
-      // For 4.15, if we get 401, try to re-authenticate
-      if (response.status === 401 && this.version === '4.15') {
+      // For session auth, if we get 401, try to re-authenticate
+      if (response.status === 401 && this.authMethod === 'session') {
         this.sessionCookie = null;
         await this.authenticateV415();
         const newHeaders = { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' };
@@ -149,20 +152,20 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
-    // For 4.15, ensure we have a valid session
-    if (this.version === '4.15' && !this.sessionCookie) {
+    // For session auth, ensure we have a valid session
+    if (this.authMethod === 'session' && !this.sessionCookie) {
       await this.authenticateV415();
     }
 
-    const authHeaders = this.version === '4.15'
+    const authHeaders = this.authMethod === 'session'
       ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
       : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
 
     // First, get the current user data
     let getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
 
-    // If 401 on 4.15, re-authenticate and retry
-    if (!getResponse.ok && getResponse.status === 401 && this.version === '4.15') {
+    // If 401 on session auth, re-authenticate and retry
+    if (!getResponse.ok && getResponse.status === 401 && this.authMethod === 'session') {
       this.sessionCookie = null;
       await this.authenticateV415();
       const newHeaders = { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' };
@@ -199,15 +202,15 @@ export class TraccarService {
       await this.authenticateV415();
     }
 
-    const authHeaders = this.version === '4.15'
+    const authHeaders = this.authMethod === 'session'
       ? { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' }
       : { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
 
     // First, get the current user data
     let getResponse = await fetch(`${this.baseUrl}/api/users/${userId}`, { headers: authHeaders });
 
-    // If 401 on 4.15, re-authenticate and retry
-    if (!getResponse.ok && getResponse.status === 401 && this.version === '4.15') {
+    // If 401 on session auth, re-authenticate and retry
+    if (!getResponse.ok && getResponse.status === 401 && this.authMethod === 'session') {
       this.sessionCookie = null;
       await this.authenticateV415();
       const newHeaders = { 'Content-Type': 'application/json', 'Cookie': this.sessionCookie || '' };
