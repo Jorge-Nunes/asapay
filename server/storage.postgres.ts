@@ -123,6 +123,7 @@ export class PostgresStorage implements IStorage {
         traccarUsername: config?.traccarUsername || 'admin',
         traccarPassword: config?.traccarPassword || '',
         traccarVersion: config?.traccarVersion || 'latest',
+        traccarAuthMethod: config?.traccarAuthMethod || 'session',
         traccarLimiteCobrancasVencidas: config?.traccarLimiteCobrancasVencidas || 3,
         webhookUrl: config?.webhookUrl || '',
         diasAviso: config?.diasAviso || 10,
