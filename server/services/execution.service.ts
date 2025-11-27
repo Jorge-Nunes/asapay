@@ -158,7 +158,9 @@ export class ExecutionService {
 
       // ========== PROCESSING PHASE: Now process the synchronized data ==========
       console.log('[Execution] 📤 Iniciando processamento de mensagens...');
-      const cobrancas = cobrancasFromSync;
+      // IMPORTANT: Reload cobrancas from DB to get the preserved OVERDUE status
+      // (not the raw API data which may have been overwritten during sync)
+      const cobrancas = await storage.getCobrancas();
 
       console.log('Categorizing cobranças...');
       const categorized = ProcessorService.categorizeCobrancas(cobrancas, config.diasAviso);
