@@ -453,7 +453,7 @@ Obrigado por sua confiança! 🙏`,
       
       const db = getDb();
       
-      // Process each cobrança with intelligent merge logic
+      // Process each cobrancas with intelligent merge logic
       for (const newC of newCobrancas) {
         const existing = await db.query.cobrancas.findFirst({
           where: eq(cobrancas.id, newC.id),
@@ -462,13 +462,25 @@ Obrigado por sua confiança! 🙏`,
         let finalStatus = newC.status;
         let finalTipo = newC.tipo;
         
+        // DEBUG: Log merge logic for critical IDs
+        const isCritical = ['pay_949d63o7ogbw9foh', 'pay_qey9uuxv9oz1we6g', 'pay_yk8y8v4lq87u4md5'].includes(newC.id);
+        if (isCritical) {
+          console.log(`[Storage] MERGE DEBUG ${newC.id}:
+  existing: ${existing ? `{status: "${existing.status}", tipo: "${existing.tipo}"}` : 'NULL'}
+  new: {status: "${newC.status}", tipo: "${newC.tipo}"}
+  Check: existing.status === "OVERDUE"? ${existing?.status === 'OVERDUE'}
+  Check: !includes RECEIVED/CONFIRMED? ${!['RECEIVED', 'CONFIRMED'].includes(newC.status)}`);
+        }
+        
         // Preserve OVERDUE/atraso status unless payment confirmed
         if (existing) {
           if (existing.status === 'OVERDUE' && !['RECEIVED', 'CONFIRMED'].includes(newC.status)) {
             finalStatus = 'OVERDUE';
+            if (isCritical) console.log(`[Storage] ✅ PRESERVING OVERDUE for ${newC.id}`);
           }
           if (existing.tipo === 'atraso' && !['RECEIVED', 'CONFIRMED'].includes(newC.status)) {
             finalTipo = 'atraso';
+            if (isCritical) console.log(`[Storage] ✅ PRESERVING atraso for ${newC.id}`);
           }
         }
         
