@@ -314,15 +314,17 @@ export class WebhookService {
       }
 
       // Check if customer still has overdue payments exceeding limit
+      // Same logic as daily execution: OVERDUE status OR PENDING with tipo='atraso'
       const allCobrancas = await storage.getCobrancas();
       const customerOverdueCobrancas = allCobrancas.filter(
-        c => c.customer === customerId && c.status === 'OVERDUE'
+        c => c.customer === customerId && 
+             (c.status === 'OVERDUE' || (c.status === 'PENDING' && c.tipo === 'atraso'))
       );
 
       const limite = config.traccarLimiteCobrancasVencidas || 3;
 
       if (customerOverdueCobrancas.length < limite && client.isTraccarBlocked) {
-        console.log(`[Webhook] Desbloqueando usuário ${client.name} no Traccar (atrasos: ${customerOverdueCobrancas.length}/${limite})`);
+        console.log(`[Webhook] 🔓 Desbloqueando usuário ${client.name} no Traccar (atrasos: ${customerOverdueCobrancas.length}/${limite})`);
         
         const traccarService = new TraccarService(config);
         await traccarService.unblockUser(parseInt(client.traccarUserId));
