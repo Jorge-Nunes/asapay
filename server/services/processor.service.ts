@@ -62,6 +62,14 @@ export class ProcessorService {
       { locale: ptBR }
     );
 
+    // Calculate dias_falta
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const dueDate = new Date(cobranca.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffTime = dueDate.getTime() - hoje.getTime();
+    const diasFalta = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
     const totalOverdueFormatted = totalOverdueValue
       ? new Intl.NumberFormat('pt-BR', {
           style: 'currency',
@@ -75,6 +83,7 @@ export class ProcessorService {
       .replace(/\{\{\s*vencimento\s*\}\}/g, vencimentoFormatado)
       .replace(/\{\{\s*cliente_nome\s*\}\}/g, cobranca.customerName)
       .replace(/\{\{\s*dias_aviso\s*\}\}/g, String(diasAviso))
+      .replace(/\{\{\s*dias_falta\s*\}\}/g, String(diasFalta))
       .replace(/\{\{\s*quantidade_cobrancas\s*\}\}/g, String(overdueCount || 0))
       .replace(/\{\{\s*valor_total\s*\}\}/g, totalOverdueFormatted);
   }
