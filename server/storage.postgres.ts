@@ -461,15 +461,30 @@ Obrigado por sua confiança! 🙏`,
       const mergedCobrancas = newCobrancas.map(newC => {
         const existing = existingMap.get(newC.id);
         
+        // DEBUG: Log existing vs new for problematic IDs
+        if (newC.id === 'pay_949d63o7ogbw9foh' || existing?.status === 'OVERDUE') {
+          console.log(`[Storage] DEBUG Merge ${newC.id}:`, {
+            existing: existing ? { status: existing.status, tipo: existing.tipo } : 'NONE',
+            new: { status: newC.status, tipo: newC.tipo },
+            preserve: existing && (existing.status === 'OVERDUE' || existing.tipo === 'atraso'),
+          });
+        }
+        
         // If existing cobrança has OVERDUE or tipo='atraso', preserve it
         // Only update if new status is a payment confirmation (RECEIVED/CONFIRMED)
         if (existing && (existing.status === 'OVERDUE' || existing.tipo === 'atraso')) {
           // Only change if new status indicates payment was made
           if (newC.status === 'RECEIVED' || newC.status === 'CONFIRMED') {
             // Payment confirmed - update status
+            if (existing.id === 'pay_949d63o7ogbw9foh') {
+              console.log(`[Storage] ✅ Updating ${existing.id} to RECEIVED (payment confirmed)`);
+            }
             return newC;
           }
           // Keep existing OVERDUE status
+          if (existing.id === 'pay_949d63o7ogbw9foh') {
+            console.log(`[Storage] ✅ Preserving OVERDUE for ${existing.id}: status=${existing.status}, tipo=${existing.tipo}`);
+          }
           return {
             ...newC,
             status: existing.status,
