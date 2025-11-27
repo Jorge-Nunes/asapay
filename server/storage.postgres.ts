@@ -478,7 +478,7 @@ Obrigado por sua confiança! 🙏`,
             invoiceUrl: sql`excluded.invoice_url`,
             description: sql`excluded.description`,
             tipo: sql`excluded.tipo`,
-            updatedAt: now(),
+            updatedAt: new Date(),
           },
         });
       
