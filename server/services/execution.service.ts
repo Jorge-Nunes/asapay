@@ -243,16 +243,25 @@ export class ExecutionService {
               console.log(`[Traccar] Cliente encontrado: ${client.name} (ID: ${client.traccarUserId})`);
 
               // Get user directly by ID (not by phone) - more reliable
+              console.log(`[Traccar] Buscando dados do usuário Traccar ID: ${client.traccarUserId}`);
               const traccarUser = await traccarService.getUserById(client.traccarUserId);
               
               if (traccarUser) {
+                console.log(`[Traccar] Usuário encontrado: ${traccarUser.name}, disabled=${traccarUser.disabled}`);
                 const shouldBlock = overdueCount >= limiteCobrancas;
                 const isCurrentlyBlocked = traccarUser.disabled === true;
+                console.log(`[Traccar] shouldBlock=${shouldBlock}, isCurrentlyBlocked=${isCurrentlyBlocked}, limite=${limiteCobrancas}`);
                 
                 if (shouldBlock && !isCurrentlyBlocked) {
                   // Block user
-                  console.log(`[Traccar] Bloqueando usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId}) - ${overdueCount} cobranças vencidas`);
-                  await traccarService.blockUser(parseInt(client.traccarUserId));
+                  console.log(`[Traccar] ✓ BLOQUEANDO usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId}) - ${overdueCount} cobranças vencidas`);
+                  try {
+                    const blockResult = await traccarService.blockUser(parseInt(client.traccarUserId));
+                    console.log(`[Traccar] ✓ Bloqueio bem-sucedido para ID ${client.traccarUserId}:`, blockResult);
+                  } catch (blockError) {
+                    console.error(`[Traccar] ✗ Erro ao bloquear usuário ID ${client.traccarUserId}:`, blockError);
+                    throw blockError;
+                  }
                   
                   // Update client blocked status in database
                   await storage.blockClientTraccar(client.id);
@@ -296,8 +305,14 @@ export class ExecutionService {
                   }
                 } else if (!shouldBlock && isCurrentlyBlocked) {
                   // Unblock user if they no longer meet the blocking criteria
-                  console.log(`[Traccar] Desbloqueando usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId})`);
-                  await traccarService.unblockUser(parseInt(client.traccarUserId));
+                  console.log(`[Traccar] ✓ DESBLOQUEANDO usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId})`);
+                  try {
+                    const unblockResult = await traccarService.unblockUser(parseInt(client.traccarUserId));
+                    console.log(`[Traccar] ✓ Desbloqueio bem-sucedido para ID ${client.traccarUserId}:`, unblockResult);
+                  } catch (unblockError) {
+                    console.error(`[Traccar] ✗ Erro ao desbloquear usuário ID ${client.traccarUserId}:`, unblockError);
+                    throw unblockError;
+                  }
                   
                   // Update client blocked status in database
                   await storage.unblockClientTraccar(client.id);
@@ -337,9 +352,11 @@ export class ExecutionService {
                     } as ExecutionLog);
                   }
                 }
+              } else {
+                console.log(`[Traccar] ⚠️ Usuário Traccar não encontrado ou erro na busca (ID: ${client.traccarUserId})`);
               }
             } catch (error) {
-              console.error(`[Traccar] Erro ao processar bloqueio para ${customerPhone}:`, error);
+              console.error(`[Traccar] ✗ Erro ao processar bloqueio para ${customerPhone}:`, error);
               
               logs.push({
                 id: `traccar-error-${customerPhone}`,
