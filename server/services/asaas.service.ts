@@ -167,10 +167,8 @@ export class AsaasService {
     return payments.map(payment => {
       const customer = customerMap.get(payment.customer);
       
-      // Parse dueDate correctly: Asaas returns "YYYY-MM-DD" in local timezone
-      // Create date at noon to avoid timezone conversion issues
-      const [year, month, day] = payment.dueDate.split('-');
-      const correctedDate = new Date(`${year}-${month}-${day}T12:00:00`).toISOString().split('T')[0];
+      // Keep dueDate as-is from Asaas (YYYY-MM-DD format is already in São Paulo timezone)
+      // Do NOT convert to Date/ISO as it will cause timezone shift issues
       
       return {
         id: payment.id,
@@ -178,7 +176,7 @@ export class AsaasService {
         customerName: customer?.name || 'Cliente não encontrado',
         customerPhone: customer?.mobilePhone || customer?.phone || '',
         value: payment.value,
-        dueDate: correctedDate,
+        dueDate: payment.dueDate,
         status: payment.status,
         invoiceUrl: payment.invoiceUrl,
         description: payment.description,
