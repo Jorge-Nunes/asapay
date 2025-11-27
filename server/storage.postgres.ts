@@ -478,9 +478,18 @@ Obrigado por sua confiança! 🙏`,
             invoiceUrl: sql`excluded.invoice_url`,
             description: sql`excluded.description`,
             tipo: sql`excluded.tipo`,
-            updatedAt: new Date(),
+            updatedAt: now(),
           },
         });
+      
+      // Force update ALL cobrancas tipo to ensure recategorization works
+      console.log('[Storage] Forcing tipo update for all cobrancas...');
+      for (const cobranca of newCobrancas) {
+        await db.update(cobrancas)
+          .set({ tipo: cobranca.tipo })
+          .where(eq(cobrancas.id, cobranca.id));
+      }
+      console.log(`[Storage] Forced update of ${newCobrancas.length} cobrancas tipos`);
     } catch (error) {
       console.error('[Storage] Error in saveCobrancas:', error);
       throw error;
