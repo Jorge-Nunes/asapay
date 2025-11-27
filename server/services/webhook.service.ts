@@ -332,8 +332,8 @@ export class WebhookService {
 
         // Send unblock message
         try {
-          const phone = (client as any).mobile_phone || client.phone || '';
-          console.log(`[Webhook] 📱 Tentando enviar mensagem de desbloqueio para ${phone}. Template disponível: ${!!config.messageTemplates?.desbloqueio}`);
+          const phone = client.mobilePhone || client.phone || '';
+          console.log(`[Webhook] 📱 Tentando enviar mensagem de desbloqueio para ${phone}. Template: ${!!config.messageTemplates?.desbloqueio}`);
           
           if (config.messageTemplates?.desbloqueio && config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
             const evolutionService = new EvolutionService(
