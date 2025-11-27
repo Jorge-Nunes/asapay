@@ -332,6 +332,9 @@ export class WebhookService {
 
         // Send unblock message
         try {
+          const phone = (client as any).mobile_phone || client.phone || '';
+          console.log(`[Webhook] 📱 Tentando enviar mensagem de desbloqueio para ${phone}. Template disponível: ${!!config.messageTemplates?.desbloqueio}`);
+          
           if (config.messageTemplates?.desbloqueio && config.evolutionUrl && config.evolutionApiKey && config.evolutionInstance) {
             const evolutionService = new EvolutionService(
               config.evolutionUrl,
@@ -339,7 +342,6 @@ export class WebhookService {
               config.evolutionInstance
             );
 
-            const phone = client.mobilePhone || client.phone || '';
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, '');
               const message = config.messageTemplates.desbloqueio
@@ -347,11 +349,15 @@ export class WebhookService {
                 .replace('{{data}}', new Date().toLocaleDateString('pt-BR'));
               
               await evolutionService.sendTextMessage(cleanPhone, message);
-              console.log(`[Webhook] Mensagem de desbloqueio enviada para ${cleanPhone}`);
+              console.log(`[Webhook] ✅ Mensagem de desbloqueio enviada para ${cleanPhone}`);
+            } else {
+              console.log(`[Webhook] ⚠️ Telefone vazio para cliente ${client.name}`);
             }
+          } else {
+            console.log(`[Webhook] ⚠️ Template desbloqueio não configurado ou Evolution API não pronta`);
           }
         } catch (error) {
-          console.error(`[Webhook] Erro ao enviar mensagem de desbloqueio:`, error);
+          console.error(`[Webhook] ❌ Erro ao enviar mensagem de desbloqueio:`, error);
         }
       } else {
         console.log(`[Webhook] Cliente não será desbloqueado (atrasos: ${customerOverdueCobrancas.length}/${limite})`);
