@@ -197,8 +197,8 @@ export class TraccarService {
       throw new Error('Traccar não configurado');
     }
 
-    // For 4.15, ensure we have a valid session
-    if (this.version === '4.15' && !this.sessionCookie) {
+    // For session auth, ensure we have a valid session
+    if (this.authMethod === 'session' && !this.sessionCookie) {
       await this.authenticateV415();
     }
 

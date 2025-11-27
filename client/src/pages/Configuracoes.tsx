@@ -899,6 +899,24 @@ export default function Configuracoes() {
                 </p>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="traccar-auth-method">Método de Autenticação</Label>
+                <Select
+                  value={formData.traccarAuthMethod || 'session'}
+                  onValueChange={(value) => setFormData({ ...formData, traccarAuthMethod: value })}
+                >
+                  <SelectTrigger id="traccar-auth-method" className="border-2" data-testid="select-traccar-auth-method">
+                    <SelectValue placeholder="Selecione o método" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="session">Session (v4.15) - Usa Email + Senha com Cookies</SelectItem>
+                    <SelectItem value="bearer">Bearer Token (Latest) - Usa API Key com Bearer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Defina qual método de autenticação sua instância Traccar utiliza. Este campo sobrescreve as configurações automáticas.
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="traccar-limite">Limite de Cobranças Vencidas</Label>
                 <Input
                   id="traccar-limite"
