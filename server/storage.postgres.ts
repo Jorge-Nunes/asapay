@@ -453,80 +453,52 @@ Obrigado por sua confiança! 🙏`,
       
       const db = getDb();
       
-      // Get existing cobrancas to preserve OVERDUE status during sync
-      const existingCobrancas = await db.query.cobrancas.findMany();
-      const existingMap = new Map(existingCobrancas.map(c => [c.id, c]));
+      // Use SQL UPSERT with CASE logic to preserve OVERDUE status intelligently
+      // This ensures that if a cobrança is already marked OVERDUE in the DB,
+      // it stays OVERDUE unless the new data shows payment confirmation
+      await db.execute(sql`
+        INSERT INTO cobrancas (
+          id, customer, customer_name, customer_phone, value, due_date, 
+          status, invoice_url, description, tipo
+        ) VALUES ${sql.join(
+          newCobrancas.map(c => 
+            sql`(
+              ${c.id}, ${c.customer}, ${c.customerName}, ${c.customerPhone}, 
+              ${c.value.toString()}, ${c.dueDate}, ${c.status}, 
+              ${c.invoiceUrl}, ${c.description}, ${c.tipo}
+            )`
+          ),
+          sql`, `
+        )}
+        ON CONFLICT (id) DO UPDATE SET
+          customer = EXCLUDED.customer,
+          customer_name = EXCLUDED.customer_name,
+          customer_phone = EXCLUDED.customer_phone,
+          value = EXCLUDED.value,
+          due_date = EXCLUDED.due_date,
+          status = CASE 
+            -- If existing is OVERDUE, only change if new status indicates payment (RECEIVED/CONFIRMED)
+            WHEN cobrancas.status = 'OVERDUE' AND EXCLUDED.status NOT IN ('RECEIVED', 'CONFIRMED')
+              THEN 'OVERDUE'
+            -- If existing tipo is 'atraso', preserve it unless payment confirmed
+            WHEN cobrancas.tipo = 'atraso' AND EXCLUDED.status NOT IN ('RECEIVED', 'CONFIRMED')
+              THEN cobrancas.status
+            -- Otherwise use the new status
+            ELSE EXCLUDED.status
+          END,
+          invoice_url = EXCLUDED.invoice_url,
+          description = EXCLUDED.description,
+          tipo = CASE 
+            -- If existing tipo is 'atraso', preserve it unless payment confirmed
+            WHEN cobrancas.tipo = 'atraso' AND EXCLUDED.status NOT IN ('RECEIVED', 'CONFIRMED')
+              THEN 'atraso'
+            -- Otherwise use new tipo
+            ELSE EXCLUDED.tipo
+          END,
+          updated_at = NOW()
+      `);
       
-      // Merge: preserve OVERDUE/atraso status, don't overwrite with API data
-      const mergedCobrancas = newCobrancas.map(newC => {
-        const existing = existingMap.get(newC.id);
-        
-        // DEBUG: Log existing vs new for problematic IDs
-        if (newC.id === 'pay_949d63o7ogbw9foh' || existing?.status === 'OVERDUE') {
-          console.log(`[Storage] DEBUG Merge ${newC.id}:`, {
-            existing: existing ? { status: existing.status, tipo: existing.tipo } : 'NONE',
-            new: { status: newC.status, tipo: newC.tipo },
-            preserve: existing && (existing.status === 'OVERDUE' || existing.tipo === 'atraso'),
-          });
-        }
-        
-        // If existing cobrança has OVERDUE or tipo='atraso', preserve it
-        // Only update if new status is a payment confirmation (RECEIVED/CONFIRMED)
-        if (existing && (existing.status === 'OVERDUE' || existing.tipo === 'atraso')) {
-          // Only change if new status indicates payment was made
-          if (newC.status === 'RECEIVED' || newC.status === 'CONFIRMED') {
-            // Payment confirmed - update status
-            if (existing.id === 'pay_949d63o7ogbw9foh') {
-              console.log(`[Storage] ✅ Updating ${existing.id} to RECEIVED (payment confirmed)`);
-            }
-            return newC;
-          }
-          // Keep existing OVERDUE status
-          if (existing.id === 'pay_949d63o7ogbw9foh') {
-            console.log(`[Storage] ✅ Preserving OVERDUE for ${existing.id}: status=${existing.status}, tipo=${existing.tipo}`);
-          }
-          return {
-            ...newC,
-            status: existing.status,
-            tipo: existing.tipo,
-          };
-        }
-        
-        // New cobrança or existing without OVERDUE - use new data
-        return newC;
-      });
-      
-      // Use UPSERT for batch efficiency with merged data
-      await db.insert(cobrancas)
-        .values(mergedCobrancas.map(c => ({
-          id: c.id,
-          customer: c.customer,
-          customerName: c.customerName,
-          customerPhone: c.customerPhone,
-          value: c.value.toString(),
-          dueDate: c.dueDate,
-          status: c.status,
-          invoiceUrl: c.invoiceUrl,
-          description: c.description,
-          tipo: c.tipo,
-        })))
-        .onConflictDoUpdate({
-          target: cobrancas.id,
-          set: {
-            customer: sql`excluded.customer`,
-            customerName: sql`excluded.customer_name`,
-            customerPhone: sql`excluded.customer_phone`,
-            value: sql`excluded.value`,
-            dueDate: sql`excluded.due_date`,
-            status: sql`excluded.status`,
-            invoiceUrl: sql`excluded.invoice_url`,
-            description: sql`excluded.description`,
-            tipo: sql`excluded.tipo`,
-            updatedAt: new Date(),
-          },
-        });
-      
-      console.log(`[Storage] Saved/updated ${newCobrancas.length} cobrancas (preserving OVERDUE status)`);
+      console.log(`[Storage] ✅ Saved/updated ${newCobrancas.length} cobrancas (OVERDUE status preserved in DB)`);
     } catch (error) {
       console.error('[Storage] Error in saveCobrancas:', error);
       throw error;
