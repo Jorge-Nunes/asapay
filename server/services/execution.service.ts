@@ -227,39 +227,53 @@ export class ExecutionService {
           for (const [asaasCustomerId, { count: overdueCount, customerPhone }] of overdueByAsaasId.entries()) {
             try {
               // Get client from Asaas ID to find Traccar mapping
-              console.log(`[Traccar] Processando cliente ${asaasCustomerId} com ${overdueCount} cobranças vencidas`);
-              const client = await storage.getClientByAsaasId(asaasCustomerId);
+              console.log(`\n[Traccar] ========== Processando cliente ${asaasCustomerId} com ${overdueCount} cobranças vencidas ==========`);
+              let client;
+              try {
+                client = await storage.getClientByAsaasId(asaasCustomerId);
+                console.log(`[Traccar] CLIENT RESULT:`, client ? { id: client.id, name: client.name, traccarUserId: client.traccarUserId } : null);
+              } catch (err) {
+                console.error(`[Traccar] ✗ ERRO em getClientByAsaasId:`, err);
+                throw err;
+              }
               
               if (!client) {
-                console.log(`[Traccar] Cliente ${asaasCustomerId} não encontrado no banco`);
+                console.log(`[Traccar] ⚠️  Cliente ${asaasCustomerId} não encontrado no banco`);
                 continue;
               }
               
               if (!client?.traccarUserId) {
-                console.log(`[Traccar] Cliente ${asaasCustomerId} (${client.name}) não tem usuário Traccar mapeado`);
+                console.log(`[Traccar] ⚠️  Cliente ${asaasCustomerId} (${client.name}) não tem usuário Traccar mapeado`);
                 continue;
               }
               
-              console.log(`[Traccar] Cliente encontrado: ${client.name} (ID: ${client.traccarUserId})`);
+              console.log(`[Traccar] ✓ Cliente encontrado: ${client.name} (ID: ${client.traccarUserId})`);
 
               // Get user directly by ID (not by phone) - more reliable
-              console.log(`[Traccar] Buscando dados do usuário Traccar ID: ${client.traccarUserId}`);
-              const traccarUser = await traccarService.getUserById(client.traccarUserId);
+              console.log(`[Traccar] 🔍 Buscando dados do usuário Traccar ID: ${client.traccarUserId}`);
+              let traccarUser;
+              try {
+                traccarUser = await traccarService.getUserById(client.traccarUserId);
+                console.log(`[Traccar] ✓ getUserById retornou:`, traccarUser ? { id: traccarUser.id, name: traccarUser.name, disabled: traccarUser.disabled } : 'NULL');
+              } catch (getUserErr) {
+                console.error(`[Traccar] ✗ ERRO em getUserById(${client.traccarUserId}):`, getUserErr);
+                throw getUserErr;
+              }
               
               if (traccarUser) {
-                console.log(`[Traccar] Usuário encontrado: ${traccarUser.name}, disabled=${traccarUser.disabled}`);
+                console.log(`[Traccar] ✓ Usuário encontrado: ${traccarUser.name}, disabled=${traccarUser.disabled}`);
                 const shouldBlock = overdueCount >= limiteCobrancas;
                 const isCurrentlyBlocked = traccarUser.disabled === true;
-                console.log(`[Traccar] shouldBlock=${shouldBlock}, isCurrentlyBlocked=${isCurrentlyBlocked}, limite=${limiteCobrancas}`);
+                console.log(`[Traccar] LÓGICA: shouldBlock=${shouldBlock} (${overdueCount} >= ${limiteCobrancas}?), isCurrentlyBlocked=${isCurrentlyBlocked}`);
                 
                 if (shouldBlock && !isCurrentlyBlocked) {
                   // Block user
-                  console.log(`[Traccar] ✓ BLOQUEANDO usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId}) - ${overdueCount} cobranças vencidas`);
+                  console.log(`[Traccar] 🚨 EXECUTANDO: blockUser(${client.traccarUserId})`);
                   try {
                     const blockResult = await traccarService.blockUser(parseInt(client.traccarUserId));
-                    console.log(`[Traccar] ✓ Bloqueio bem-sucedido para ID ${client.traccarUserId}:`, blockResult);
+                    console.log(`[Traccar] ✅ SUCESSO - Bloqueio bem-sucedido para ID ${client.traccarUserId}`);
                   } catch (blockError) {
-                    console.error(`[Traccar] ✗ Erro ao bloquear usuário ID ${client.traccarUserId}:`, blockError);
+                    console.error(`[Traccar] ❌ ERRO em blockUser(${client.traccarUserId}):`, blockError instanceof Error ? { message: blockError.message, stack: blockError.stack.split('\n')[0] } : blockError);
                     throw blockError;
                   }
                   
@@ -305,12 +319,12 @@ export class ExecutionService {
                   }
                 } else if (!shouldBlock && isCurrentlyBlocked) {
                   // Unblock user if they no longer meet the blocking criteria
-                  console.log(`[Traccar] ✓ DESBLOQUEANDO usuário Traccar ID ${client.traccarUserId} (Cliente: ${asaasCustomerId})`);
+                  console.log(`[Traccar] 🔓 EXECUTANDO: unblockUser(${client.traccarUserId})`);
                   try {
                     const unblockResult = await traccarService.unblockUser(parseInt(client.traccarUserId));
-                    console.log(`[Traccar] ✓ Desbloqueio bem-sucedido para ID ${client.traccarUserId}:`, unblockResult);
+                    console.log(`[Traccar] ✅ SUCESSO - Desbloqueio bem-sucedido para ID ${client.traccarUserId}`);
                   } catch (unblockError) {
-                    console.error(`[Traccar] ✗ Erro ao desbloquear usuário ID ${client.traccarUserId}:`, unblockError);
+                    console.error(`[Traccar] ❌ ERRO em unblockUser(${client.traccarUserId}):`, unblockError instanceof Error ? { message: unblockError.message, stack: unblockError.stack.split('\n')[0] } : unblockError);
                     throw unblockError;
                   }
                   
@@ -353,10 +367,10 @@ export class ExecutionService {
                   }
                 }
               } else {
-                console.log(`[Traccar] ⚠️ Usuário Traccar não encontrado ou erro na busca (ID: ${client.traccarUserId})`);
+                console.log(`[Traccar] ⚠️ traccarUser é NULL/undefined (ID: ${client.traccarUserId})`);
               }
             } catch (error) {
-              console.error(`[Traccar] ✗ Erro ao processar bloqueio para ${customerPhone}:`, error);
+              console.error(`[Traccar] ❌ CATCH ERROR ao processar ${asaasCustomerId}:`, error instanceof Error ? { message: error.message, code: (error as any).code } : error);
               
               logs.push({
                 id: `traccar-error-${customerPhone}`,
